@@ -20,16 +20,20 @@ add_subdirectory(third_party/spdlog)
 
 add_subdirectory(third_party/eigen)
 
+find_package(Threads REQUIRED)
+
+include(GenerateExportHeader)
 add_library(boink SHARED)
+generate_export_header(boink EXPORT_FILE_NAME "${CMAKE_SOURCE_DIR}/include/boink_export.h")
 
 target_compile_options(boink PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -pedantic>
-  $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
 )
 
 target_sources(boink
   PRIVATE
-    src/test.cpp
+    src/boink.cpp
 )
 
 target_include_directories(boink
@@ -38,7 +42,7 @@ target_include_directories(boink
 )
 
 target_link_libraries(boink
-  PRIVATE eigen
+  PUBLIC Eigen3::Eigen
   PUBLIC spdlog::spdlog
 )
 
@@ -51,6 +55,10 @@ set(TEST_SOURCES
 
 foreach(name IN LISTS TEST_SOURCES)
   add_executable(${name} tests/${name}.cpp)
-  target_link_libraries(${name} PRIVATE boink)
+  target_link_libraries(${name}
+    PRIVATE 
+      boink
+      Threads::Threads # Required to resolve pthreads warning/errors on MSVC
+  )
   add_test(${name} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name})
 endforeach()
