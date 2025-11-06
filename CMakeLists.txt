@@ -24,7 +24,7 @@ find_package(Threads REQUIRED)
 
 include(GenerateExportHeader)
 add_library(boink SHARED)
-generate_export_header(boink EXPORT_FILE_NAME "${CMAKE_SOURCE_DIR}/include/boink_export.h")
+generate_export_header(boink)
 
 target_compile_options(boink PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -pedantic>
@@ -39,6 +39,7 @@ target_sources(boink
 target_include_directories(boink
   PUBLIC include
   PRIVATE src
+  PUBLIC ${CMAKE_BINARY_DIR} # for boink_export.h
 )
 
 target_link_libraries(boink
