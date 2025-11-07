@@ -40,7 +40,7 @@ target_sources(boink
 target_include_directories(boink
   PUBLIC include
   PRIVATE src
-  PUBLIC ${CMAKE_BINARY_DIR} # for boink_export.h
+  PRIVATE ${CMAKE_BINARY_DIR} # for boink_export.h
 )
 
 target_link_libraries(boink
