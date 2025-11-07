@@ -34,6 +34,7 @@ target_compile_options(boink PRIVATE
 target_sources(boink
   PRIVATE
     src/boink.cpp
+    src/boink_capi.cpp
 )
 
 target_include_directories(boink
