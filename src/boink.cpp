@@ -1,4 +1,4 @@
-#include "boink.h"
+#include "boink/boink.h"
 
 #include <iostream>
 

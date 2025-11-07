@@ -1,5 +1,5 @@
-#include "boink_capi.h"
-#include "boink.h"
+#include "boink/boink_capi.h"
+#include "boink/boink.h"
 
 BoinkHandle create_engine()
 {
