@@ -27,14 +27,29 @@ add_library(boink SHARED)
 generate_export_header(boink)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
-  add_link_options(-fsanitize=address,undefined)
+    if (MSVC)
+        message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
+        
+        add_compile_options(
+          /fsanitize=address
+          /WAll
+          /WX
+        )
+        add_link_options(/fsanitize=address)
+    else()
+        message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
+        
+        add_compile_options(
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+            -Wall
+            -Werror
+            -Wextra
+            -pedantic
+        )
+        add_link_options(-fsanitize=address,undefined)
+    endif()
 endif()
-
-target_compile_options(boink PRIVATE
-  $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -pedantic>
-  $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
-)
 
 target_sources(boink
   PRIVATE

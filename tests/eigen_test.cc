@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-int main(int argc, char **argv)
+int main()
 {
   // Define a 3D vector
     Eigen::Vector3d v(1.0, 2.0, 3.0);
