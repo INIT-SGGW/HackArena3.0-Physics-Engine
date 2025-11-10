@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(BoinkEngine VERSION 1.0.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -26,6 +26,11 @@ include(GenerateExportHeader)
 add_library(boink SHARED)
 generate_export_header(boink)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+  add_link_options(-fsanitize=address,undefined)
+endif()
+
 target_compile_options(boink PRIVATE
   $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -pedantic>
   $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
@@ -33,8 +38,9 @@ target_compile_options(boink PRIVATE
 
 target_sources(boink
   PRIVATE
-    src/boink.cpp
-    src/boink_capi.cpp
+    src/boink.cc
+    src/boink_capi.cc
+    src/world.cc
 )
 
 target_include_directories(boink
@@ -53,10 +59,11 @@ include(CTest)
 set(TEST_SOURCES
   eigen_test
   spdlog_test
+  world_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
-  add_executable(${name} tests/${name}.cpp)
+  add_executable(${name} tests/${name}.cc)
   target_link_libraries(${name}
     PRIVATE 
       boink
