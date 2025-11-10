@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 
 project(BoinkEngine VERSION 1.0.0)
 
@@ -30,16 +30,16 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     if (MSVC)
         message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
         
-        add_compile_options(
+        target_compile_options(boink PRIVATE
           /fsanitize=address
-          /WAll
+          /W4
           /WX
         )
-        add_link_options(/fsanitize=address)
+        target_link_options(boink PRIVATE /fsanitize=address)
     else()
         message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
         
-        add_compile_options(
+        target_compile_options( boink PRIVATE
             -fsanitize=address,undefined
             -fno-omit-frame-pointer
             -Wall
@@ -47,7 +47,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             -Wextra
             -pedantic
         )
-        add_link_options(-fsanitize=address,undefined)
+        target_link_options(boink PRIVATE -fsanitize=address,undefined)
     endif()
 endif()
 
@@ -55,6 +55,7 @@ target_sources(boink
   PRIVATE
     src/boink.cc
     src/boink_capi.cc
+  PUBLIC
     src/world.cc
 )
 
