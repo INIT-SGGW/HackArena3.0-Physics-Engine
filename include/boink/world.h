@@ -6,6 +6,7 @@
 #include "boink/components/velocity.h"
 
 #include "boink/systems/movement_system.h"
+#include "boink/systems/debug_system.h"
 
 #include "boink/utils/tuple_unpack.h"
 
@@ -18,8 +19,11 @@ namespace boink
   class World
   {
   public:
-    using BolidComponents=std::tuple<Transform,Velocity>;
-    using BolidSystems=std::tuple<apply_tuple_t<MovementSystem,BolidComponents>>;
+    using BolidComponents=std::tuple<Transform, Velocity>;
+    using BolidSystems=std::tuple<
+        apply_tuple_t<MovementSystem, BolidComponents>,
+        apply_tuple_t<DebugSystem, BolidComponents>
+    >;
   public:
     /**
      * @brief Default initializes the world.

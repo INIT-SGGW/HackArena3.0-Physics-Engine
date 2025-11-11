@@ -112,7 +112,7 @@ namespace boink
 
       return true;
     }
-private:
+  private:
     /**
      * @brief Gets the vector of components of type Component_.
      *

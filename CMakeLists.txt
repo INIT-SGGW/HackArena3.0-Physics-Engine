@@ -57,7 +57,7 @@ target_sources(boink
     src/boink_capi.cc
   PUBLIC
     src/world.cc
-)
+ "include/boink/systems/debug_system.h")
 
 target_include_directories(boink
   PUBLIC include
@@ -79,7 +79,7 @@ set(TEST_SOURCES
 )
 
 foreach(name IN LISTS TEST_SOURCES)
-  add_executable(${name} tests/${name}.cc)
+  add_executable(${name} tests/${name}.cc "include/boink/systems/debug_system.h")
   target_link_libraries(${name}
     PRIVATE 
       boink
