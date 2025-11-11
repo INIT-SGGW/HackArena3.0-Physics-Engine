@@ -19,9 +19,9 @@ namespace boink
             size_t index = 0;
             auto view = component_manager.template getComponentView<Transform, Velocity>();
             view.forEach(
-                [&index](Transform& trans, Velocity& vel)
+                [&](Transform& trans, Velocity& vel)
             {
-                std::cout << "Data for " << index << " object:" << std::endl;
+                std::cout << "Data for " << component_manager.getIDbyIndex(index) << " object:" << std::endl;
                 std::cout << "X: " << trans.position.x() << std::endl;
                 std::cout << "Y: " << trans.position.y() << std::endl;
                 std::cout << "Z: " << trans.position.z() << std::endl;
