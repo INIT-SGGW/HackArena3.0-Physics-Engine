@@ -34,6 +34,7 @@ namespace boink
                 std::cout << "VelY: " << vel.velocity.y() << std::endl;
                 std::cout << "VelZ: " << vel.velocity.z() << std::endl;
                 std::cout << std::endl;
+                index++;
             }
             );
         }

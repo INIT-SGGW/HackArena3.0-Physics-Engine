@@ -113,7 +113,7 @@ namespace boink
       return true;
     }
 
-    Entity::ID getIDbyIndex(size_t index)
+    Entity::ID getIDByIndex(size_t index)
     {
         return index_to_id_map_[index];
     }
