@@ -12,8 +12,8 @@ namespace boink
   /**
    * @brief Manages a set of systems and updates them.
    */
-  template<typename... Components_,typename... Systems_>
-  class SystemManager<std::tuple<Components_...>,std::tuple<Systems_...>>
+  template<typename... Components_, typename... Systems_>
+  class SystemManager<std::tuple<Components_...>, std::tuple<Systems_...>>
   {
   public:
     /**
