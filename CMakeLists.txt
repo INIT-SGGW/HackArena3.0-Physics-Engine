@@ -34,7 +34,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
           /W4
           /WX
         )
-        target_link_options(boink PRIVATE /fsanitize=address)
+        target_link_options(boink PUBLIC /fsanitize=address)
     else()
         message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
         
@@ -46,7 +46,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             -Wextra
             -pedantic
         )
-        target_link_options(boink PRIVATE -fsanitize=address,undefined)
+        target_link_options(boink PUBLIC -fsanitize=address,undefined)
     endif()
 endif()
 
@@ -54,7 +54,6 @@ target_sources(boink
   PRIVATE
     src/boink.cc
     src/boink_capi.cc
-  PUBLIC
     src/math.cc
     src/world.cc
 )
