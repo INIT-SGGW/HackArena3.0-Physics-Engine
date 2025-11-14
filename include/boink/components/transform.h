@@ -9,7 +9,7 @@ namespace boink
    */
   struct Transform
   {
-    Eigen::Vector3d position{Eigen::Vector3d::Zero()};
-    Eigen::Vector3d rotation{Eigen::Vector3d::Zero()};
+    Eigen::Vector3d position{};
+    Eigen::Matrix3d rotation{};
   };
 }

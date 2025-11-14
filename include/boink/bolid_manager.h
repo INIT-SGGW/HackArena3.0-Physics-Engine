@@ -28,6 +28,16 @@ namespace boink
     using ID=Entity::ID;
   public:
     /**
+     * @brief Sets up all systmes on bolid entities
+     *
+     * @param dt Delta time.
+     */
+    void SetupSystems(double dt)
+    {
+      system_manager_.Setup(component_manager_,dt);
+    }
+    
+    /**
      * @brief Updates all systmes on bolid entities
      *
      * @param dt Delta time.
@@ -97,6 +107,6 @@ namespace boink
     std::unordered_set<ID> avail_ids_;
 
     ComponentManager<Components_...> component_manager_;
-    SystemManager<std::tuple<Components_...>,std::tuple<Systems_...>> system_manager_;
+    SystemManager<Systems_...> system_manager_;
   };
 }

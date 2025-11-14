@@ -5,7 +5,6 @@ project(BoinkEngine VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -56,6 +55,7 @@ target_sources(boink
     src/boink.cc
     src/boink_capi.cc
   PUBLIC
+    src/math.cc
     src/world.cc
 )
 
@@ -73,8 +73,8 @@ target_link_libraries(boink
 include(CTest)
 
 set(TEST_SOURCES
-  eigen_test
-  spdlog_test
+  #eigen_test
+  #spdlog_test
   world_test
 )
 

@@ -3,12 +3,13 @@
 #include "boink/bolid_manager.h"
 
 #include "boink/components/transform.h"
-#include "boink/components/velocity.h"
+#include "boink/components/kinematics.h"
+#include "boink/components/bolid_model.h"
+#include "boink/components/bolid_inputs.h"
 
-#include "boink/systems/movement_system.h"
 #include "boink/systems/debug_system.h"
-
-#include "boink/utils/tuple_unpack.h"
+#include "boink/systems/bolid_spawn_system.h"
+#include "boink/systems/movement_system.h"
 
 namespace boink
 {
@@ -19,17 +20,21 @@ namespace boink
   class World
   {
   public:
-    using BolidComponents=std::tuple<Transform, Velocity>;
-    using BolidSystems=std::tuple<
-        apply_tuple_t<MovementSystem, BolidComponents>,
-        apply_tuple_t<DebugSystem, BolidComponents>
-    >;
+    using BolidComponents=std::tuple<BolidModel,BolidInput,Transform,Kinematics>;
+    using BolidSystems=std::tuple<BolidSpawnSystem,MovementSystem,DebugSystem>;
   public:
     /**
      * @brief Default initializes the world.
      *
      */
     World();
+
+    /**
+     * @brief Start simulation.
+     *
+     * @param dt Delta time in seconds.
+     */
+    void start(double dt);
 
     /**
      * @brief Update the world for a simulation step.
