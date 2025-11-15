@@ -26,36 +26,43 @@ add_library(boink SHARED)
 generate_export_header(boink)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    if (MSVC)
-        message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
-        
-        target_compile_options(boink PRIVATE
-          /fsanitize=address
-          /W4
-          /WX
-        )
-        target_link_options(boink PUBLIC /fsanitize=address)
-    else()
-        message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
-        
-        target_compile_options( boink PRIVATE
-            -fsanitize=address,undefined
-            -fno-omit-frame-pointer
-            -Wall
-            -Werror
-            -Wextra
-            -pedantic
-        )
-        target_link_options(boink PUBLIC -fsanitize=address,undefined)
-    endif()
+  if (MSVC)
+    message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
+    
+    target_compile_options(boink PRIVATE
+      /fsanitize=address
+      /W4
+      /WX
+    )
+    target_link_options(boink PUBLIC /fsanitize=address)
+  else()
+    message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
+    
+    target_compile_options( boink PRIVATE
+      -fsanitize=address,undefined
+      -fno-omit-frame-pointer
+      -Wall
+      -Werror
+      -Wextra
+      -pedantic
+    )
+    target_link_options(boink PUBLIC -fsanitize=address,undefined)
+  endif()
+endif()
+
+# This files on Windows must be PUBLIC
+#(i dunno why and for now i dont care)
+if(WIN32)
+  set(BOINK_SOURCES_VISIBILITY PUBLIC)
+else()
+  set(BOINK_SOURCES_VISIBILITY PRIVATE)
 endif()
 
 target_sources(boink
   PRIVATE
     src/boink.cc
     src/boink_capi.cc
-  PUBLIC # This files on Windows must be PUBLIC 
-         #(i dunno why and for now i dont care)
+  ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
     src/world.cc
 )
