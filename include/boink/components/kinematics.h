@@ -4,9 +4,12 @@
 
 namespace boink
 {
+  /**
+   * @brief Describes body motion.
+   */
   struct Kinematics
   {
     Eigen::Vector3d velocity{};
-    Eigen::Vector3d acceleration{};
+    double acceleration{};
   };
 }
