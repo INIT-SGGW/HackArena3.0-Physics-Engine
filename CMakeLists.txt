@@ -21,9 +21,9 @@ add_subdirectory(third_party/eigen)
 
 find_package(Threads REQUIRED)
 
-include(GenerateExportHeader)
+#include(GenerateExportHeader)
 add_library(boink SHARED)
-generate_export_header(boink)
+#generate_export_header(boink)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -50,17 +50,18 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   endif()
 endif()
 
-# This files on Windows must be PUBLIC
-#(i dunno why and for now i dont care)
 if(WIN32)
+  # This files on Windows must be PUBLIC
+  #(i dunno why and for now i dont care)
   set(BOINK_SOURCES_VISIBILITY PUBLIC)
+  target_compile_definitions(boink PRIVATE BOINK_BUILD_DLL)
 else()
   set(BOINK_SOURCES_VISIBILITY PRIVATE)
 endif()
 
+
 target_sources(boink
   PRIVATE
-    src/boink.cc
     src/boink_capi.cc
   ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
@@ -70,7 +71,7 @@ target_sources(boink
 target_include_directories(boink
   PUBLIC include
   PRIVATE src
-  PRIVATE ${CMAKE_BINARY_DIR} # for boink_export.h
+  #PRIVATE ${CMAKE_BINARY_DIR} # for boink_export.h
 )
 
 target_link_libraries(boink
@@ -88,6 +89,21 @@ set(TEST_SOURCES
 
 foreach(name IN LISTS TEST_SOURCES)
   add_executable(${name} tests/${name}.cc)
+  target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
+  target_link_libraries(${name}
+    PRIVATE 
+      boink
+      Threads::Threads # Required to resolve pthreads warning/errors on MSVC
+  )
+  add_test(${name} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name})
+endforeach()
+
+set(TEST_SOURCES_C
+  capi_test
+)
+foreach(name IN LISTS TEST_SOURCES_C)
+  add_executable(${name} tests/${name}.c)
+  target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
   target_link_libraries(${name}
     PRIVATE 
       boink

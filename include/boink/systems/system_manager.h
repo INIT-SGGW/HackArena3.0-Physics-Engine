@@ -20,8 +20,10 @@ namespace boink
      * @param component_manager Reference to the ComponentManager storing components.
      * @param dt Delta time.
      */
-    template <typename... Components_>
-    void Setup(ComponentManager<Components_...>& component_manager,double dt)
+    template <typename TupleStaticComponents_, typename TupleComponents_>
+    void Setup(
+        ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+        double dt)
     {
       std::apply([&,dt](auto&... sys) {
         (([&,dt] {
@@ -38,8 +40,10 @@ namespace boink
      * @param component_manager Reference to the ComponentManager storing components.
      * @param dt Delta time.
      */
-    template <typename... Components_>
-    void Update(ComponentManager<Components_...>& component_manager,double dt)
+    template <typename TupleStaticComponents_, typename TupleComponents_>
+    void Update(
+        ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+        double dt)
     {
       std::apply([&,dt](auto&... sys) {
         (([&,dt] {

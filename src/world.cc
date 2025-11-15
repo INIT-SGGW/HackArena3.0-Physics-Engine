@@ -2,17 +2,18 @@
 
 namespace boink
 {
-  World::World()
-  {
-    
-  }
+  World::World(const CarModel& car_model)
+    :car_manager(car_model)
+  {}
 
   void World::start(double dt)
   {
-    bolid_manager.SetupSystems(dt);
+    car_manager.SetupSystems(dt);
+    time_passed_+=dt;
   }
   void World::update(double dt)
   {
-    bolid_manager.UpdateSystems(dt);
+    car_manager.UpdateSystems(dt);
+    time_passed_+=dt;
   }
 }

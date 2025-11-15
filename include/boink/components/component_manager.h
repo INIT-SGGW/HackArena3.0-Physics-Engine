@@ -9,20 +9,23 @@
 
 namespace boink
 {
+  template <typename TupleStaticComponents_,typename TupleComponents_>
+  class ComponentManager;
 
   /**
    * @brief Manages the storage of entity components.
    */
-  template<typename... Components_>
-  class ComponentManager
+  template<typename... StaticComponents_,typename... Components_>
+  class ComponentManager<std::tuple<StaticComponents_...>,std::tuple<Components_...>>
   {
   public:
     /**
      * @brief Constructs empty object.
      */
-    ComponentManager()
-      :size_(0)
-    {}
+    ComponentManager(const StaticComponents_&... static_components)
+      :static_components_{static_components...},size_(0)
+    {
+    }
 
     /**
      * @brief Creates a view into one or more component containers.
@@ -53,6 +56,30 @@ namespace boink
       };
     }
 
+    template<typename... SubComponents_>
+    std::tuple<const SubComponents_&...> getCarComponents(Entity::ID entity_id)
+    {
+      size_t index=id_to_index_map_.at(entity_id);
+      return std::tuple(
+        getComponentContainer<SubComponents_>().at(index)...
+      );
+    }
+
+    /**
+     * @brief Creates a tuple of one or more static component containers.
+     *
+     * @tparam StatcSubComponents_ The static component types to include in the tuple.
+     *
+     * @return A tuple containing StaticSubComponets_.
+     */
+    template<typename... StaticSubComponents_>
+    std::tuple<StaticSubComponents_&...> getStaticComponentView()
+    {
+      return std::tuple<StaticSubComponents_&...>(
+        std::get<StaticSubComponents_>(static_components_)...
+      );
+    }
+
     /**
      * @brief Adds a set of components to an entity.
      *
@@ -61,7 +88,7 @@ namespace boink
      * @param entity_id The unique identifier of the entity to which components are added.
      * @param components The component instances to be stored.
      */
-    void addComponents(Entity::ID entity_id,Components_... components)
+    void addComponents(Entity::ID entity_id,const Components_&... components)
     {
       // If component for a given entity was added eariler do nothing.
       if(id_to_index_map_.find(entity_id)!=id_to_index_map_.end())
@@ -69,8 +96,41 @@ namespace boink
       
       (getComponentContainer<Components_>().add(components),...);
       id_to_index_map_[entity_id]=size_;
+      index_to_id_map_[size_]=entity_id;
 
       size_++;
+    }
+
+    /**
+     * @brief Adds a set of components to an entity.
+     *
+     * @tparam Components_ The component types being added.
+     *
+     * @param entity_id The unique identifier of the entity to which components are added.
+     * @param components The component instances to be stored.
+     */
+    void addComponents(Entity::ID entity_id,Components_&&... components)
+    {
+      // If component for a given entity was added eariler do nothing.
+      if(id_to_index_map_.find(entity_id)!=id_to_index_map_.end())
+        return;
+      
+      (getComponentContainer<Components_>().add(std::move(components)),...);
+      id_to_index_map_[entity_id]=size_;
+      index_to_id_map_[size_]=entity_id;
+
+      size_++;
+    }
+
+    template<typename... SubComponents_>
+    void updateComponents(Entity::ID entity_id, const SubComponents_&... sub_components)
+    {
+      auto it=id_to_index_map_.find(entity_id);
+      // If entity doesnt exist return.
+      if(it==id_to_index_map_.end())
+        return;
+
+      (getComponentContainer<SubComponents_>().update(sub_components,it->second),...);
     }
 
     /**
@@ -113,9 +173,17 @@ namespace boink
       return true;
     }
 
-    Entity::ID getIDByIndex(size_t index)
+    /**
+     * @brief Returns the entity ID corresponding to the given index.
+     *
+     * @param index The position of the entity in the internal container.
+     *
+     * @return Entity::ID The ID of the entity at the specified index.
+     *
+     */
+    Entity::ID getIDByIndex(size_t index) const
     {
-        return index_to_id_map_[index];
+        return index_to_id_map_.at(index);
     }
 
   private:
@@ -145,9 +213,13 @@ namespace boink
       return std::get<UnorderedContainer<Component_>>(containers_);
     }
   public:
+    static constexpr size_t STATIC_COMPONENTS_COUNT=sizeof...(StaticComponents_);
     static constexpr size_t COMPONENTS_COUNT=sizeof...(Components_);
   private:
+    std::tuple<StaticComponents_...> static_components_;
+
     std::tuple<UnorderedContainer<Components_>...> containers_;
+
     std::unordered_map<Entity::ID,size_t> id_to_index_map_;
     std::unordered_map<size_t,Entity::ID> index_to_id_map_;
 

@@ -4,8 +4,8 @@
 #include "boink/components/component_manager.h"
 
 #include "boink/components/transform.h"
-#include "boink/components/bolid_inputs.h"
-#include "boink/components/bolid_model.h"
+#include "boink/components/car_inputs.h"
+#include "boink/components/car_model.h"
 #include "boink/components/kinematics.h"
 
 #include "boink/utils/math.h"
@@ -29,16 +29,21 @@ namespace boink
       * @param component_manager Reference to the ComponentManager storing components.
       * @param dt Delta time.
       */
-    template<typename... Components_>
-    void Update(ComponentManager<Components_...>& component_manager,
-        double dt)
+    template <typename TupleStaticComponents_, typename TupleComponents_>
+    void Update(
+      ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+      double dt)
     {
       auto view=component_manager
-        .template getComponentView<BolidModel,BolidInput,Transform,Kinematics>();
+        .template getComponentView<CarInput,Transform,Kinematics>();
+
+      auto static_comps=component_manager.
+        template getStaticComponentView<CarModel>();
+      const auto& model = std::get<CarModel&>(static_comps);
+
       view.forEach(
         [&, dt](
-          const BolidModel& model,
-          const BolidInput& input,
+          const CarInput& input,
           Transform& trans, 
           Kinematics& kin
         )
@@ -52,7 +57,7 @@ namespace boink
           // this means that angle_x is postive when rotation is from Y to Z, for
           // angle_y is from Z to X and for angle_z from X to Y.
           
-          // Assumes that initial bolid postion is at 0,0,0 if not displacement
+          // Assumes that initial car postion is at 0,0,0 if not displacement
           // vector must be provided
 
           // TODO Simulate engine output to the wheels

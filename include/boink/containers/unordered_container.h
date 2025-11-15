@@ -37,6 +37,28 @@ namespace boink
     }
 
     /**
+     * @brief Set value at given index.
+     *
+     * @param value Value to assign.
+     * @param index Target index.
+     */
+    void update(const T& value, size_t index)
+    {
+      values_[index]=value;
+    }
+
+    /**
+     * @brief Set value at given index.
+     *
+     * @param value Value to assign.
+     * @param index Target index.
+     */
+    void update(T&& value, size_t index)
+    {
+      values_[index]=std::move(value);
+    }
+
+    /**
      * @brief Removes the element at the specified index.
      *
      * @param index The index of the element to remove.
@@ -49,6 +71,10 @@ namespace boink
       values_.pop_back();
     }
 
+    const T& at(size_t index) const
+    {
+      return values_.at(index);
+    }
     /**
      * @brief Returns a pointer to the underlying data.
      *

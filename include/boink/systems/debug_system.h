@@ -5,7 +5,7 @@
 
 #include "boink/components/transform.h"
 #include "boink/components/kinematics.h"
-#include "boink/components/bolid_model.h"
+#include "boink/components/car_model.h"
 
 #include <iostream>
 
@@ -14,33 +14,41 @@ namespace boink
     class DebugSystem
     {
     public:
-        template<typename... Components_>
-        void Setup(ComponentManager<Components_...>& component_manager,
-            double)
+        template <typename TupleStaticComponents_, typename TupleComponents_>
+        void Setup(
+            ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+            double dt)
         {
             size_t index = 0;
             auto view = component_manager.
-              template getComponentView<BolidModel,Transform, Kinematics>();
+              template getComponentView<Transform, Kinematics>();
+            auto static_comps=component_manager.
+              template getStaticComponentView<CarModel>();
+            const auto& model = std::get<CarModel&>(static_comps);
             view.forEach(
-                [&](BolidModel& model,Transform& trans, Kinematics& kin)
+                [&](Transform& trans, Kinematics& kin)
                 {
-                    Log(model,trans,kin,component_manager.getIDByIndex(index));
+                    Log(dt,model,trans,kin,component_manager.getIDByIndex(index));
                     index++;
                 }
             );
         }
 
-        template<typename... Components_>
-        void Update(ComponentManager<Components_...>& component_manager,
-            double)
+        template <typename TupleStaticComponents_, typename TupleComponents_>
+        void Update(
+            ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+            double dt)
         {
             size_t index = 0;
             auto view = component_manager.
-              template getComponentView<BolidModel,Transform, Kinematics>();
+              template getComponentView<Transform, Kinematics>();
+            auto static_comps=component_manager.
+              template getStaticComponentView<CarModel>();
+            const auto& model = std::get<CarModel&>(static_comps);
             view.forEach(
-                [&](BolidModel& model,Transform& trans, Kinematics& kin)
+                [&](Transform& trans, Kinematics& kin)
                 {
-                    Log(model,trans,kin,component_manager.getIDByIndex(index));
+                    Log(dt,model,trans,kin,component_manager.getIDByIndex(index));
                     index++;
                 }
             );
@@ -53,8 +61,10 @@ namespace boink
             std::cout << "Y: " << vec.y() << std::endl;
             std::cout << "Z: " << vec.z() << std::endl;
         }
-        void Log(BolidModel& model,Transform& trans, Kinematics& kin, size_t id)
+        void Log(
+            double dt,const CarModel& model,Transform& trans, Kinematics& kin, size_t id)
         {
+            std::cout << "Delta time: "<<dt<<std::endl;
             std::cout << "Data for ";
             std::cout << id<<" object:" << std::endl;
             

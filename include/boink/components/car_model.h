@@ -5,9 +5,9 @@
 namespace boink
 {
   /**
-   * @brief Represents model of a bolid it is constant during simulation.
+   * @brief Represents model of a car which is constant during simulation.
    */
-  struct BolidModel
+  struct CarModel
   {
     // TODO
     // Make it vars const and create ctor

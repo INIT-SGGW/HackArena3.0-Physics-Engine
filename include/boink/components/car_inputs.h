@@ -2,7 +2,7 @@
 
 namespace boink
 {
-  struct BolidInput
+  struct CarInput
   {
     double throttle{};
     double brake{};
