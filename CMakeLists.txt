@@ -54,6 +54,8 @@ target_sources(boink
   PRIVATE
     src/boink.cc
     src/boink_capi.cc
+  PUBLIC # This files on Windows must be PUBLIC 
+         #(i dunno why and for now i dont care)
     src/math.cc
     src/world.cc
 )

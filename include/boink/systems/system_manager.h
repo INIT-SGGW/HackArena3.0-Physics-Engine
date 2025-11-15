@@ -23,14 +23,13 @@ namespace boink
     template <typename... Components_>
     void Setup(ComponentManager<Components_...>& component_manager,double dt)
     {
-      ((
-        [&,dt](){
-          auto& sys=std::get<Systems_>(systems_);
-          if constexpr(requires{sys.Setup(component_manager,dt);})
+      std::apply([&,dt](auto&... sys) {
+        (([&,dt] {
+          if constexpr (requires { sys.Setup(component_manager, dt); }) {
             sys.Setup(component_manager, dt);
-        }()),
-        ...
-      );
+          }
+        }()), ...);
+      }, systems_);
     }
 
     /**
@@ -42,14 +41,13 @@ namespace boink
     template <typename... Components_>
     void Update(ComponentManager<Components_...>& component_manager,double dt)
     {
-      ((
-        [&,dt]{
-          auto& sys=std::get<Systems_>(systems_);
-          if constexpr(requires{sys.Update(component_manager,dt);})
+      std::apply([&,dt](auto&... sys) {
+        (([&,dt] {
+          if constexpr (requires { sys.Update(component_manager, dt); }) {
             sys.Update(component_manager, dt);
-        }()),
-        ...
-      );
+          }
+        }()), ...);
+      }, systems_);
     }
   private:
     std::tuple<Systems_...> systems_;

@@ -2,6 +2,8 @@
 
 #include <Eigen/Core>
 
+#include <numbers>
+
 namespace boink
 {
   namespace math
@@ -91,7 +93,7 @@ namespace boink
      */
     inline double deg2rad(double deg)
     {
-      return deg/180.0*M_PI;
+      return deg/180.0*std::numbers::pi;
     }
   }
 }

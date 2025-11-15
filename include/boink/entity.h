@@ -10,6 +10,6 @@ namespace boink
    */
   struct Entity
   {
-    using ID=uint32_t;
+    using ID=uint64_t;
   };
 }
