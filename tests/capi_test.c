@@ -1,6 +1,27 @@
 #include "boink/boink_capi.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+
+void test_heap_overflow_c() {
+    // Allocate 10 integers (40 bytes)
+    int* data = (int*)malloc(10 * sizeof(int));
+
+    if (data == NULL) {
+        perror("malloc failed");
+        return;
+    }
+
+    printf("Running C ASan test: Heap Buffer Overflow...\n");
+
+    // GOOD ACCESS: Accessing index 5 is safe
+    data[5] = 100;
+
+    // BAD ACCESS: Accessing index 10 (the 11th element), which is past the end.
+    data[10] = 200; // <--- ASan should crash here!
+
+    free(data);
+}
 
 void printCarState(struct BoinkCarState* out, double time);
 int test();

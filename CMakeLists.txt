@@ -48,6 +48,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     )
     target_link_options(boink PUBLIC -fsanitize=address,undefined)
   endif()
+  set(ENV{ASAN_OPTIONS} "detect_leaks=1")
 endif()
 
 if(WIN32)
@@ -93,6 +94,8 @@ set(TEST_SOURCES
 foreach(name IN LISTS TEST_SOURCES)
   add_executable(${name} tests/${name}.cc)
   target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
+  target_compile_options(${name} PRIVATE /fsanitize=address)
+  target_link_options(${name} PUBLIC /fsanitize=address)
   target_link_libraries(${name}
     PRIVATE 
       boink
@@ -107,6 +110,8 @@ set(TEST_SOURCES_C
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)
   target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
+  target_compile_options(${name} PRIVATE /fsanitize=address)
+  target_link_options(${name} PUBLIC /fsanitize=address)
   target_link_libraries(${name}
     PRIVATE 
       boink
