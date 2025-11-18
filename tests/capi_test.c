@@ -2,25 +2,32 @@
 
 #include <stdio.h>
 
+void printCarState(struct BoinkCarState* out, double time);
+int test();
 int main()
+{
+  return test();
+}
+
+int test()
 {
   BoinkCarModel car_model;
   BoinkVec3 vec;
   vec.x=-1.0;
   vec.y=0.0;
-  vec.z=1.0;
+  vec.z=2.0;
   car_model.front_left_wheel=vec;
   vec.x=1.0;
   vec.y=0.0;
-  vec.z=1.0;
+  vec.z=2.0;
   car_model.front_right_wheel=vec;
   vec.x=-1.0;
   vec.y=0.0;
-  vec.z=-1.0;
+  vec.z=-2.0;
   car_model.rear_left_wheel=vec;
   vec.x=1.0;
   vec.y=0.0;
-  vec.z=-1.0;
+  vec.z=-2.0;
   car_model.rear_right_wheel=vec;
   car_model.max_steer_angle=30;
 
@@ -37,7 +44,9 @@ int main()
     return -1;
   }
 
-  if(boink_begin_world(handle,0.0)!=BOINK_OK)
+  double time=0.0;
+  double dt=0.5;
+  if(boink_begin_world(handle,time)!=BOINK_OK)
   {
     fprintf(stderr,"Failed to begin world\n");
     return -1;
@@ -56,20 +65,49 @@ int main()
 
   for(int i=0;i<2;i++)
   {
-    if(boink_step(handle,0.5)!=BOINK_OK)
+    time+=dt;
+    if(boink_step(handle,dt)!=BOINK_OK)
     {
       fprintf(stderr,"Failed to begin world\n");
       return -1;
     }
 
-    struct BoinkCarState out_state;
-    if(boink_read_car_state(handle,car_id,&out_state)!=BOINK_OK)
+    struct BoinkCarState out;
+    if(boink_read_car_state(handle,car_id,&out)!=BOINK_OK)
     {
       fprintf(stderr,"Failed read car state\n");
       return -1;
     }
+    printCarState(&out,time);
   }
 
-
   boink_destroy_world(handle);
+
+  return 0;
+}
+
+void printCarState(struct BoinkCarState* out, double time)
+{
+#define VAR_PRINT_D(x) printf("  [%s]: %f\n",#x,x)
+#define VAR_PRINT_U(x) printf("  [%s]: %lu\n",#x,x)
+#define VAR_PRINT_I(x) printf("  [%s]: %d\n",#x,x)
+    printf("Car state after t=%f\n",time);
+    VAR_PRINT_D(out->brake_applied);
+    VAR_PRINT_U(out->car_id);
+    VAR_PRINT_D(out->engine_rpm);
+    VAR_PRINT_I(out->gear);
+    VAR_PRINT_D(out->orientation.roll);
+    VAR_PRINT_D(out->orientation.pitch);
+    VAR_PRINT_D(out->orientation.yaw);
+    VAR_PRINT_D(out->position.x);
+    VAR_PRINT_D(out->position.y);
+    VAR_PRINT_D(out->position.z);
+    VAR_PRINT_D(out->speed);
+    VAR_PRINT_D(out->throttle_applied);
+    VAR_PRINT_D(out->wheel_angles[0]);
+    VAR_PRINT_D(out->wheel_angles[1]);
+    VAR_PRINT_D(out->wheel_speeds[0]);
+    VAR_PRINT_D(out->wheel_speeds[1]);
+    VAR_PRINT_D(out->wheel_speeds[2]);
+    VAR_PRINT_D(out->wheel_speeds[3]);
 }

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "boink/car_manager.h"
 
 #include "boink/components/transform.h"
 #include "boink/components/kinematics.h"
-#include "boink/components/car_model.h"
 #include "boink/components/car_inputs.h"
+#include "boink/components/car_model.h"
 
-#include "boink/systems/debug_system.h"
+#include "boink/car_manager.h"
 #include "boink/systems/car_spawn_system.h"
 #include "boink/systems/movement_system.h"
+#include "boink/systems/debug_system.h"
 
 namespace boink
 {
@@ -23,11 +23,8 @@ namespace boink
     using CarComponents=std::tuple<CarInput,Transform,Kinematics>;
     using CarSystems=std::tuple<CarSpawnSystem,MovementSystem,DebugSystem>;
   public:
-    /**
-     * @brief Default initializes the world.
-     *
-     */
     World(const CarModel& car_model);
+    World(CarModel&& car_model);
 
     /**
      * @brief Start simulation.

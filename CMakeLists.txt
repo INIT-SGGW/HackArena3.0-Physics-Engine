@@ -21,7 +21,7 @@ add_subdirectory(third_party/eigen)
 
 find_package(Threads REQUIRED)
 
-#include(GenerateExportHeader)
+#include(GenerateExportHeader) 
 add_library(boink SHARED)
 #generate_export_header(boink)
 
@@ -82,9 +82,12 @@ target_link_libraries(boink
 include(CTest)
 
 set(TEST_SOURCES
-  #eigen_test
-  #spdlog_test
+  eigen_test
+  spdlog_test
   world_test
+  capi_test2
+  mem_component_test
+  type_diff_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -95,7 +98,7 @@ foreach(name IN LISTS TEST_SOURCES)
       boink
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
-  add_test(${name} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name})
+  add_test(NAME ${name} COMMAND ${name})
 endforeach()
 
 set(TEST_SOURCES_C
@@ -109,5 +112,5 @@ foreach(name IN LISTS TEST_SOURCES_C)
       boink
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
-  add_test(${name} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${name})
+  add_test(NAME ${name} COMMAND ${name})
 endforeach()

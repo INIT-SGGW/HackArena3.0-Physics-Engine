@@ -22,4 +22,6 @@ int main()
     // remove (depending on SPDLOG_ACTIVE_LEVEL) the call on the release code.
     SPDLOG_TRACE("Some trace message with param {}", 42);
     SPDLOG_DEBUG("Some debug message");
+
+    return 0;
 }

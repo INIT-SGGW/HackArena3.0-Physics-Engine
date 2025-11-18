@@ -4,10 +4,12 @@
 
 #include "boink/components/component_manager.h"
 #include "boink/systems/system_manager.h"
-
 #include "boink/components/car_model.h"
 
+#include "boink/utils/type_difference.h"
+
 #include <tuple>
+#include <type_traits>
 #include <unordered_set>
 #include <cassert>
 
@@ -32,8 +34,17 @@ namespace boink
     CarManager(const CarModel& car_model)
       :component_manager_(car_model)
     {
-      
     }
+
+    CarManager(CarModel&& car_model) 
+      :component_manager_(std::move(car_model))
+    {
+    }
+
+    ~CarManager()
+    {
+    }
+
     /**
      * @brief Sets up all systmes on car entities
      *
@@ -61,8 +72,17 @@ namespace boink
      *
      * @return Unique car identifier.
      */
-    ID addCar(const Components_&... components)
+    template<typename... Ts_>
+    ID addCar(Ts_&&... components)
     {
+      // Checks whether Ts_ types are equal to Components_ order matters.
+      static_assert(
+        std::is_same_v<
+          std::tuple<std::remove_cvref_t<Ts_>...>,
+          std::tuple<Components_...>
+        >
+      );
+
       ID new_id;
       if(avail_ids_.empty())
         new_id=cars_.size();
@@ -75,7 +95,7 @@ namespace boink
       auto pair=cars_.insert(new_id);
       assert(pair.second);
 
-      component_manager_.addComponents(new_id,components...);
+      component_manager_.addComponents(new_id,std::forward<Ts_>(components)...);
       return new_id;
     }
 
@@ -89,22 +109,33 @@ namespace boink
       return addCar(Components_{}...);
     }
 
-    template<typename... SubComponents_>
-    void updateCar(ID car_id, const SubComponents_&... sub_components)
+    template<typename... Ts_>
+    void updateCar(ID car_id, Ts_&&... sub_components)
     {
+      // Checks whether Ts_ are subset of types Compoents_
+      static_assert(
+        (contains_type<std::remove_cvref_t<Ts_>,Components_...>::value && ...)
+      );
+
       if(!cars_.contains(car_id))
         return;
-      
-      // TODO All those const Components_& are good candidates for
-      // std::forward and if not then to use move ctor
-      component_manager_.updateComponents(car_id, sub_components...);
+
+      component_manager_.
+        updateComponents(car_id, std::forward<Ts_>(sub_components)...);
     }
 
     template<typename... SubComponents_>
-    std::tuple<SubComponents_...> getCarComponents(ID car_id)
+    auto getCarComponents(ID car_id)
     {
       return component_manager_.
-        template getCarComponents<SubComponents_...>(car_id);
+        template getEntityComponents<SubComponents_...>(car_id);
+    }
+
+    template<typename... SubComponents_>
+    auto getCarComponents(ID car_id) const
+    {
+      return component_manager_.
+        template getEntityComponents<SubComponents_...>(car_id);
     }
 
     template<typename... StaticSubComponents_>

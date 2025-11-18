@@ -3,8 +3,10 @@
 #include "boink/entity.h"
 #include "boink/containers/unordered_container.h"
 #include "boink/containers/component_view.h"
+#include "boink/utils/type_difference.h"
 
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 
 namespace boink
@@ -22,9 +24,17 @@ namespace boink
     /**
      * @brief Constructs empty object.
      */
-    ComponentManager(const StaticComponents_&... static_components)
-      :static_components_{static_components...},size_(0)
+    template <typename... Ts_>
+    ComponentManager(Ts_&&... static_components) 
+      :static_components_{std::forward<Ts_>(static_components)...},size_(0)
     {
+      // Checks whether Ts_ types are equal to StaticComponents_ order matters.
+      static_assert(
+        std::is_same_v<
+          std::tuple<std::remove_cvref_t<Ts_>...>,
+          std::tuple<StaticComponents_...>
+        >
+      );
     }
 
     /**
@@ -46,6 +56,10 @@ namespace boink
     template<typename... SubComponents_>
     ComponentView<SubComponents_...> getComponentView()
     {
+      static_assert(
+        (contains_type<SubComponents_,Components_...>::value && ...)
+      );
+
       return ComponentView<SubComponents_...>{    
         std::tuple{
           std::span(
@@ -57,10 +71,19 @@ namespace boink
     }
 
     template<typename... SubComponents_>
-    std::tuple<const SubComponents_&...> getCarComponents(Entity::ID entity_id)
+    auto getEntityComponents(Entity::ID entity_id)
     {
       size_t index=id_to_index_map_.at(entity_id);
-      return std::tuple(
+      return std::tuple<SubComponents_&...>(
+        getComponentContainer<SubComponents_>().at(index)...
+      );
+    }
+
+    template<typename... SubComponents_>
+    auto getEntityComponents(Entity::ID entity_id) const
+    {
+      size_t index=id_to_index_map_.at(entity_id);
+      return std::tuple<const SubComponents_&...>(
         getComponentContainer<SubComponents_>().at(index)...
       );
     }
@@ -88,49 +111,45 @@ namespace boink
      * @param entity_id The unique identifier of the entity to which components are added.
      * @param components The component instances to be stored.
      */
-    void addComponents(Entity::ID entity_id,const Components_&... components)
+    template <typename... Ts_>
+    void addComponents(Entity::ID entity_id, Ts_&&... components)
     {
+      // Checks whether Ts_ types are equal to Components_ order matters.
+      static_assert(
+        std::is_same_v<
+          std::tuple<std::remove_cvref_t<Ts_>...>,
+          std::tuple<Components_...>
+        >
+      );
+
       // If component for a given entity was added eariler do nothing.
       if(id_to_index_map_.find(entity_id)!=id_to_index_map_.end())
         return;
-      
-      (getComponentContainer<Components_>().add(components),...);
+
+      (getComponentContainer<std::remove_cvref_t<Ts_>>().
+       add(std::forward<Ts_>(components)),...);
+
       id_to_index_map_[entity_id]=size_;
       index_to_id_map_[size_]=entity_id;
 
       size_++;
     }
 
-    /**
-     * @brief Adds a set of components to an entity.
-     *
-     * @tparam Components_ The component types being added.
-     *
-     * @param entity_id The unique identifier of the entity to which components are added.
-     * @param components The component instances to be stored.
-     */
-    void addComponents(Entity::ID entity_id,Components_&&... components)
+    template<typename... Ts_>
+    void updateComponents(Entity::ID entity_id, Ts_&&... sub_components)
     {
-      // If component for a given entity was added eariler do nothing.
-      if(id_to_index_map_.find(entity_id)!=id_to_index_map_.end())
-        return;
-      
-      (getComponentContainer<Components_>().add(std::move(components)),...);
-      id_to_index_map_[entity_id]=size_;
-      index_to_id_map_[size_]=entity_id;
+      // Checks whether Ts_ are subset of types Compoents_
+      static_assert(
+        (contains_type<std::remove_cvref_t<Ts_>,Components_...>::value && ...)
+      );
 
-      size_++;
-    }
-
-    template<typename... SubComponents_>
-    void updateComponents(Entity::ID entity_id, const SubComponents_&... sub_components)
-    {
       auto it=id_to_index_map_.find(entity_id);
       // If entity doesnt exist return.
       if(it==id_to_index_map_.end())
         return;
 
-      (getComponentContainer<SubComponents_>().update(sub_components,it->second),...);
+      (getComponentContainer<std::remove_cvref_t<Ts_>>().
+       update(std::forward<Ts_>(sub_components),it->second),...);
     }
 
     /**

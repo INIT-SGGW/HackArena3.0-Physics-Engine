@@ -4,7 +4,13 @@ namespace boink
 {
   World::World(const CarModel& car_model)
     :car_manager(car_model)
-  {}
+  {
+  }
+
+  World::World(CarModel&& car_model) 
+    :car_manager(std::move(car_model))
+  {
+  }
 
   void World::start(double dt)
   {

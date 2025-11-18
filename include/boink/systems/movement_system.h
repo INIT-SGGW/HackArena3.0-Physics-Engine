@@ -84,10 +84,12 @@ namespace boink
                 model.direction,model.direction+front_displacement);
 
           Vector3d new_front=model.front+front_displacement;
-          Vector3d front_new_disp_after_d_rot=new_front-delta_rotation*new_front;
+          Vector3d front_new_disp_after_d_rot=new_front-delta_rotation*model.front;
 
           // Its rotation matrix so traspose equals to inverse.
-          trans.position=trans.rotation.transpose()*front_new_disp_after_d_rot;
+          trans.position=
+            trans.rotation.transpose()*front_new_disp_after_d_rot+
+            trans.position;
 
           // Order matters
           trans.rotation=delta_rotation*trans.rotation;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <vector>
 #include <cassert>
 
@@ -21,19 +22,10 @@ namespace boink
      *
      * @param value The element to be added.
      */
-    void add(const T& value)
+    template<typename U>
+    void add(U&& value)
     {
-      values_.push_back(value);
-    }
-
-    /**
-     * @brief Adds an element to the container by an rvalue.
-     *
-     * @param value The element to be added.
-     */
-    void add(T&& value)
-    {
-      values_.push_back(std::move(value));
+      values_.push_back(std::forward<U>(value));
     }
 
     /**
@@ -42,20 +34,11 @@ namespace boink
      * @param value Value to assign.
      * @param index Target index.
      */
-    void update(const T& value, size_t index)
+    template<typename U>
+    void update(U&& value, size_t index)
     {
-      values_[index]=value;
-    }
-
-    /**
-     * @brief Set value at given index.
-     *
-     * @param value Value to assign.
-     * @param index Target index.
-     */
-    void update(T&& value, size_t index)
-    {
-      values_[index]=std::move(value);
+      static_assert(std::is_same_v<T,std::remove_cvref_t<U>>);
+      values_[index]=std::forward<U>(value);
     }
 
     /**
@@ -69,6 +52,11 @@ namespace boink
 
       values_[index]=std::move(values_.back());
       values_.pop_back();
+    }
+
+    T& at(size_t index) 
+    {
+      return values_.at(index);
     }
 
     const T& at(size_t index) const

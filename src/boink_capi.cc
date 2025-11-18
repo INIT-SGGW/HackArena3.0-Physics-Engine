@@ -3,11 +3,14 @@
 #include "boink/components/car_inputs.h"
 #include "boink/components/car_model.h"
 #include "boink/components/transform.h"
+
 #include "boink/components/kinematics.h"
 
 #include "boink/utils/math.h"
 
 #include "boink/world.h"
+
+#include <utility>
 
 int boink_init()
 {
@@ -28,7 +31,7 @@ BoinkHandle boink_create_world(const BoinkCarModel* car_model)
   model.rear_right_wheel=b_v3_2_e_v(car_model->rear_right_wheel);
   model.max_steer_angle_deg=car_model->max_steer_angle;
 
-  return (BoinkHandle)new (std::nothrow) boink::World(model);
+  return (BoinkHandle)new (std::nothrow) boink::World(std::move(model));
 }
 
 int boink_begin_world(
@@ -88,7 +91,7 @@ int boink_set_controls(
   input.steer_angle=controls->steer;
   input.throttle=controls->throttle;
 
-  p_world->car_manager.updateCar(car_id,input);
+  p_world->car_manager.updateCar(car_id,std::move(input));
 
   return BOINK_OK;
 }
@@ -109,7 +112,7 @@ int boink_read_car_state(
   out_state->wheel_speeds[3]=0.0;
   out_state->car_id=car_id;
 
-  auto [input,trans,kins]=p_world->car_manager.
+  const auto& [input,trans,kins]=p_world->car_manager.
     getCarComponents<boink::CarInput,boink::Transform,boink::Kinematics>(car_id);
 
   auto model=p_world->
