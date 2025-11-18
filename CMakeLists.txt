@@ -99,6 +99,7 @@ set(TEST_SOURCES
   type_diff_test
   asan_test
   memory_leak_test
+  utils_math
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -114,6 +115,7 @@ endforeach()
 
 set(TEST_SOURCES_C
   capi_test
+  rotate_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)

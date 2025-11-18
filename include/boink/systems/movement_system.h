@@ -60,17 +60,19 @@ namespace boink
           // Assumes that initial car postion is at 0,0,0 if not displacement
           // vector must be provided
 
+          // Steer_angle >0 -> left; <0 -> right
+
           // TODO Simulate engine output to the wheels
           // must be in other system
           kin.acceleration=input.throttle-input.brake;
           double turn_angle=
-            math::deg2rad(input.steer_angle/2 * model.max_steer_angle_deg);
+            math::deg2rad(input.steer_angle * model.max_steer_angle_deg);
 
           double sin_turn=std::sin(turn_angle);
           double cos_turn=std::cos(turn_angle);
+          Matrix3d turn_rotation=math::getRodriguesRotationMatrix(sin_turn,cos_turn,model.normal);
           Vector3d wheel_direction=
-            math::getRodriguesRotationMatrix(sin_turn,cos_turn,model.normal)*
-            model.direction;
+            turn_rotation*model.direction;
 
           // Simulate car movement
           kin.velocity=(kin.velocity.norm()+kin.acceleration*dt)*wheel_direction;
@@ -79,12 +81,15 @@ namespace boink
             kin.velocity*dt+
             (0.5*kin.acceleration*dt*dt)*wheel_direction;
 
+          Vector3d new_model_direction=(model.direction+front_displacement);
+          new_model_direction.normalize();
           Matrix3d delta_rotation=
             math::getRotationMatrix(
-                model.direction,model.direction+front_displacement);
+                model.direction,new_model_direction);
 
           Vector3d new_front=model.front+front_displacement;
-          Vector3d front_new_disp_after_d_rot=new_front-delta_rotation*model.front;
+          Vector3d rot_front=delta_rotation*model.front;
+          Vector3d front_new_disp_after_d_rot=new_front-rot_front;
 
           // Its rotation matrix so traspose equals to inverse.
           trans.position=
