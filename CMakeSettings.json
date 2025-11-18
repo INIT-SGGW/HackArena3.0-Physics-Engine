@@ -9,7 +9,14 @@
       "installRoot": "${projectDir}\\build\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "USE_ASAN_WIN",
+          "value": "False",
+          "type": "BOOL"
+        }
+      ]
     }
   ]
 }

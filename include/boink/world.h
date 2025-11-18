@@ -1,14 +1,15 @@
 #pragma once
 
-#include "boink/bolid_manager.h"
 
 #include "boink/components/transform.h"
-#include "boink/components/velocity.h"
+#include "boink/components/kinematics.h"
+#include "boink/components/car_inputs.h"
+#include "boink/components/car_model.h"
 
+#include "boink/car_manager.h"
+#include "boink/systems/car_spawn_system.h"
 #include "boink/systems/movement_system.h"
 #include "boink/systems/debug_system.h"
-
-#include "boink/utils/tuple_unpack.h"
 
 namespace boink
 {
@@ -19,17 +20,17 @@ namespace boink
   class World
   {
   public:
-    using BolidComponents=std::tuple<Transform, Velocity>;
-    using BolidSystems=std::tuple<
-        apply_tuple_t<MovementSystem, BolidComponents>,
-        apply_tuple_t<DebugSystem, BolidComponents>
-    >;
+    using CarComponents=std::tuple<CarInput,Transform,Kinematics>;
+    using CarSystems=std::tuple<CarSpawnSystem,MovementSystem,DebugSystem>;
   public:
+    World(const CarModel& car_model);
+    World(CarModel&& car_model);
+
     /**
-     * @brief Default initializes the world.
+     * @brief Start simulation.
      *
      */
-    World();
+    void start(double dt);
 
     /**
      * @brief Update the world for a simulation step.
@@ -39,9 +40,11 @@ namespace boink
     void update(double dt);
   public:
     /**
-     * @brief Manages bolid entities and systems.
+     * @brief Manages car entities and systems.
      */
-    BolidManager<BolidComponents,BolidSystems> bolid_manager;
+    CarManager<CarComponents,CarSystems> car_manager;
+  private:
+    double time_passed_;
   };
 }
 
