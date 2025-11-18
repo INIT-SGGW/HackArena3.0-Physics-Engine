@@ -38,17 +38,17 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   else()
     message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
     
-    target_compile_options( boink PRIVATE
-      -fsanitize=address,undefined
+    target_compile_options( boink PUBLIC
+      -fsanitize=address,undefined,leak
       -fno-omit-frame-pointer
+      PRIVATE
       -Wall
       -Werror
       -Wextra
       -pedantic
     )
-    target_link_options(boink PUBLIC -fsanitize=address,undefined)
+    target_link_options(boink PUBLIC -fsanitize=address,undefined,leak)
   endif()
-  set(ENV{ASAN_OPTIONS} "detect_leaks=1")
 endif()
 
 if(WIN32)
@@ -89,13 +89,17 @@ set(TEST_SOURCES
   capi_test2
   mem_component_test
   type_diff_test
+  asan_test
+  memory_leak_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
   add_executable(${name} tests/${name}.cc)
   target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  target_compile_options(${name} PRIVATE /fsanitize=address)
-  target_link_options(${name} PUBLIC /fsanitize=address)
+  if(MSVC)
+    target_compile_options(${name} PRIVATE /fsanitize=address)
+    target_link_options(${name} PUBLIC /fsanitize=address)
+  endif()
   target_link_libraries(${name}
     PRIVATE 
       boink
@@ -110,8 +114,10 @@ set(TEST_SOURCES_C
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)
   target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  target_compile_options(${name} PRIVATE /fsanitize=address)
-  target_link_options(${name} PUBLIC /fsanitize=address)
+  if(MSVC)
+    target_compile_options(${name} PRIVATE /fsanitize=address)
+    target_link_options(${name} PUBLIC /fsanitize=address)
+  endif()
   target_link_libraries(${name}
     PRIVATE 
       boink
