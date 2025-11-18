@@ -9,9 +9,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+option(USE_ASAN_WIN "Enable asan on windows. If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
+
 add_compile_definitions(
   $<$<CONFIG:Release>:NDEBUG>
 )
+add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
 # Enable PIC for spdlog before adding it
 set(SPDLOG_BUILD_PIC ON CACHE BOOL "Build spdlog with position independent code" FORCE)
@@ -28,13 +31,18 @@ add_library(boink SHARED)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
     message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
-    
-    target_compile_options(boink PRIVATE
-      /fsanitize=address
+    if(USE_ASAN_WIN)
+    target_compile_options(boink PUBLIC /fsanitize=address)
+    endif()
+    target_compile_options(boink 
+      PRIVATE
       /W4
       /WX
+      /EHsc
     )
+    if(USE_ASAN_WIN)
     target_link_options(boink PUBLIC /fsanitize=address)
+    endif() 
   else()
     message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
     
@@ -96,10 +104,6 @@ set(TEST_SOURCES
 foreach(name IN LISTS TEST_SOURCES)
   add_executable(${name} tests/${name}.cc)
   target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  if(MSVC)
-    target_compile_options(${name} PRIVATE /fsanitize=address)
-    target_link_options(${name} PUBLIC /fsanitize=address)
-  endif()
   target_link_libraries(${name}
     PRIVATE 
       boink
@@ -114,10 +118,6 @@ set(TEST_SOURCES_C
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)
   target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  if(MSVC)
-    target_compile_options(${name} PRIVATE /fsanitize=address)
-    target_link_options(${name} PUBLIC /fsanitize=address)
-  endif()
   target_link_libraries(${name}
     PRIVATE 
       boink

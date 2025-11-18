@@ -110,7 +110,7 @@ int test()
 void printCarState(struct BoinkCarState* out, double time)
 {
 #define VAR_PRINT_D(x) printf("  [%s]: %f\n",#x,x)
-#define VAR_PRINT_U(x) printf("  [%s]: %lu\n",#x,x)
+#define VAR_PRINT_U(x) printf("  [%s]: %llu\n",#x,x)
 #define VAR_PRINT_I(x) printf("  [%s]: %d\n",#x,x)
     printf("Car state after t=%f\n",time);
     VAR_PRINT_D(out->brake_applied);
