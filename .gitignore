@@ -22,3 +22,4 @@ build/release/*
 !build/debug/.gitkeep
 !build/release/.gitkeep
 !.clang-format
+!.github
