@@ -22,6 +22,8 @@ add_subdirectory(third_party/spdlog)
 
 add_subdirectory(third_party/eigen)
 
+add_subdirectory(third_party/piksel)
+
 find_package(Threads REQUIRED)
 
 #include(GenerateExportHeader) 
