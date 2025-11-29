@@ -7,11 +7,7 @@
 
 namespace boink
 {
-  /**
-   * @brief Simulates movement of a vehicle
-   *
-   */
-  class MovementSystem
+  class RenderSystem
   {
   public:
     template <typename TupleStaticComponents_, typename TupleComponents_>
@@ -59,6 +55,6 @@ namespace boink
 
     }
   private:
-
+  
   };
 }

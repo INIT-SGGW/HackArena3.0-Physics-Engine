@@ -28,6 +28,8 @@ namespace boink
             view.forEach(
                 [&](Transform& trans, Kinematics& kin)
                 {
+                    char *chuj=new char[256];
+                    chuj[1]='o';
                     Log(dt,model,trans,kin,component_manager.getIDByIndex(index));
                     index++;
                 }

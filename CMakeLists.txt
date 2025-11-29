@@ -9,6 +9,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+set(LSAN_SUPPRESSIONS_FILE "${CMAKE_SOURCE_DIR}/lsan_suppress.supp")
+set(LSAN_ENV_VAR "LSAN_OPTIONS=suppressions=${LSAN_SUPPRESSIONS_FILE}")
+
 option(USE_ASAN_WIN "Enable asan on windows. If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
 
 add_compile_definitions(
@@ -48,7 +51,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   else()
     message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
     
-    target_compile_options( boink PUBLIC
+    target_compile_options( boink PRIVATE
       -fsanitize=address,undefined,leak
       -fno-omit-frame-pointer
       PRIVATE
@@ -88,6 +91,7 @@ target_include_directories(boink
 target_link_libraries(boink
   PUBLIC Eigen3::Eigen
   PUBLIC spdlog::spdlog
+  PUBLIC piksel
 )
 
 include(CTest)
@@ -102,6 +106,7 @@ set(TEST_SOURCES
   asan_test
   memory_leak_test
   utils_math
+  piksel_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -113,6 +118,8 @@ foreach(name IN LISTS TEST_SOURCES)
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
+  set_tests_properties(${name} PROPERTIES
+    ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
 
 set(TEST_SOURCES_C
@@ -128,4 +135,6 @@ foreach(name IN LISTS TEST_SOURCES_C)
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
+  set_tests_properties(${name} PROPERTIES
+    ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
