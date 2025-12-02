@@ -28,8 +28,6 @@ namespace boink
             view.forEach(
                 [&](Transform& trans, Kinematics& kin)
                 {
-                    char *chuj=new char[256];
-                    chuj[1]='o';
                     Log(dt,model,trans,kin,component_manager.getIDByIndex(index));
                     index++;
                 }
@@ -74,9 +72,8 @@ namespace boink
             PrintVector(trans.position);
             std::cout << std::endl;
 
-            std::cout<<"Model front"<<std::endl;
-            PrintVector(model.front);
-            std::cout << std::endl;
+            std::cout<<"Rotation"<<std::endl;
+            std::cout <<trans.rotation<< std::endl;
 
             std::cout<<"Model direction"<<std::endl;
             PrintVector(model.direction);

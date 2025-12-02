@@ -18,12 +18,12 @@ void test()
   world.start(0.0);
 
   CarInput input;
-  input.brake=0.0;
+  input.brake=1.0;
   input.steer_angle=0.0;
-  input.throttle=1.0;
+  input.throttle=0.0;
   world.car_manager.updateCar(id,input);
 
-  for(int i=0;i<1;i++)
+  for(int i=0;i<3;i++)
   {
     world.update(0.5);
 

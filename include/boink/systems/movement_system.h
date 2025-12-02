@@ -59,12 +59,15 @@ namespace boink
           
           // Assumes that initial car postion is at 0,0,0 if not displacement
           // vector must be provided
+          //
+          //Assumes breaking is just accelerting in oppostie dir
 
           // Steer_angle >0 -> left; <0 -> right
 
           // TODO Simulate engine output to the wheels
           // must be in other system
           kin.acceleration=input.throttle-input.brake;
+
           double turn_angle=
             math::deg2rad(input.steer_angle * model.max_steer_angle_deg);
 
@@ -74,8 +77,14 @@ namespace boink
           Vector3d wheel_direction=
             turn_rotation*model.direction;
 
-          // Simulate car movement
-          kin.velocity=(kin.velocity.norm()+kin.acceleration*dt)*wheel_direction;
+          // Simulate car moement
+          if(kin.acceleration*dt + kin.velocity.norm()<0)
+          {
+            kin.acceleration=0;
+            kin.velocity=0*wheel_direction;
+          }
+          else
+            kin.velocity=(kin.velocity.norm()+kin.acceleration*dt)*wheel_direction;
 
           Vector3d front_displacement=
             kin.velocity*dt+
@@ -97,7 +106,7 @@ namespace boink
             trans.position;
 
           // Order matters
-          trans.rotation=delta_rotation*trans.rotation;
+          trans.rotation=trans.rotation*delta_rotation;
         }
       );
     }
