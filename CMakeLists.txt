@@ -9,6 +9,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
+if(CLANG_TIDY_EXE)
+    message(STATUS "Found Clang-Tidy: ${CLANG_TIDY_EXE}")
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--extra-arg=/EHsc")
+else()
+    message(WARNING "Clang-Tidy not found! Code analysis will not be available.")
+endif()
+
 option(USE_ASAN_WIN "Enable asan on windows. If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
 
 add_compile_definitions(
@@ -86,6 +94,11 @@ target_include_directories(boink
 target_link_libraries(boink
   PUBLIC Eigen3::Eigen
   PUBLIC spdlog::spdlog
+)
+
+target_include_directories(boink SYSTEM PUBLIC
+    $<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:spdlog::spdlog,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
 include(CTest)

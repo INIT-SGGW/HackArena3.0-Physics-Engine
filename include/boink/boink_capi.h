@@ -4,19 +4,18 @@
    lives in the native engine (C/C++). */
 
 #if !defined(BOINK_API)
-  #if defined(_WIN32) || defined(__CYGWIN__)
-    #if defined(BOINK_BUILD_DLL)
-      #define BOINK_API __declspec(dllexport)
-    #elif defined(BOINK_USE_DLL)
-      #define BOINK_API __declspec(dllimport)
-    #else
-      #define BOINK_API
-    #endif
-  #else
-    #define BOINK_API __attribute__((visibility("default")))
-  #endif
+#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(BOINK_BUILD_DLL)
+#define BOINK_API __declspec(dllexport)
+#elif defined(BOINK_USE_DLL)
+#define BOINK_API __declspec(dllimport)
+#else
+#define BOINK_API
 #endif
-
+#else
+#define BOINK_API __attribute__((visibility("default")))
+#endif
+#endif
 
 #ifndef BOINK_H
 #define BOINK_H
@@ -98,7 +97,7 @@ typedef struct BoinkVec3 {
   double z;
 } BoinkVec3;
 
-typedef struct BoinkCarModel{
+typedef struct BoinkCarModel {
   BoinkVec3 front_left_wheel;
   BoinkVec3 front_right_wheel;
   BoinkVec3 rear_left_wheel;
@@ -185,7 +184,7 @@ typedef struct BoinkCarState {
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 /**
  * Returns the current ABI version as `MAJOR * 100 + MINOR`.
@@ -204,7 +203,7 @@ BOINK_API int boink_init(void);
  *
  * Returns a valid [`BoinkHandle`] on success, or `NULL` on failure.
  */
-BOINK_API BoinkHandle boink_create_world(const struct BoinkCarModel* car_model);
+BOINK_API BoinkHandle boink_create_world(const struct BoinkCarModel *car_model);
 
 /**
  * Starts simulation at given timepoint.
@@ -213,8 +212,7 @@ BOINK_API BoinkHandle boink_create_world(const struct BoinkCarModel* car_model);
  *
  * Returns BOINK_OK on success or an error code otherwise.
  */
-BOINK_API int boink_begin_world(
-    BoinkHandle h, double timepoint);
+BOINK_API int boink_begin_world(BoinkHandle h, double timepoint);
 
 /**
  * Destroys a world instance created by [`boink_create_world`].
@@ -236,10 +234,10 @@ BOINK_API int boink_step(BoinkHandle h, double dt_seconds);
  * The cars are managed by library there is no need to call boink_despawn_call
  * before calling boink_destroy_world.
  *
- * Returns BOINK_OK on success or an error code if engine could not 
+ * Returns BOINK_OK on success or an error code if engine could not
  * fetch the ID.
  */
-BOINK_API int boink_spawn_car(BoinkHandle h, uint64_t* out_car_id);
+BOINK_API int boink_spawn_car(BoinkHandle h, uint64_t *out_car_id);
 
 /**
  * Removes a car with the specified identifier.
@@ -261,14 +259,16 @@ BOINK_API int boink_get_car_count(BoinkHandle h, size_t *out_count);
  *
  * The pointer `controls` must not be null.
  */
-BOINK_API int boink_set_controls(BoinkHandle h, uint64_t car_id, const struct BoinkControls *controls);
+BOINK_API int boink_set_controls(BoinkHandle h, uint64_t car_id,
+                                 const struct BoinkControls *controls);
 
 /**
  * Reads the current state of the specified car.
  *
  * The result is written to the non-null pointer `out_state`.
  */
-BOINK_API int boink_read_car_state(BoinkHandle h, uint64_t car_id, struct BoinkCarState *out_state);
+BOINK_API int boink_read_car_state(BoinkHandle h, uint64_t car_id,
+                                   struct BoinkCarState *out_state);
 
 /**
  * Writes a snapshot of all cars into the provided buffer.
@@ -281,13 +281,11 @@ BOINK_API int boink_read_car_state(BoinkHandle h, uint64_t car_id, struct BoinkC
  * - Otherwise, up to `out_cap` items are written to `out_buf`, and
  *   `*out_len` receives the number of items written.
  */
-BOINK_API int boink_write_snapshot(BoinkHandle h,
-                                struct BoinkCarState *out_buf,
-                                size_t out_cap,
-                                size_t *out_len);
+BOINK_API int boink_write_snapshot(BoinkHandle h, struct BoinkCarState *out_buf,
+                                   size_t out_cap, size_t *out_len);
 
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
 
-#endif  /* BOINK_H */
+#endif /* BOINK_H */

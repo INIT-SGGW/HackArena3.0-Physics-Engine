@@ -1,0 +1,29 @@
+name: 'Clang-Tidy Check'
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  clang-tidy:
+    name: Run Clang-Tidy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate compilation database
+        run: |
+          cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Run cpp-linter
+        uses: cpp-linter/cpp-linter-action@v2
+        with:
+          style: ''
+          tidy-checks: ''
+          database: 'build'
+          files-changed-only: true
+          ignore: 'build'

@@ -1,0 +1,13 @@
+---
+HeaderFilterRegex: '^(src|include|tests)/.*'
+
+Checks: >
+  -*,
+  bugprone-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  portability-*,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-naming,
+  -readability-magic-numbers
