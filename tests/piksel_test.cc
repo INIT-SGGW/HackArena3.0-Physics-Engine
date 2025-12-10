@@ -1,33 +1,38 @@
 #include "glm/ext/matrix_transform.hpp"
-#include "glm/trigonometric.hpp"
-
 #include "piksel/window.hh"
 #include "piksel/graphics.hh"
-#include "piksel/cube.hh"
 #include "piksel/camera.hh"
-
+#include "piksel/color.hh"
+#include "piksel/model.hh"
 #include "piksel/config.hh"
+
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <memory>
 
 using namespace piksel;
 
-int main(int argc, char **argv)
+int main()
 {
-  constexpr float cam_speed=10.f;
+  constexpr float cam_speed=10.f; 
+  Window wnd("Model load test", 1280,720);
+  Camera cam({0.f,0.f,10.f},{0.f,0.f,0.f});
+  Graphics gfx(
+      wnd,cam,SHADERS_PATH"/single_color.vert",SHADERS_PATH"/single_color.frag");
+  gfx.setBackground(Color::Blue);
 
-  Window wnd("Test",1600,900);
+  auto car = std::make_shared<Model>(ASSETS_PATH"/models/F1_bolid.glb");
+  auto track = std::make_shared<Model>(ASSETS_PATH"/models/tor.glb");
 
-  Camera cam({10.f,0.f,0.f},{0.f,0.f,0.f});
-  Graphics gfx(wnd, cam);
-  //glfwSwapInterval(0);
+  car->color=Color::Green;
+  track->color=Color::White;
 
-  Cube cube({1.f,1.0f,1.f,ASSET_PATH"/container.jpg",0});
-  Cube cube2({5.5f,1.5f,1.f,ASSET_PATH"/container.jpg",0});
-  Cube cube3({15.5f,1.5f,11.f,ASSET_PATH"/container.jpg",0});
+  double scale_factor=0.25;
+  track->scale=glm::scale(track->scale,glm::vec3(scale_factor));
 
-  gfx.AddCube(cube);
-  gfx.AddCube(cube2);
-  gfx.AddCube(cube3);
-
+  gfx.addObject(car);
+  gfx.addObject(track);
+  
   float last=glfwGetTime();
   Window::MousePos prev_mouse_pos=wnd.getMousePos();
   while(wnd)
@@ -59,21 +64,8 @@ int main(int argc, char **argv)
     cam.rotatePitch((prev_mouse_pos.y-mouse_pos.y)*dt/3.f);
     prev_mouse_pos.y=mouse_pos.y;
 
-    cube.translate=glm::translate(glm::mat4(1.f),{0.f,0.00f,0.0f});
-    cube.rotate=glm::rotate(cube.rotate,glm::radians(360.f*dt/2),
-        {1.f,0.f,1.f});
-   
-    cube2.translate=glm::translate(glm::mat4(1.f),{0.f,0.00f,3.0f});
-    cube2.rotate=glm::rotate(cube.rotate,glm::radians(360.f*dt/2),
-        {1.f,0.f,1.f});
-    
-    cube3.translate=glm::translate(glm::mat4(1.f),{0.f,0.00f,0.0f});
-    cube3.rotate=glm::mat4(1.f);;
-
-    gfx.Render();
+    gfx.render();
     wnd.update();
   }
-
   return 0;
 }
-

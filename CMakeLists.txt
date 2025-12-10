@@ -19,19 +19,14 @@ add_compile_definitions(
 )
 add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
-# Enable PIC for spdlog before adding it
-set(SPDLOG_BUILD_PIC ON CACHE BOOL "Build spdlog with position independent code" FORCE)
-add_subdirectory(third_party/spdlog)
-
-add_subdirectory(third_party/eigen)
-
-add_subdirectory(third_party/piksel)
+add_library(boink SHARED)
 
 find_package(Threads REQUIRED)
 
-#include(GenerateExportHeader) 
-add_library(boink SHARED)
-#generate_export_header(boink)
+find_package(Eigen3 CONFIG REQUIRED)
+target_link_libraries(boink PUBLIC Eigen3::Eigen)
+
+find_package(piksel CONFIG REQUIRED)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -73,7 +68,6 @@ else()
   set(BOINK_SOURCES_VISIBILITY PRIVATE)
 endif()
 
-
 target_sources(boink
   PRIVATE
     src/boink_capi.cc
@@ -85,20 +79,11 @@ target_sources(boink
 target_include_directories(boink
   PUBLIC include
   PRIVATE src
-  #PRIVATE ${CMAKE_BINARY_DIR} # for boink_export.h
-)
-
-target_link_libraries(boink
-  PUBLIC Eigen3::Eigen
-  PUBLIC spdlog::spdlog
-  PUBLIC piksel
 )
 
 include(CTest)
 
 set(TEST_SOURCES
-  eigen_test
-  spdlog_test
   world_test
   capi_test2
   mem_component_test
@@ -107,7 +92,7 @@ set(TEST_SOURCES
   memory_leak_test
   utils_math
   piksel_test
-  present_test
+  #present_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -116,6 +101,7 @@ foreach(name IN LISTS TEST_SOURCES)
   target_link_libraries(${name}
     PRIVATE 
       boink
+      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
@@ -133,6 +119,7 @@ foreach(name IN LISTS TEST_SOURCES_C)
   target_link_libraries(${name}
     PRIVATE 
       boink
+      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})

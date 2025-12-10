@@ -1,9 +1,0 @@
-[submodule "third_party/eigen"]
-	path = third_party/eigen
-	url = https://gitlab.com/libeigen/eigen.git
-[submodule "third_party/spdlog"]
-	path = third_party/spdlog
-	url = https://github.com/gabime/spdlog.git
-[submodule "third_party/piksel"]
-	path = third_party/piksel
-	url = git@github.com:v4m3rrr/piksel.git

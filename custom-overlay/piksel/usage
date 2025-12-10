@@ -1,0 +1,4 @@
+piksel provides CMake targets:
+
+find_package(piksel CONFIG REQUIRED)
+target_link_libraries(main PRIVATE piksel::piksel)

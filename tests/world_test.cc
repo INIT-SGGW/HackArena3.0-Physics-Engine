@@ -43,7 +43,7 @@ void test()
     //out_state->wheel_angles[1]=angle;
     //out_state->speed=kins.velocity.norm();
 
-    Eigen::Vector3d rpy=trans.rotation.canonicalEulerAngles(2,1,0);
+    Eigen::Vector3d rpy=trans.rotation.eulerAngles(2,1,0);
     //out_state->orientation.roll=rpy(0);
     //out_state->orientation.pitch=rpy(1);
     //out_state->orientation.yaw=rpy(2);

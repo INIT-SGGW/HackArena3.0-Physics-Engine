@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   Graphics gfx(wnd, cam);
 
   Cube car({1.f,0.5f,3.f,ASSET_PATH"/container.jpg",0});
-  Cube ground({150.5f,0.5f,110.f,ASSET_PATH"/grass.jpg",1});
+  Cube ground({150.5f,0.5f,110.f,ASSET_PATH"/grass.png",1});
 
   gfx.AddCube(car);
   gfx.AddCube(ground);
