@@ -20,7 +20,7 @@ int main()
 
   Matrix3d rot=math::getRotationMatrix(a,b);
   std::cout<<rot<<std::endl;
-  Vector3d angles=rot.canonicalEulerAngles(2,1,0);
+  Vector3d angles=rot.eulerAngles(2,1,0);
   std::cout<<"Theta_x: "<<angles.x()<<std::endl;
   std::cout<<"Theta_y: "<<angles.y()<<std::endl;
   std::cout<<"Theta_z: "<<angles.z()<<std::endl;

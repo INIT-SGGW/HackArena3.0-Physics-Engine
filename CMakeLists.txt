@@ -9,6 +9,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+set(LSAN_SUPPRESSIONS_FILE "${CMAKE_SOURCE_DIR}/lsan_suppress.supp")
+set(LSAN_ENV_VAR "LSAN_OPTIONS=suppressions=${LSAN_SUPPRESSIONS_FILE}")
+
 option(USE_ASAN_WIN "Enable asan on windows. If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
 
 add_compile_definitions(
@@ -16,17 +19,14 @@ add_compile_definitions(
 )
 add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
-# Enable PIC for spdlog before adding it
-set(SPDLOG_BUILD_PIC ON CACHE BOOL "Build spdlog with position independent code" FORCE)
-add_subdirectory(third_party/spdlog)
-
-add_subdirectory(third_party/eigen)
+add_library(boink SHARED)
 
 find_package(Threads REQUIRED)
 
-#include(GenerateExportHeader) 
-add_library(boink SHARED)
-#generate_export_header(boink)
+find_package(Eigen3 CONFIG REQUIRED)
+target_link_libraries(boink PUBLIC Eigen3::Eigen)
+
+find_package(piksel CONFIG REQUIRED)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -46,7 +46,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   else()
     message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
     
-    target_compile_options( boink PUBLIC
+    target_compile_options( boink PRIVATE
       -fsanitize=address,undefined,leak
       -fno-omit-frame-pointer
       PRIVATE
@@ -68,7 +68,6 @@ else()
   set(BOINK_SOURCES_VISIBILITY PRIVATE)
 endif()
 
-
 target_sources(boink
   PRIVATE
     src/boink_capi.cc
@@ -80,19 +79,11 @@ target_sources(boink
 target_include_directories(boink
   PUBLIC include
   PRIVATE src
-  #PRIVATE ${CMAKE_BINARY_DIR} # for boink_export.h
-)
-
-target_link_libraries(boink
-  PUBLIC Eigen3::Eigen
-  PUBLIC spdlog::spdlog
 )
 
 include(CTest)
 
 set(TEST_SOURCES
-  eigen_test
-  spdlog_test
   world_test
   capi_test2
   mem_component_test
@@ -100,6 +91,8 @@ set(TEST_SOURCES
   asan_test
   memory_leak_test
   utils_math
+  piksel_test
+  present_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -108,9 +101,12 @@ foreach(name IN LISTS TEST_SOURCES)
   target_link_libraries(${name}
     PRIVATE 
       boink
+      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
+  set_tests_properties(${name} PROPERTIES
+    ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
 
 set(TEST_SOURCES_C
@@ -123,7 +119,10 @@ foreach(name IN LISTS TEST_SOURCES_C)
   target_link_libraries(${name}
     PRIVATE 
       boink
+      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
+  set_tests_properties(${name} PROPERTIES
+    ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()

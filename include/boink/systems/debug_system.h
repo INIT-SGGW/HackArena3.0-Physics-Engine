@@ -72,9 +72,8 @@ namespace boink
             PrintVector(trans.position);
             std::cout << std::endl;
 
-            std::cout<<"Model front"<<std::endl;
-            PrintVector(model.front);
-            std::cout << std::endl;
+            std::cout<<"Rotation"<<std::endl;
+            std::cout <<trans.rotation<< std::endl;
 
             std::cout<<"Model direction"<<std::endl;
             PrintVector(model.direction);
