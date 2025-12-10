@@ -3,8 +3,8 @@
 #include "glm/matrix.hpp"
 #include "piksel/window.hh"
 #include "piksel/graphics.hh"
-#include "piksel/cube.hh"
 #include "piksel/camera.hh"
+#include "piksel/model.hh"
 
 #include "piksel/config.hh"
 
@@ -24,13 +24,20 @@ int main(int argc, char **argv)
   Window wnd("Test",1600,900);
 
   Camera cam({0.f,10.f,10.f},{0.f,0.f,0.f});
-  Graphics gfx(wnd, cam);
+  Graphics gfx(
+      wnd,cam,SHADERS_PATH"/single_color.vert",SHADERS_PATH"/single_color.frag");
 
-  Cube car({1.f,0.5f,3.f,ASSET_PATH"/container.jpg",0});
-  Cube ground({150.5f,0.5f,110.f,ASSET_PATH"/grass.png",1});
+  auto car = std::make_shared<Model>(ASSETS_PATH"/models/F1_bolid.glb");
+  auto ground  = std::make_shared<Model>(ASSETS_PATH"/models/tor.glb");
+  car->color=Color::Green;
+  ground->color=Color::White;
 
-  gfx.AddCube(car);
-  gfx.AddCube(ground);
+  double scale_factor=0.25;
+  ground->scale=glm::scale(ground->scale,glm::vec3(scale_factor));
+
+  gfx.addObject(car);
+  gfx.addObject(ground);
+  gfx.setBackground(Color::Blue);
 
   boink::CarModel car_model;
   car_model.front_left_wheel=Vector3d(-1.0,0.0,2.0);
@@ -124,13 +131,13 @@ int main(int argc, char **argv)
                           0.f,0.f,0.f,1.f);
 
 
-    car.translate=glm::translate(glm::mat4(1.f),{pos.x(),pos.y(),pos.z()});
-    car.rotate=glm::transpose(rotate_mat);
+    car->translate=glm::translate(glm::mat4(1.f),{pos.x(),pos.y(),pos.z()});
+    car->rotate=glm::transpose(rotate_mat);
     
-    ground.translate=glm::translate(glm::mat4(1.f),{0.f,-2.00f,0.0f});
-    ground.rotate=glm::mat4(1.f);;
+    ground->translate=glm::translate(glm::mat4(1.f),{0.f,-2.00f,0.0f});
+    ground->rotate=glm::mat4(1.f);;
 
-    gfx.Render();
+    gfx.render();
     wnd.update();
   }
 

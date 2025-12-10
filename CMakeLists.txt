@@ -92,7 +92,7 @@ set(TEST_SOURCES
   memory_leak_test
   utils_math
   piksel_test
-  #present_test
+  present_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
