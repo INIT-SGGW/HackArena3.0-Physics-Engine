@@ -1,4 +1,4 @@
-#include "boink/boink_capi.h"
+#include "boink/boink_c_api.h"
 
 #include <stdio.h>
 #include <inttypes.h>

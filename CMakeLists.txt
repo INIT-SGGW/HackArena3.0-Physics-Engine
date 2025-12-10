@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 1.0.0)
+project(BoinkEngine VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,7 +9,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(LSAN_SUPPRESSIONS_FILE "${CMAKE_SOURCE_DIR}/lsan_suppress.supp")
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/boink/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/boink/version.h
+)
+
+set(LSAN_SUPPRESSIONS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/lsan_suppress.supp")
 set(LSAN_ENV_VAR "LSAN_OPTIONS=suppressions=${LSAN_SUPPRESSIONS_FILE}")
 
 option(USE_ASAN_WIN "Enable asan on windows. If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
@@ -70,15 +75,18 @@ endif()
 
 target_sources(boink
   PRIVATE
-    src/boink_capi.cc
+    src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
     src/world.cc
 )
 
 target_include_directories(boink
-  PUBLIC include
-  PRIVATE src
+  PUBLIC 
+    include
+  PRIVATE 
+    src
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
 include(CTest)

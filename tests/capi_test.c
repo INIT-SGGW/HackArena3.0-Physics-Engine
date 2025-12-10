@@ -1,28 +1,8 @@
-#include "boink/boink_capi.h"
+#include "boink/boink_c_api.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
-
-void test_heap_overflow_c() {
-    // Allocate 10 integers (40 bytes)
-    int* data = (int*)malloc(10 * sizeof(int));
-
-    if (data == NULL) {
-        perror("malloc failed");
-        return;
-    }
-
-    printf("Running C ASan test: Heap Buffer Overflow...\n");
-
-    // GOOD ACCESS: Accessing index 5 is safe
-    data[5] = 100;
-
-    // BAD ACCESS: Accessing index 10 (the 11th element), which is past the end.
-    data[10] = 200; // <--- ASan should crash here!
-
-    free(data);
-}
 
 void printCarState(struct BoinkCarState* out, double time);
 int test();
@@ -33,6 +13,13 @@ int main()
 
 int test()
 {
+  unsigned int major,minor,patch;
+  boink_get_c_api_version(&major,&minor,&patch);
+  printf("C API version: %d.%d.%d\n",major,minor,patch);
+
+  boink_get_engine_version(&major,&minor,&patch);
+  printf("Engine version: %d.%d.%d\n",major,minor,patch);
+
   BoinkCarModel car_model;
   BoinkVec3 vec;
   vec.x=-1.0;

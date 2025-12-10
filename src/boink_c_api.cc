@@ -1,4 +1,4 @@
-#include "boink/boink_capi.h"
+#include "boink/boink_c_api.h"
 
 #include "boink/components/car_inputs.h"
 #include "boink/components/car_model.h"
@@ -9,9 +9,32 @@
 #include "boink/utils/math.h"
 
 #include "boink/world.h"
+#include "boink/version.h"
 
 #include <utility>
 #include <Eigen/Geometry>
+
+int boink_get_c_api_version(unsigned int *out_major,
+                                 unsigned int *out_minor,
+                                 unsigned int *out_patch)
+{
+  *out_major=BOINK_C_API_VERSION_MAJOR;
+  *out_minor=BOINK_C_API_VERSION_MINOR;
+  *out_patch=BOINK_C_API_VERSION_PATCH;
+
+  return BOINK_OK;
+}
+
+int boink_get_engine_version(unsigned int *out_major,
+                                 unsigned int *out_minor,
+                                 unsigned int *out_patch)
+{
+  *out_major=BOINK_VERSION_MAJOR;
+  *out_minor=BOINK_VERSION_MINOR;
+  *out_patch=BOINK_VERSION_PATCH;
+
+  return BOINK_OK;
+}
 
 int boink_init()
 {
