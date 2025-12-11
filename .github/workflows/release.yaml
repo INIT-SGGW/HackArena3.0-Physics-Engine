@@ -1,0 +1,62 @@
+name: Build and Upload Release Asset
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Build Linux (AMD64)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Pobranie kodu źródłowego
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Zainstalowanie CMake i Ninja (szybki build system)
+      - name: Setup CMake and Ninja
+        uses: lukka/get-cmake@latest
+
+      # 3. Konfiguracja vcpkg (cache, bootstrap)
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          # Ścieżka do vcpkg.json (domyślna, ale warto być jawnym)
+          vcpkgJsonGlob: 'vcpkg.json'
+
+      # 4. Konfiguracja projektu (CMake Configure)
+      # To tutaj dzieje się magia instalacji zależności z vcpkg.json
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake \
+            -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/custom-overlay
+
+      # 5. Budowanie projektu (Kompilacja Twojego kodu)
+      - name: Build
+        run: cmake --build build --config Release
+
+      # 6. Pakowanie (Stworzenie paczki wynikowej)
+      # Używamy cmake --install, aby zebrać pliki w ładny folder 'install',
+      # a następnie pakujemy go do .tar.gz
+      - name: Package
+        run: |
+          mkdir release_package
+          # Zakładam, że w CMakeLists.txt masz zdefiniowane reguły install()
+          # Jeśli nie - spakujemy po prostu pliki binarne ręcznie (patrz opis poniżej)
+          cmake --install build --prefix release_package
+          
+          # Tworzenie archiwum
+          tar -czvf boink-linux-amd64.tar.gz -C release_package .
+
+      # 7. Wrzucenie pliku do Release'a
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: boink-linux-amd64.tar.gz
