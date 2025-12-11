@@ -66,3 +66,13 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: boink-linux-amd64.tar.gz
+
+      # --- Opcjonalnie: Debugowanie ---
+      # Jeśli build nadal failuje, ten krok wrzuci logi vcpkg jako artefakt,
+      # żebyś mógł je pobrać i przeczytać, zamiast patrzeć w konsolę.
+      - name: Upload vcpkg logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vcpkg-logs
+          path: build/vcpkg_installed/vcpkg/buildtrees/**/*.log
