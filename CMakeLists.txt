@@ -26,6 +26,11 @@ add_compile_definitions($<$<CONFIG:Debug>:_DEBUG>)
 
 add_library(boink SHARED)
 
+set_target_properties(boink PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
 find_package(Threads REQUIRED)
 
 find_package(Eigen3 CONFIG REQUIRED)
@@ -85,7 +90,7 @@ target_sources(boink
 
 target_include_directories(boink
   PUBLIC 
-    include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE 
     src
     ${CMAKE_CURRENT_BINARY_DIR}/generated
@@ -138,7 +143,9 @@ foreach(name IN LISTS TEST_SOURCES_C)
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
+
 endif()
+
 
 # Include the module that defines standard installation directory variables
 include(GNUInstallDirs)

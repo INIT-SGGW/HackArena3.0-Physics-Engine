@@ -1,0 +1,19 @@
+# BoinkEngineConfig.cmake.in
+
+# Define the package version
+set(BoinkEngine_VERSION "@PROJECT_VERSION@")
+
+# Since we use install(EXPORT ...), we include the generated
+# BoinkEngineTargets.cmake file to define the imported targets (BoinkEngine::boink).
+include("${CMAKE_CURRENT_LIST_DIR}/BoinkEngineTargets.cmake")
+
+# Check if the required components (though none are explicitly defined here) are found.
+# If the imported target exists, the package is considered found.
+if (TARGET BoinkEngine::boink)
+    set(BoinkEngine_FOUND TRUE)
+    # Define the installed include directory for the user's convenience
+    get_target_property(BoinkEngine_INCLUDE_DIRS BoinkEngine::boink INTERFACE_INCLUDE_DIRECTORIES)
+else()
+    set(BoinkEngine_FOUND FALSE)
+    set(BoinkEngine_NOT_FOUND_MESSAGE "BoinkEngine targets could not be found.")
+endif()
