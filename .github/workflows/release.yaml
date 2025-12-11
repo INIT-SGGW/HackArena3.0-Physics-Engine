@@ -22,26 +22,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1.5. Instalacja zależności systemowych dla GLFW/Grafiki ---
-      - name: Install Linux Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config libxi-dev libxrandr-dev
-
       # 2. Zainstalowanie CMake i Ninja (szybki build system)
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
 
       # 2.5 Weź co się da z binary cache'a
       - name: Restore vcpkg binary cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
+        id: cache-vcpkg-restore
         with:
-          # Co cache'ujemy? Folder z gotowymi paczkami
-          path: ~/.cache/vcpkg/archives
-          # Klucz cache'a: System + Hash pliku vcpkg.json.
-          # Jeśli zmienisz coś w vcpkg.json, hash się zmieni i cache zostanie odświeżony.
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
-          # Restore keys: Jeśli dokładny klucz nie pasuje, spróbuj pobrać najnowszy dostępny dla tego systemu.
+          path: /home/runner/.cache/vcpkg/archives
+          # "primary key" nie jest tu aż tak ważny, ważniejsze są restore-keys
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}-reset
+          # restore-keys: Bierzemy cokolwiek, co zaczyna się od Linux-vcpkg-
+          # Dzięki temu pobierzemy cache z poprzedniego (nawet nieudanego) runa
           restore-keys: |
             ${{ runner.os }}-vcpkg-
 
@@ -57,6 +51,19 @@ jobs:
       - name: Configure CMake
         run: |
           cmake --preset=release
+
+      # --- KROK 3: SAVE (Zapisywanie - nawet przy błędzie!) ---
+      # To uruchomi się ZAWSZE, nawet jak 'Build' zwróci błąd.
+      - name: Save vcpkg binary cache
+        uses: actions/cache/save@v4
+        if: always() 
+        with:
+          path: /home/runner/.cache/vcpkg/archives
+          # Dodajemy github.run_id do klucza.
+          # DLACZEGO? Bo cache w GitHub jest "tylko do odczytu" po zapisaniu.
+          # Nie da się zaktualizować istniejącego klucza. Musimy stworzyć nowy, unikalny klucz
+          # za każdym razem, gdy doszły nowe binarki.
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
 
       # 5. Budowanie projektu (Kompilacja Twojego kodu)
       - name: Build
