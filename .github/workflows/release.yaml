@@ -60,7 +60,7 @@ jobs:
 
       # 5. Budowanie projektu (Kompilacja Twojego kodu)
       - name: Build
-        run: cmake --build --preset=release
+        run: cmake --build build/release
 
       # 6. Pakowanie (Stworzenie paczki wynikowej)
       # Używamy cmake --install, aby zebrać pliki w ładny folder 'install',
