@@ -36,7 +36,9 @@ find_package(Threads REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC Eigen3::Eigen)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 find_package(piksel CONFIG REQUIRED)
+endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -94,6 +96,8 @@ target_include_directories(boink
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
 set(TEST_SOURCES
@@ -139,6 +143,9 @@ foreach(name IN LISTS TEST_SOURCES_C)
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
+
+endif()
+
 
 # Include the module that defines standard installation directory variables
 include(GNUInstallDirs)
