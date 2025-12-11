@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # ZMIANA 1: Używamy 'files' zamiast 'x-gha'.
-      # To mówi vcpkg: "Zapisuj skompilowane paczki w standardowym folderze cache na dysku".
-      VCPKG_BINARY_SOURCES: "clear;files,readwrite"
+      # NAPRAWA 1: Podajemy pełną, absolutną ścieżkę do folderu cache.
+      # /home/runner/ to domyślny katalog użytkownika na GitHub Actions.
+      VCPKG_BINARY_SOURCES: "clear;files,/home/runner/.cache/vcpkg/archives,readwrite"
 
     steps:
       # 1. Pobranie kodu źródłowego
@@ -56,12 +56,7 @@ jobs:
       # To tutaj dzieje się magia instalacji zależności z vcpkg.json
       - name: Configure CMake
         run: |
-          cmake -S . -B build -G Ninja \
-           --preset=release
-           
-# -DCMAKE_BUILD_TYPE=Release \
-# -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake \
-# -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/custom-overlay
+          cmake --preset=release
 
       # 5. Budowanie projektu (Kompilacja Twojego kodu)
       - name: Build
@@ -73,9 +68,9 @@ jobs:
       - name: Package
         run: |
           mkdir release_package
-          # Zakładam, że w CMakeLists.txt masz zdefiniowane reguły install()
-          # Jeśli nie - spakujemy po prostu pliki binarne ręcznie (patrz opis poniżej)
-          cmake --install build --prefix release_package
+          
+          # Instalujemy z folderu build/release do folderu release_package
+          cmake --install build/release --prefix release_package
           
           # Tworzenie archiwum
           tar -czvf boink-native-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz -C release_package .
