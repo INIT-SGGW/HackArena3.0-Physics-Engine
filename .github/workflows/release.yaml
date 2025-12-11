@@ -12,6 +12,11 @@ jobs:
     name: Build Linux (AMD64)
     runs-on: ubuntu-latest
 
+    env:
+      # ZMIANA 1: Używamy 'files' zamiast 'x-gha'.
+      # To mówi vcpkg: "Zapisuj skompilowane paczki w standardowym folderze cache na dysku".
+      VCPKG_BINARY_SOURCES: "clear;files,readwrite"
+
     steps:
       # 1. Pobranie kodu źródłowego
       - name: Checkout code
@@ -26,6 +31,19 @@ jobs:
       # 2. Zainstalowanie CMake i Ninja (szybki build system)
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
+
+      # 2.5 Weź co się da z binary cache'a
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v4
+        with:
+          # Co cache'ujemy? Folder z gotowymi paczkami
+          path: ~/.cache/vcpkg/archives
+          # Klucz cache'a: System + Hash pliku vcpkg.json.
+          # Jeśli zmienisz coś w vcpkg.json, hash się zmieni i cache zostanie odświeżony.
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+          # Restore keys: Jeśli dokładny klucz nie pasuje, spróbuj pobrać najnowszy dostępny dla tego systemu.
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
 
       # 3. Konfiguracja vcpkg (cache, bootstrap)
       - name: Setup vcpkg
