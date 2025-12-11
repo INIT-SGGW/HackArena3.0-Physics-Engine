@@ -31,7 +31,9 @@ find_package(Threads REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC Eigen3::Eigen)
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 find_package(piksel CONFIG REQUIRED)
+endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -89,6 +91,8 @@ target_include_directories(boink
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
 set(TEST_SOURCES
@@ -134,3 +138,58 @@ foreach(name IN LISTS TEST_SOURCES_C)
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
+endif()
+
+# Include the module that defines standard installation directory variables
+include(GNUInstallDirs)
+
+# 1. Install the 'boink' shared library
+# LIBRARY: for the shared library file (.so, .dylib)
+# ARCHIVE: for the import library file on Windows/macOS (.lib, .a)
+# RUNTIME: for the DLL file on Windows (.dll)
+install(TARGETS boink
+    EXPORT BoinkEngineTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+# 2. Install the public headers
+# We assume your public headers are under 'include/boink' and need to be installed to 'include/boink'.
+# The $<BUILD_INTERFACE:...> in target_include_directories is a good practice for interface setup.
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/boink
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+)
+
+# 3. Install the generated version header
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/boink/version.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/boink
+)
+
+# 4. Export the targets for use by other CMake projects
+# This generates a file (e.g., BoinkEngineTargets.cmake) that other projects can use with find_package().
+install(EXPORT BoinkEngineTargets
+    FILE BoinkEngineTargets.cmake
+    NAMESPACE BoinkEngine::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/BoinkEngine
+)
+
+# 5. (Optional) Install a CMake configuration file
+# This is a common practice to make the package discoverable with find_package(BoinkEngine).
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/BoinkEngineConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/BoinkEngineConfig.cmake
+    @ONLY
+)
+
+# Install the configuration files
+# This is where the magic happens: the files are installed to the standard location
+# where find_package() will look (e.g., lib/cmake/BoinkEngine).
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/BoinkEngineConfig.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/BoinkEngine
+)
