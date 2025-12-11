@@ -1,6 +1,13 @@
 {
   "dependencies": [
-    "eigen3",
-    "piksel"
-  ]
+    "eigen3"
+  ],
+  "features": {
+    "debug-tools": {
+      "description": "Dependencies only needed for debug and testing builds.",
+      "dependencies": [
+        "piksel"
+      ]
+    }
+  }
 }
