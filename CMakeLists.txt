@@ -36,9 +36,6 @@ find_package(Threads REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC Eigen3::Eigen)
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-find_package(piksel CONFIG REQUIRED)
-endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -100,6 +97,7 @@ target_include_directories(boink
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
+find_package(piksel CONFIG REQUIRED)
 set(TEST_SOURCES
   world_test
   capi_test2
