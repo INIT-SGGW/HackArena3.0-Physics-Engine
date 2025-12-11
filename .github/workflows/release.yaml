@@ -17,6 +17,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 1.5. Instalacja zależności systemowych dla GLFW/Grafiki ---
+      - name: Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxinerama-dev libxcursor-dev xorg-dev libglu1-mesa-dev pkg-config libxi-dev libxrandr-dev
+
       # 2. Zainstalowanie CMake i Ninja (szybki build system)
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
