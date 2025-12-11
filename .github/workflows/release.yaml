@@ -57,9 +57,11 @@ jobs:
       - name: Configure CMake
         run: |
           cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/custom-overlay
+           --preset=release
+           
+# -DCMAKE_BUILD_TYPE=Release \
+# -DCMAKE_TOOLCHAIN_FILE=${{ env.VCPKG_ROOT }}/scripts/buildsystems/vcpkg.cmake \
+# -DVCPKG_OVERLAY_PORTS=${{ github.workspace }}/custom-overlay
 
       # 5. Budowanie projektu (Kompilacja Twojego kodu)
       - name: Build
