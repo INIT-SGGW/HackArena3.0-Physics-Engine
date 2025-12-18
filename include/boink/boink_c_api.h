@@ -3,20 +3,20 @@
    It contains only types and function signatures — the implementation
    lives in the native engine (C/C++). */
 
-// clang-format off
+   // clang-format off
 
 #if !defined(BOINK_API)
-  #if defined(_WIN32) || defined(__CYGWIN__)
-    #if defined(BOINK_BUILD_DLL)
-      #define BOINK_API __declspec(dllexport)
-    #elif defined(BOINK_USE_DLL)
-      #define BOINK_API __declspec(dllimport)
-    #else
-      #define BOINK_API
-    #endif
-  #else
-    #define BOINK_API __attribute__((visibility("default")))
-  #endif
+#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(BOINK_BUILD_DLL)
+#define BOINK_API __declspec(dllexport)
+#elif defined(BOINK_USE_DLL)
+#define BOINK_API __declspec(dllimport)
+#else
+#define BOINK_API
+#endif
+#else
+#define BOINK_API __attribute__((visibility("default")))
+#endif
 #endif
 
 
@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 1
+#define BOINK_C_API_VERSION_MINOR 2
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -41,33 +41,33 @@
  */
 #define BOINK_OK 0
 
-/**
- * Indicates an invalid argument (for example a null pointer or an out-of-range value).
- */
+ /**
+  * Indicates an invalid argument (for example a null pointer or an out-of-range value).
+  */
 #define BOINK_ERR_INVALID_ARG 1
 
-/**
- * Indicates that the output buffer was too small.
- */
+  /**
+   * Indicates that the output buffer was too small.
+   */
 #define BOINK_ERR_BUFFER_TOO_SMALL 2
 
-/**
- * Indicates that a requested object or identifier was not found.
- */
+   /**
+    * Indicates that a requested object or identifier was not found.
+    */
 #define BOINK_ERR_NOT_FOUND 3
 
-/**
- * Indicates an internal engine error.
- */
+    /**
+     * Indicates an internal engine error.
+     */
 #define BOINK_ERR_INTERNAL 100
 
-/**
- * Represents an opaque engine handle.
- *
- * The pointer refers to an internal world or engine instance allocated
- * and owned by the native C or C++ side.
- */
-typedef void *BoinkHandle;
+     /**
+      * Represents an opaque engine handle.
+      *
+      * The pointer refers to an internal world or engine instance allocated
+      * and owned by the native C or C++ side.
+      */
+typedef void* BoinkHandle;
 
 /**
  * Represents a 3D vector in world coordinates (meters).
@@ -137,22 +137,14 @@ typedef struct BoinkControls {
 } BoinkControls;
 
 /**
- * Represents roll–pitch–yaw orientation in radians.
+ * Represents a quaternion rotation (x, y, z, w).
  */
-typedef struct BoinkEulerRPY {
-  /**
-   * Roll angle in radians.
-   */
-  double roll;
-  /**
-   * Pitch angle in radians.
-   */
-  double pitch;
-  /**
-   * Yaw angle in radians.
-   */
-  double yaw;
-} BoinkEulerRPY;
+typedef struct BoinkQuaternion {
+  double x;
+  double y;
+  double z;
+  double w;
+} BoinkQuaternion;
 
 /**
  * Represents the full state of a car at a specific simulation instant.
@@ -167,9 +159,9 @@ typedef struct BoinkCarState {
    */
   struct BoinkVec3 position;
   /**
-   * Orientation of the car in roll–pitch–yaw angles (radians).
+   * Orientation of the car as a quaternion (x, y, z, w).
    */
-  struct BoinkEulerRPY orientation;
+  struct BoinkQuaternion orientation;
   /**
    * Linear speed magnitude of the car in meters per second.
    */
@@ -218,162 +210,162 @@ typedef struct BoinkCarState {
 extern "C" {
 #endif // __cplusplus
 
-/**
- * Retrieves the version of the Boink C API.
- *
- * Parameters:
- * - `out_major` – pointer to receive the major version number.
- * - `out_minor` – pointer to receive the minor version number.
- * - `out_patch` – pointer to receive the patch version number.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - An error code on failure.
- */
-BOINK_API int boink_get_c_api_version(unsigned int *out_major,
-                                   unsigned int *out_minor,
-                                   unsigned int *out_patch);
+  /**
+   * Retrieves the version of the Boink C API.
+   *
+   * Parameters:
+   * - `out_major` – pointer to receive the major version number.
+   * - `out_minor` – pointer to receive the minor version number.
+   * - `out_patch` – pointer to receive the patch version number.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
+   */
+  BOINK_API int boink_get_c_api_version(unsigned int* out_major,
+    unsigned int* out_minor,
+    unsigned int* out_patch);
 
-/**
- * Retrieves the version of the Boink engine library.
- *
- * Parameters:
- * - `out_major` – pointer to receive the major version number.
- * - `out_minor` – pointer to receive the minor version number.
- * - `out_patch` – pointer to receive the patch version number.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - An error code on failure.
- */
-BOINK_API int boink_get_engine_version(unsigned int *out_major,
-                                    unsigned int *out_minor,
-                                    unsigned int *out_patch);
+  /**
+   * Retrieves the version of the Boink engine library.
+   *
+   * Parameters:
+   * - `out_major` – pointer to receive the major version number.
+   * - `out_minor` – pointer to receive the minor version number.
+   * - `out_patch` – pointer to receive the patch version number.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
+   */
+  BOINK_API int boink_get_engine_version(unsigned int* out_major,
+    unsigned int* out_minor,
+    unsigned int* out_patch);
 
-/**
- * Initializes the Boink engine library.
- *
- * This function must be called before any other Boink API is used.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - An error code on failure.
- */
-BOINK_API int boink_init(void);
+  /**
+   * Initializes the Boink engine library.
+   *
+   * This function must be called before any other Boink API is used.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
+   */
+  BOINK_API int boink_init(void);
 
-/**
- * Creates a new world instance.
- *
- * The car model is shared by all car entities in the world.
- *
- * Parameters:
- * - `car_model` – pointer to a car model description. The pointer must
- *   refer to a valid `BoinkCarModel` for the lifetime of the call.
- *
- * Returns:
- * - A valid `BoinkHandle` on success.
- * - Null on failure.
- */
-BOINK_API BoinkHandle boink_create_world(const struct BoinkCarModel *car_model);
+  /**
+   * Creates a new world instance.
+   *
+   * The car model is shared by all car entities in the world.
+   *
+   * Parameters:
+   * - `car_model` – pointer to a car model description. The pointer must
+   *   refer to a valid `BoinkCarModel` for the lifetime of the call.
+   *
+   * Returns:
+   * - A valid `BoinkHandle` on success.
+   * - Null on failure.
+   */
+  BOINK_API BoinkHandle boink_create_world(const struct BoinkCarModel* car_model);
 
-/**
- * Starts a simulation in the given world at the specified timepoint.
- *
- * The timepoint is expressed in seconds. The car model used in the world
- * is the one provided during `boink_create_world`.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - An error code on failure.
- */
-BOINK_API int boink_begin_world(BoinkHandle h, double timepoint);
+  /**
+   * Starts a simulation in the given world at the specified timepoint.
+   *
+   * The timepoint is expressed in seconds. The car model used in the world
+   * is the one provided during `boink_create_world`.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
+   */
+  BOINK_API int boink_begin_world(BoinkHandle h, double timepoint);
 
-/**
- * Destroys a world instance created by `boink_create_world`.
- *
- * It is not required to despawn all cars before destroying the world.
- *
- * Parameters:
- * - `h` – handle to the world to destroy. Passing null is allowed and has
- *   no effect.
- */
-BOINK_API void boink_destroy_world(BoinkHandle h);
+  /**
+   * Destroys a world instance created by `boink_create_world`.
+   *
+   * It is not required to despawn all cars before destroying the world.
+   *
+   * Parameters:
+   * - `h` – handle to the world to destroy. Passing null is allowed and has
+   *   no effect.
+   */
+  BOINK_API void boink_destroy_world(BoinkHandle h);
 
-/**
- * Advances the simulation by a fixed time step.
- *
- * Parameters:
- * - `h` – handle to a valid world.
- * - `dt_seconds` – time step in seconds.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - An error code on failure.
- */
-BOINK_API int boink_step(BoinkHandle h, double dt_seconds);
+  /**
+   * Advances the simulation by a fixed time step.
+   *
+   * Parameters:
+   * - `h` – handle to a valid world.
+   * - `dt_seconds` – time step in seconds.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
+   */
+  BOINK_API int boink_step(BoinkHandle h, double dt_seconds);
 
-/**
- * Spawns a new car with a newly generated unique identifier.
- *
- * The engine owns the car and manages its lifetime until it is despawned
- * or the world is destroyed.
- *
- * Parameters:
- * - `h` – handle to a valid world.
- * - `out_car_id` – non-null pointer that receives the new car identifier.
- *
- * Returns:
- * - `BOINK_OK` on success and writes the identifier to `*out_car_id`.
- * - An error code if the engine cannot allocate or generate the identifier
- *   or if the arguments are invalid.
- */
-BOINK_API int boink_spawn_car(BoinkHandle h, uint64_t *out_car_id);
+  /**
+   * Spawns a new car with a newly generated unique identifier.
+   *
+   * The engine owns the car and manages its lifetime until it is despawned
+   * or the world is destroyed.
+   *
+   * Parameters:
+   * - `h` – handle to a valid world.
+   * - `out_car_id` – non-null pointer that receives the new car identifier.
+   *
+   * Returns:
+   * - `BOINK_OK` on success and writes the identifier to `*out_car_id`.
+   * - An error code if the engine cannot allocate or generate the identifier
+   *   or if the arguments are invalid.
+   */
+  BOINK_API int boink_spawn_car(BoinkHandle h, uint64_t* out_car_id);
 
-/**
- * Removes a car with the specified identifier.
- *
- * Parameters:
- * - `h` – handle to a valid world.
- * - `car_id` – identifier of the car to despawn.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
- * - Another error code for other failures.
- */
-BOINK_API int boink_despawn_car(BoinkHandle h, uint64_t car_id);
+  /**
+   * Removes a car with the specified identifier.
+   *
+   * Parameters:
+   * - `h` – handle to a valid world.
+   * - `car_id` – identifier of the car to despawn.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
+   * - Another error code for other failures.
+   */
+  BOINK_API int boink_despawn_car(BoinkHandle h, uint64_t car_id);
 
-/**
- * Sets the desired driver controls for the specified car.
- *
- * Parameters:
- * - `h` – handle to a valid world.
- * - `car_id` – identifier of the car to control.
- * - `controls` – non-null pointer to the desired control inputs.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - `BOINK_ERR_INVALID_ARG` if `controls` is null.
- * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
- * - Another error code for other failures.
- */
-BOINK_API int boink_set_controls(BoinkHandle h, uint64_t car_id, const struct BoinkControls *controls);
+  /**
+   * Sets the desired driver controls for the specified car.
+   *
+   * Parameters:
+   * - `h` – handle to a valid world.
+   * - `car_id` – identifier of the car to control.
+   * - `controls` – non-null pointer to the desired control inputs.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - `BOINK_ERR_INVALID_ARG` if `controls` is null.
+   * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
+   * - Another error code for other failures.
+   */
+  BOINK_API int boink_set_controls(BoinkHandle h, uint64_t car_id, const struct BoinkControls* controls);
 
-/**
- * Reads the current state of the specified car.
- *
- * Parameters:
- * - `h` – handle to a valid world.
- * - `car_id` – identifier of the car whose state is requested.
- * - `out_state` – non-null pointer that receives the car state.
- *
- * Returns:
- * - `BOINK_OK` on success and writes the state to `*out_state`.
- * - `BOINK_ERR_INVALID_ARG` if `out_state` is null.
- * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
- * - Another error code for other failures.
- */
-BOINK_API int boink_read_car_state(BoinkHandle h, uint64_t car_id, struct BoinkCarState *out_state);
+  /**
+   * Reads the current state of the specified car.
+   *
+   * Parameters:
+   * - `h` – handle to a valid world.
+   * - `car_id` – identifier of the car whose state is requested.
+   * - `out_state` – non-null pointer that receives the car state.
+   *
+   * Returns:
+   * - `BOINK_OK` on success and writes the state to `*out_state`.
+   * - `BOINK_ERR_INVALID_ARG` if `out_state` is null.
+   * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
+   * - Another error code for other failures.
+   */
+  BOINK_API int boink_read_car_state(BoinkHandle h, uint64_t car_id, struct BoinkCarState* out_state);
 
 #ifdef __cplusplus
 }  // extern "C"

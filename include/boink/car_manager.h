@@ -12,6 +12,8 @@
 #include <type_traits>
 #include <unordered_set>
 #include <cassert>
+#include <optional>
+#include <functional>
 
 namespace boink
 {
@@ -110,7 +112,7 @@ namespace boink
     }
 
     template<typename... Ts_>
-    void updateCar(ID car_id, Ts_&&... sub_components)
+    bool updateCar(ID car_id, Ts_&&... sub_components)
     {
       // Checks whether Ts_ are subset of types Compoents_
       static_assert(
@@ -118,24 +120,32 @@ namespace boink
       );
 
       if(!cars_.contains(car_id))
-        return;
+        return false;
 
       component_manager_.
         updateComponents(car_id, std::forward<Ts_>(sub_components)...);
+
+      return true;
     }
 
     template<typename... SubComponents_>
-    auto getCarComponents(ID car_id)
+    std::optional<std::tuple<SubComponents_&...>> getCarComponents(ID car_id)
     {
-      return component_manager_.
-        template getEntityComponents<SubComponents_...>(car_id);
+      if (!cars_.contains(car_id))
+        return std::nullopt;
+
+      return component_manager_
+        .template getEntityComponents<SubComponents_...>(car_id);
     }
 
     template<typename... SubComponents_>
-    auto getCarComponents(ID car_id) const
+    std::optional<std::tuple<SubComponents_&...>> getCarComponents(ID car_id) const
     {
-      return component_manager_.
-        template getEntityComponents<SubComponents_...>(car_id);
+      if (!cars_.contains(car_id))
+        return std::nullopt;
+
+      return component_manager_
+        .template getEntityComponents<SubComponents_...>(car_id);
     }
 
     template<typename... StaticSubComponents_>
@@ -164,6 +174,11 @@ namespace boink
       
       assert(ret);
       return ret;
+    }
+
+    bool isCarPresent(ID car_id)
+    {
+      return cars_.contains(car_id);
     }
   private:
     std::unordered_set<ID> cars_;

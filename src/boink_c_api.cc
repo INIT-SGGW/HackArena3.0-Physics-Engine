@@ -18,6 +18,11 @@ int boink_get_c_api_version(unsigned int *out_major,
                                  unsigned int *out_minor,
                                  unsigned int *out_patch)
 {
+  if (out_major == nullptr || 
+    out_minor == nullptr || 
+    out_patch == nullptr)
+    return BOINK_ERR_INVALID_ARG;
+
   *out_major=BOINK_C_API_VERSION_MAJOR;
   *out_minor=BOINK_C_API_VERSION_MINOR;
   *out_patch=BOINK_C_API_VERSION_PATCH;
@@ -29,6 +34,11 @@ int boink_get_engine_version(unsigned int *out_major,
                                  unsigned int *out_minor,
                                  unsigned int *out_patch)
 {
+  if (out_major == nullptr ||
+    out_minor == nullptr ||
+    out_patch == nullptr)
+    return BOINK_ERR_INVALID_ARG;
+
   *out_major=BOINK_VERSION_MAJOR;
   *out_minor=BOINK_VERSION_MINOR;
   *out_patch=BOINK_VERSION_PATCH;
@@ -48,6 +58,9 @@ static Eigen::Vector3d b_v3_2_e_v(const BoinkVec3& b_vec)
 
 BoinkHandle boink_create_world(const BoinkCarModel* car_model)
 {
+  if (car_model == nullptr)
+    return nullptr;
+
   boink::CarModel model{};
   model.front_left_wheel=b_v3_2_e_v(car_model->front_left_wheel);
   model.front_right_wheel=b_v3_2_e_v(car_model->front_right_wheel);
@@ -115,9 +128,10 @@ int boink_set_controls(
   input.steer_angle=controls->steer;
   input.throttle=controls->throttle;
 
-  p_world->car_manager.updateCar(car_id,std::move(input));
-
-  return BOINK_OK;
+  if (p_world->car_manager.updateCar(car_id, std::move(input)))
+    return BOINK_OK;
+  else
+    return BOINK_ERR_NOT_FOUND;
 }
 
 
@@ -128,6 +142,11 @@ int boink_read_car_state(
   if(p_world==nullptr)
     return BOINK_ERR_INVALID_ARG;
 
+  if (!p_world->car_manager.isCarPresent(car_id))
+  {
+    return BOINK_ERR_NOT_FOUND;
+  }
+
   out_state->engine_rpm=0.0;
   out_state->gear=0;
   out_state->wheel_speeds[0]=0.0;
@@ -136,9 +155,17 @@ int boink_read_car_state(
   out_state->wheel_speeds[3]=0.0;
   out_state->car_id=car_id;
 
-  const auto& [input,trans,kins]=p_world->car_manager.
+  auto components_opt=
+    p_world->car_manager.
     getCarComponents<boink::CarInput,boink::Transform,boink::Kinematics>(car_id);
 
+  if (!components_opt)
+  {
+    return BOINK_ERR_INTERNAL;
+  }
+
+  const auto& [input, trans, kins] = components_opt.value();
+ 
   auto model=p_world->
     car_manager.getCarStaticComponents<boink::CarModel>();
 
@@ -152,13 +179,15 @@ int boink_read_car_state(
   out_state->wheel_angles[1]=angle;
   out_state->speed=kins.velocity.norm();
 
-  Eigen::Vector3d rpy=trans.rotation.eulerAngles(2,1,0);
-  out_state->orientation.roll=rpy(0);
-  out_state->orientation.pitch=rpy(1);
-  out_state->orientation.yaw=rpy(2);
+  Eigen::Quaterniond quad(trans.rotation);
+
+  out_state->orientation.x = quad.x();
+  out_state->orientation.y = quad.y();
+  out_state->orientation.z = quad.z();
+  out_state->orientation.w = quad.w();
 
   out_state->position={trans.position.x(),trans.position.y(),trans.position.z()};
-
+  
   return BOINK_OK;
 }
 
