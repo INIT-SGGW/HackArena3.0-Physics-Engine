@@ -4,91 +4,129 @@ on:
   release:
     types: [created]
   workflow_dispatch:
-      inputs:
-        description:
-          description: 'Uruchom to, aby zaktualizować/rozgrzać cache (np. po zmianie vcpkg.json). Nie utworzy to Release.'
-          required: false
-          default: 'Manual Cache Update'
-          type: string
+    inputs:
+      description:
+        description: 'Uruchom to, aby zaktualizować/rozgrzać cache. Nie utworzy to Release.'
+        required: false
+        default: 'Manual Cache Update'
+        type: string
 
 permissions:
   contents: write
 
 jobs:
-  build-linux:
-    name: Build Linux (AMD64)
+  build-and-release:
+    name: Build ${{ matrix.name }}
     runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Konfiguracja dla Linuxa
+          - name: Linux (AMD64)
+            target: linux
+            triplet: x64-linux
+            # Nadpisujemy zmienne CMake w locie
+            cmake_args: "-DCMAKE_SYSTEM_NAME=Linux" 
+            artifact_name: boink-native
+            asset_extension: tar.gz
+            
+          # Konfiguracja dla Windowsa (Cross-compile via MinGW)
+          - name: Windows (AMD64 - MinGW)
+            target: windows
+            triplet: x64-mingw-dynamic # Community triplet wbudowany w vcpkg
+            # Dla MinGW musimy powiedzieć CMake, że to Windows
+            cmake_args: "-DCMAKE_SYSTEM_NAME=Windows"
+            artifact_name: boink-native
+            asset_extension: zip
 
     env:
-      # NAPRAWA 1: Podajemy pełną, absolutną ścieżkę do folderu cache.
-      # /home/runner/ to domyślny katalog użytkownika na GitHub Actions.
+      # Ważne: Cache jest dzielony między jobami, ale klucze będą inne dzięki ${{ matrix.triplet }}
       VCPKG_BINARY_SOURCES: "clear;files,/home/runner/.cache/vcpkg/archives,readwrite"
+      # Ustawiamy triplet globalnie dla vcpkg w tym jobie
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
 
     steps:
-      # 1. Pobranie kodu źródłowego
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Zainstalowanie CMake i Ninja (szybki build system)
+      # --- KROK SPECIFICZNY DLA WINDOWS (MINGW) ---
+      # Instalujemy kompilator MinGW-w64 na maszynie Linux
+      - name: Install MinGW-w64
+        if: matrix.target == 'windows'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64
+
       - name: Setup CMake and Ninja
         uses: lukka/get-cmake@latest
 
-      # 2.5 Weź co się da z binary cache'a
+      # Cache przywracamy z uwzględnieniem TRIPLETU w kluczu!
       - name: Restore vcpkg binary cache
         uses: actions/cache/restore@v4
         id: cache-vcpkg-restore
         with:
           path: /home/runner/.cache/vcpkg/archives
-          # Klucz dla bieżącego uruchomienia
-          key: Linux-vcpkg-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
-          # Broad Match: Szukamy czegokolwiek z 'main', co pasuje do vcpkg
+          # Klucz musi zawierać triplet, inaczej Linux spróbuje użyć bibliotek Windowsa
+          key: ${{ matrix.target }}-vcpkg-${{ matrix.triplet }}-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            Linux-vcpkg-
+            ${{ matrix.target }}-vcpkg-${{ matrix.triplet }}-
 
-      # 3. Konfiguracja vcpkg (cache, bootstrap)
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          # Ścieżka do vcpkg.json (domyślna, ale warto być jawnym)
           vcpkgJsonGlob: 'vcpkg.json'
+          # Przekazujemy triplet z matrixa
+          vcpkgTriplet: ${{ matrix.triplet }}
 
-      # 4. Konfiguracja projektu (CMake Configure)
-      # To tutaj dzieje się magia instalacji zależności z vcpkg.json
       - name: Configure CMake
+        # Dodajemy flagi z matrixa oraz wymuszamy triplet w CMake
         run: |
-          cmake --preset=release
+          cmake --preset=release \
+            -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
+            ${{ matrix.cmake_args }}
 
-      # --- KROK 3: SAVE (Zapisywanie - nawet przy błędzie!) ---
-      # To uruchomi się ZAWSZE, nawet jak 'Build' zwróci błąd.
+      # Zapisywanie cache (zawsze)
       - name: Save vcpkg binary cache
         uses: actions/cache/save@v4
         if: always()
         with:
           path: /home/runner/.cache/vcpkg/archives
-          key: Linux-vcpkg-${{ hashFiles('vcpkg.json') }}-${{ github.run_id }}
+          key: ${{ matrix.target }}-vcpkg-${{ matrix.triplet }}-${{ hashFiles('vcpkg.json') }}
 
-      # 5. Budowanie projektu (Kompilacja Twojego kodu)
       - name: Build
         run: cmake --build build/release
 
-      # 6. Pakowanie (Stworzenie paczki wynikowej)
-      # Używamy cmake --install, aby zebrać pliki w ładny folder 'install',
-      # a następnie pakujemy go do .tar.gz
-      - name: Package
+      # --- PAKOWANIE (Różne dla systemów) ---
+      
+      # 1. Przygotowanie folderu install (wspólne)
+      - name: Install to staging
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir release_package
-          
-          # Instalujemy z folderu build/release do folderu release_package
           cmake --install build/release --prefix release_package
-          
-          # Tworzenie archiwum
-          tar -czvf boink-native-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz -C release_package .
 
-      # 7. Wrzucenie pliku do Release'a
+      # 2. Pakowanie Linux (tar.gz)
+      - name: Package Linux
+        if: startsWith(github.ref, 'refs/tags/') && matrix.target == 'linux'
+        run: |
+          tar -czvf ${{ matrix.artifact_name }}-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz -C release_package .
+
+      # 3. Pakowanie Windows (zip)
+      - name: Package Windows
+        if: startsWith(github.ref, 'refs/tags/') && matrix.target == 'windows'
+        run: |
+          # Instalujemy zip jeśli go nie ma (zwykle jest na ubuntu-latest)
+          cd release_package
+          zip -r ../${{ matrix.artifact_name }}-${{ github.event.release.tag_name }}-windows-x86_64.zip .
+
+      # --- UPLOAD ---
+      
       - name: Upload Release Asset
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: boink-native-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz
+          files: |
+            ${{ matrix.artifact_name }}-${{ github.event.release.tag_name }}-linux-x86_64.tar.gz
+            ${{ matrix.artifact_name }}-${{ github.event.release.tag_name }}-windows-x86_64.zip
