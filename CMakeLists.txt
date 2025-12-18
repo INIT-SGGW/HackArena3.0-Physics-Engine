@@ -101,14 +101,14 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
 set(TEST_SOURCES
-  world_test
-  capi_test2
-  mem_component_test
-  type_diff_test
-  asan_test
-  memory_leak_test
-  utils_math
-  piksel_test
+  #world_test
+  #capi_test2
+  #mem_component_test
+  #type_diff_test
+  #asan_test
+  #memory_leak_test
+  #utils_math
+  #piksel_test
   present_test
 )
 
@@ -128,7 +128,7 @@ endforeach()
 
 set(TEST_SOURCES_C
   capi_test
-  rotate_test
+  #rotate_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)

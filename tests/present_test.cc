@@ -13,7 +13,11 @@
 #include "boink/components/transform.h"
 #include <Eigen/Core>
 
+#ifdef _WIN32
 #define PROJECT_PATH "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine"
+#else
+#define PROJECT_PATH "."
+#endif
 
 using namespace piksel;
 using namespace Eigen;
@@ -29,8 +33,8 @@ int main(int argc, char **argv)
   Graphics gfx(
       wnd,cam,PIKSEL_SHADERS_PATH"/single_color.vert", PIKSEL_SHADERS_PATH"/single_color.frag");
 
-  auto car = std::make_shared<Model>(PROJECT_PATH"\\Bolid_F1.glb");
-  auto ground  = std::make_shared<Model>(PROJECT_PATH"\\Bolid_Tor_test.glb");
+  auto car = std::make_shared<Model>(PROJECT_PATH"/Bolid_F1.glb");
+  auto ground  = std::make_shared<Model>(PROJECT_PATH"/Bolid_Tor_test.glb");
   car->color=Color::Green;
   ground->color=Color::White;
 
