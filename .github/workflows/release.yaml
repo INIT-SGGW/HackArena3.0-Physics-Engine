@@ -32,12 +32,16 @@ jobs:
             artifact_name: boink-native
             asset_extension: tar.gz
             
-          # Konfiguracja dla Windowsa (Cross-compile via MinGW)
+          # --- WINDOWS (MinGW) ---
           - name: Windows (AMD64 - MinGW)
             target: windows
-            triplet: x64-mingw-dynamic # Community triplet wbudowany w vcpkg
-            # Dla MinGW musimy powiedzieć CMake, że to Windows
-            cmake_args: "-DCMAKE_SYSTEM_NAME=Windows"
+            triplet: x64-mingw-dynamic
+            # TU JEST FIX: Jawnie wskazujemy kompilatory MinGW-w64
+            cmake_args: >-
+              -DCMAKE_SYSTEM_NAME=Windows
+              -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc
+              -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++
+              -DCMAKE_RC_COMPILER=x86_64-w64-mingw32-windres
             artifact_name: boink-native
             asset_extension: zip
 
