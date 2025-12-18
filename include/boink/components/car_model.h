@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string_view>
+
+#include <glm/glm.hpp>
+#include <tiny_gltf.h>
+
 #include <Eigen/Core>
 
 #ifdef MEMORY_TEST
@@ -12,6 +17,11 @@ namespace boink
    */
   struct CarModel
   {
+    std::string_view LEFT_REAR_WHEEL_NAME="Cylinder.005";
+    std::string_view RIGHT_REAR_WHEEL_NAME="Cylinder.004";
+    std::string_view LEFT_FRONT_WHEEL_NAME="Cylinder.003";
+    std::string_view RIGHT_FRONT_WHEEL_NAME="Cylinder.007";
+    std::string_view CHASSIS_NAME="Cylinder.002";
 #ifdef MEMORY_TEST
     CarModel()
     {
@@ -95,6 +105,8 @@ namespace boink
     }
 #endif
 
+    CarModel(std::string_view filename);
+
     // TODO
     // Make it vars const and create ctor
     Eigen::Vector3d rear_left_wheel{};
@@ -106,5 +118,10 @@ namespace boink
     Eigen::Vector3d front{};
     Eigen::Vector3d direction{}; // Normalized vector
     Eigen::Vector3d normal{}; // Normalized. Points to the top of a car 
-  };
+  private:
+    void bindModelNodes(
+        const tinygltf::Model& model,
+        const tinygltf::Node& node,
+        const glm::mat4& transform);
+};
 }

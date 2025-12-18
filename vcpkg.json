@@ -1,6 +1,7 @@
 {
   "dependencies": [
-    "eigen3"
+    "eigen3",
+    "tinygltf"
   ],
   "features": {
     "debug-tools": {

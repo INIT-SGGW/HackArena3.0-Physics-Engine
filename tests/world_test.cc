@@ -5,11 +5,7 @@ using namespace Eigen;
 
 void test()
 {
-  CarModel car_model;
-  car_model.front_left_wheel=Vector3d(-1.0,0.0,2.0);
-  car_model.front_right_wheel=Vector3d(1.0,0.0,2.0);
-  car_model.rear_left_wheel=Vector3d(-1.0,0.0,-2.0);
-  car_model.rear_right_wheel=Vector3d(1.0,0.0,-2.0);
+  CarModel car_model("car.glb");
   car_model.max_steer_angle_deg=30;
 
   World world(car_model);

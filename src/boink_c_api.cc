@@ -41,18 +41,10 @@ int boink_init()
   return BOINK_OK;
 }
 
-static Eigen::Vector3d b_v3_2_e_v(const BoinkVec3& b_vec)
-{
-  return Eigen::Vector3d{b_vec.x,b_vec.y,b_vec.z};
-}
-
 BoinkHandle boink_create_world(const BoinkCarModel* car_model)
 {
-  boink::CarModel model{};
-  model.front_left_wheel=b_v3_2_e_v(car_model->front_left_wheel);
-  model.front_right_wheel=b_v3_2_e_v(car_model->front_right_wheel);
-  model.rear_left_wheel=b_v3_2_e_v(car_model->rear_left_wheel);
-  model.rear_right_wheel=b_v3_2_e_v(car_model->rear_right_wheel);
+  // TODO
+  boink::CarModel model{car_model->filename};
   model.max_steer_angle_deg=car_model->max_steer_angle;
 
   return (BoinkHandle)new (std::nothrow) boink::World(std::move(model));

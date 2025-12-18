@@ -21,7 +21,7 @@ namespace boink
   {
   public:
     using CarComponents=std::tuple<CarInput,Transform,Kinematics>;
-    using CarSystems=std::tuple<CarSpawnSystem,MovementSystem,DebugSystem>;
+    using CarSystems=std::tuple<CarSpawnSystem,MovementSystem>;
   public:
     World(const CarModel& car_model);
     World(CarModel&& car_model);

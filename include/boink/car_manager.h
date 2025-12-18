@@ -36,12 +36,12 @@ namespace boink
     {
     }
 
-    CarManager(CarModel&& car_model) 
+    CarManager(CarModel&& car_model) noexcept
       :component_manager_(std::move(car_model))
     {
     }
 
-    ~CarManager()
+    ~CarManager() noexcept
     {
     }
 

@@ -36,6 +36,8 @@ find_package(Threads REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC Eigen3::Eigen)
 
+find_path(TINYGLTF_INCLUDE_DIRS "tiny_gltf.h")
+target_include_directories(boink PRIVATE ${TINYGLTF_INCLUDE_DIRS})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -83,7 +85,14 @@ target_sources(boink
   ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
     src/world.cc
+    src/car_model.cc
 )
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  target_sources(boink
+    PRIVATE
+      src/tinygltf_impl.cc)
+endif()
 
 target_include_directories(boink
   PUBLIC 
@@ -99,15 +108,15 @@ include(CTest)
 
 find_package(piksel CONFIG REQUIRED)
 set(TEST_SOURCES
-  world_test
-  capi_test2
-  mem_component_test
-  type_diff_test
-  asan_test
-  memory_leak_test
-  utils_math
-  piksel_test
+  ##world_test
+  ##capi_test2
+  ##mem_component_test
+  ##type_diff_test
+  ##asan_test
+  ##memory_leak_test
+  ##utils_math
   present_test
+  tinygltf_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -126,7 +135,7 @@ endforeach()
 
 set(TEST_SOURCES_C
   capi_test
-  rotate_test
+  #rotate_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)

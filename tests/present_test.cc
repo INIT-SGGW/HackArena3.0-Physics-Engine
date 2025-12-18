@@ -25,10 +25,10 @@ int main(int argc, char **argv)
 
   Camera cam({0.f,10.f,10.f},{0.f,0.f,0.f});
   Graphics gfx(
-      wnd,cam,SHADERS_PATH"/single_color.vert",SHADERS_PATH"/single_color.frag");
+      wnd,cam,PIKSEL_SHADERS_PATH"/single_color.vert",PIKSEL_SHADERS_PATH"/single_color.frag");
 
-  auto car = std::make_shared<Model>(ASSETS_PATH"/models/F1_bolid.glb");
-  auto ground  = std::make_shared<Model>(ASSETS_PATH"/models/tor.glb");
+  auto car = std::make_shared<Model>("car.glb");
+  auto ground  = std::make_shared<Model>("Bolid_Tor_test.glb");
   car->color=Color::Green;
   ground->color=Color::White;
 
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
   gfx.addObject(ground);
   gfx.setBackground(Color::Blue);
 
-  boink::CarModel car_model;
+  boink::CarModel car_model("car.glb");
   car_model.front_left_wheel=Vector3d(-1.0,0.0,2.0);
   car_model.front_right_wheel=Vector3d(1.0,0.0,2.0);
   car_model.rear_left_wheel=Vector3d(-1.0,0.0,-2.0);
@@ -88,10 +88,10 @@ int main(int argc, char **argv)
       world.car_manager.getCarComponents<boink::Transform,CarInput>(id);
 
     if(wnd.getKey(GLFW_KEY_E)==Window::KeyState::Press){
-      input.steer_angle+=0.1f;
+      input.steer_angle-=0.1f;
     }
     if(wnd.getKey(GLFW_KEY_Q)==Window::KeyState::Press){
-      input.steer_angle-=0.1f;
+      input.steer_angle+=0.1f;
     }
 
     if(wnd.getKey(GLFW_KEY_R)==Window::KeyState::Press){

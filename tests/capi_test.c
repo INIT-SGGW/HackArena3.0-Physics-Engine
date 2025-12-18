@@ -21,23 +21,7 @@ int test()
   printf("Engine version: %d.%d.%d\n",major,minor,patch);
 
   BoinkCarModel car_model;
-  BoinkVec3 vec;
-  vec.x=-1.0;
-  vec.y=0.0;
-  vec.z=2.0;
-  car_model.front_left_wheel=vec;
-  vec.x=1.0;
-  vec.y=0.0;
-  vec.z=2.0;
-  car_model.front_right_wheel=vec;
-  vec.x=-1.0;
-  vec.y=0.0;
-  vec.z=-2.0;
-  car_model.rear_left_wheel=vec;
-  vec.x=1.0;
-  vec.y=0.0;
-  vec.z=-2.0;
-  car_model.rear_right_wheel=vec;
+  car_model.filename="car.glb";
   car_model.max_steer_angle=30;
 
   BoinkHandle handle=boink_create_world(&car_model);

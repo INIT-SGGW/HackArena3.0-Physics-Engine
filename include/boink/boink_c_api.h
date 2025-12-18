@@ -93,26 +93,8 @@ typedef struct BoinkVec3 {
  * The car model is shared by all car entities in the world.
  */
 typedef struct BoinkCarModel {
-  /**
-   * Position of the front-left wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 front_left_wheel;
-  /**
-   * Position of the front-right wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 front_right_wheel;
-  /**
-   * Position of the rear-left wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 rear_left_wheel;
-  /**
-   * Position of the rear-right wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 rear_right_wheel;
-  /**
-   * Maximum steering angle of the front wheels in degrees.
-   */
   double max_steer_angle;
+  const char* filename;
 } BoinkCarModel;
 
 /**
