@@ -1,15 +1,14 @@
 {
   "name": "piksel",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "homepage": "https://github.com/v4m3rrr/piksel",
   "license": "MIT",
   "dependencies": [
-    "assimp",
     "glfw3",
     "glm",
     "opengl",
-    "stb",
     "glad",
+    "tinygltf",
     {
       "name": "vcpkg-cmake",
       "host": true

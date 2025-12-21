@@ -14,10 +14,6 @@ CMakeUserPresets.json
 .ycm*
 docs
 .vscode
-.*
 
-build/debug/*
-build/release/*
 
-!build/debug/.gitkeep
-!build/release/.gitkeep
+build

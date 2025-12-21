@@ -105,9 +105,6 @@ void printCarState(struct BoinkCarState* out, double time)
     VAR_PRINT_U(out->car_id);
     VAR_PRINT_D(out->engine_rpm);
     VAR_PRINT_I(out->gear);
-    VAR_PRINT_D(out->orientation.roll);
-    VAR_PRINT_D(out->orientation.pitch);
-    VAR_PRINT_D(out->orientation.yaw);
     VAR_PRINT_D(out->position.x);
     VAR_PRINT_D(out->position.y);
     VAR_PRINT_D(out->position.z);

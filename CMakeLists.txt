@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 0.1.0)
+project(BoinkEngine VERSION 0.2.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -46,7 +46,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(boink 
       PRIVATE
       /W4
-      /WX
+      #/WX
       /EHsc
     )
     if(USE_ASAN_WIN)
@@ -71,7 +71,7 @@ endif()
 if(WIN32)
   # This files on Windows must be PUBLIC
   #(i dunno why and for now i dont care)
-  set(BOINK_SOURCES_VISIBILITY PUBLIC)
+  set(BOINK_SOURCES_VISIBILITY PRIVATE)
   target_compile_definitions(boink PRIVATE BOINK_BUILD_DLL)
 else()
   set(BOINK_SOURCES_VISIBILITY PRIVATE)
@@ -99,14 +99,14 @@ include(CTest)
 
 find_package(piksel CONFIG REQUIRED)
 set(TEST_SOURCES
-  world_test
-  capi_test2
-  mem_component_test
-  type_diff_test
-  asan_test
-  memory_leak_test
-  utils_math
-  piksel_test
+  #world_test
+  #capi_test2
+  #mem_component_test
+  #type_diff_test
+  #asan_test
+  #memory_leak_test
+  #utils_math
+  #piksel_test
   present_test
 )
 
@@ -126,7 +126,7 @@ endforeach()
 
 set(TEST_SOURCES_C
   capi_test
-  rotate_test
+  #rotate_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)

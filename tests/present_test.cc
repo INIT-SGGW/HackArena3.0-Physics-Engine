@@ -13,6 +13,12 @@
 #include "boink/components/transform.h"
 #include <Eigen/Core>
 
+#ifdef _WIN32
+#define PROJECT_PATH "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine"
+#else
+#define PROJECT_PATH "."
+#endif
+
 using namespace piksel;
 using namespace Eigen;
 using namespace boink;
@@ -25,10 +31,10 @@ int main(int argc, char **argv)
 
   Camera cam({0.f,10.f,10.f},{0.f,0.f,0.f});
   Graphics gfx(
-      wnd,cam,SHADERS_PATH"/single_color.vert",SHADERS_PATH"/single_color.frag");
+      wnd,cam,PIKSEL_SHADERS_PATH"/single_color.vert", PIKSEL_SHADERS_PATH"/single_color.frag");
 
-  auto car = std::make_shared<Model>(ASSETS_PATH"/models/F1_bolid.glb");
-  auto ground  = std::make_shared<Model>(ASSETS_PATH"/models/tor.glb");
+  auto car = std::make_shared<Model>(PROJECT_PATH"/Bolid_F1.glb");
+  auto ground  = std::make_shared<Model>(PROJECT_PATH"/Bolid_Tor_test.glb");
   car->color=Color::Green;
   ground->color=Color::White;
 
@@ -85,7 +91,7 @@ int main(int argc, char **argv)
     }
 
     auto [trans, input]=
-      world.car_manager.getCarComponents<boink::Transform,CarInput>(id);
+      world.car_manager.getCarComponents<boink::Transform,CarInput>(id).value();
 
     if(wnd.getKey(GLFW_KEY_E)==Window::KeyState::Press){
       input.steer_angle+=0.1f;
