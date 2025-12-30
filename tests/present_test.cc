@@ -33,8 +33,8 @@ int main(int argc, char **argv)
   Graphics gfx(
       wnd,cam,PIKSEL_SHADERS_PATH"/single_color.vert", PIKSEL_SHADERS_PATH"/single_color.frag");
 
-  auto car = std::make_shared<Model>(PROJECT_PATH"/Bolid_F1.glb");
-  auto ground  = std::make_shared<Model>(PROJECT_PATH"/Bolid_Tor_test.glb");
+  auto car = std::make_shared<Model>(PROJECT_PATH"/Bolid_F1.glb",1.f);
+  auto ground  = std::make_shared<Model>(PROJECT_PATH"/Bolid_Tor_test.glb",1.f);
   car->color=Color::Green;
   ground->color=Color::White;
 

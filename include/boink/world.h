@@ -22,7 +22,8 @@
 #include "boink/car_manager.h"
 #include "boink/systems/car_spawn_system.h"
 #include "boink/systems/movement_system.h"
-#include "boink/systems/debug_system.h"
+#include "boink/simulation.h"
+#include "boink/debug_render.h"
 
 namespace boink
 {
@@ -37,7 +38,6 @@ namespace boink
     using CarSystems=std::tuple<CarSpawnSystem,MovementSystem>;
   public:
     World(const CarModel& car_model);
-    World(CarModel&& car_model);
 
     /**
      * @brief Start simulation.
@@ -51,12 +51,16 @@ namespace boink
      * @param dt Delta time in seconds.
      */
     void update(double dt);
+    void setDebuger(DebugRender* dbg);
+    void addGround(const btVector3& dims, const btVector3& pos);
+    void addSphere(btScalar radius, const btVector3& pos);
   public:
     /**
      * @brief Manages car entities and systems.
      */
     CarManager<CarComponents,CarSystems> car_manager;
   private:
+    Simulation simulation;
     double time_passed_=0.0;
   };
 }

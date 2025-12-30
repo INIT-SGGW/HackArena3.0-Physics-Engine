@@ -13,7 +13,6 @@
 #include <unordered_set>
 #include <cassert>
 #include <optional>
-#include <functional>
 
 namespace boink
 {

@@ -36,6 +36,11 @@ find_package(Threads REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC Eigen3::Eigen)
 
+find_package(Bullet CONFIG REQUIRED)
+target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
+
+find_package(piksel CONFIG REQUIRED)                                                                                                                                          
+target_link_libraries(boink PUBLIC piksel::piksel)   
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -83,6 +88,8 @@ target_sources(boink
   ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
     src/world.cc
+    src/debug_render.cc
+    src/simulation.cc
 )
 
 target_include_directories(boink
@@ -97,7 +104,6 @@ target_include_directories(boink
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
-find_package(piksel CONFIG REQUIRED)
 set(TEST_SOURCES
   #world_test
   #capi_test2
@@ -108,6 +114,8 @@ set(TEST_SOURCES
   #utils_math
   #piksel_test
   present_test
+  vehicle_test
+  colider_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -116,7 +124,6 @@ foreach(name IN LISTS TEST_SOURCES)
   target_link_libraries(${name}
     PRIVATE 
       boink
-      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
@@ -134,7 +141,6 @@ foreach(name IN LISTS TEST_SOURCES_C)
   target_link_libraries(${name}
     PRIVATE 
       boink
-      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
