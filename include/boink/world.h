@@ -120,8 +120,11 @@ namespace boink
     void addGround(const btVector3& dims, const btVector3& pos);
     void addSphere(btScalar radius, const btVector3& pos);
   private:
-    CarManager<CarComponents,CarSystems> car_manager;
+    // The order of simulation and car_manger objects
+    // must be preserved because custom deleter of Rigidbody object
+    // needs dynamic_world to exists.
     Simulation simulation;
+    CarManager<CarComponents,CarSystems> car_manager;
     double time_passed_=0.0;
   };
 }

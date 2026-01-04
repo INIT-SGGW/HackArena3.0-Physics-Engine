@@ -124,7 +124,7 @@ namespace boink
       btScalar mass)
   {
 
-    std::shared_ptr<btConvexHullShape> hull(new btConvexHullShape());
+    btConvexHullShape* hull=new btConvexHullShape();
 
     for (const btVector3& v : vertices)
     {
@@ -153,15 +153,25 @@ namespace boink
     //it provides interpolation capabilities, and only synchronizes 'active' objects
     btDefaultMotionState* motion_state = new btDefaultMotionState(transform);
     btRigidBody::btRigidBodyConstructionInfo rb_info
-      (mass, motion_state, hull.get(), local_inertia);
-    std::shared_ptr<btRigidBody> body (new btRigidBody(rb_info));
+      (mass, motion_state, hull, local_inertia);
+    std::shared_ptr<btRigidBody> body (
+        new btRigidBody(rb_info),
+        [world=dynamics_world.get()](btRigidBody* ptr)
+        {
+          if(ptr->getMotionState())
+            delete ptr->getMotionState();
+
+          world->removeRigidBody(ptr);
+          delete ptr->getCollisionShape();
+          delete ptr;
+        });
 
     //add the body to the dynamics world
     dynamics_world->addRigidBody(body.get());
 
-    collision_shapes.push_back(hull);
+    //collision_shapes.push_back(hull);
 
-    return {mass,local_inertia,hull,body};
+    return {mass,local_inertia,body};
   }
 }   
     
