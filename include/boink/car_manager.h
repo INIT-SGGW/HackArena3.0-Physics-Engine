@@ -32,11 +32,6 @@ namespace boink
   public:
     using ID=Entity::ID;
   public:
-    CarManager(const CarModel& car_model)
-      :component_manager_(car_model)
-    {
-    }
-
     CarManager(CarModel&& car_model) 
       :component_manager_(std::move(car_model))
     {

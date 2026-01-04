@@ -28,6 +28,7 @@ namespace boink
     Rigidbody createCarRigidbody(
         const std::vector<btVector3>& vertices, 
         const btTransform& trans,
+        const btVector3& scale,
         btScalar mass);
     void step(double dt);
     void registerDebugDrawer(btIDebugDraw* dbg);

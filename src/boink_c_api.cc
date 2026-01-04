@@ -61,7 +61,7 @@ BoinkHandle boink_create_world(const BoinkCarModel* car_model)
   if (car_model == nullptr)
     return nullptr;
 
-  boink::CarModel model{};
+  boink::CarModel model{"abra kadabra"};
   model.front_left_wheel=b_v3_2_e_v(car_model->front_left_wheel);
   model.front_right_wheel=b_v3_2_e_v(car_model->front_right_wheel);
   model.rear_left_wheel=b_v3_2_e_v(car_model->rear_left_wheel);

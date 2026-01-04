@@ -120,6 +120,7 @@ namespace boink
   Rigidbody Simulation::createCarRigidbody(
       const std::vector<btVector3>& vertices, 
       const btTransform& trans,
+      const btVector3& scale,
       btScalar mass)
   {
 
@@ -135,6 +136,8 @@ namespace boink
     hull->initializePolyhedralFeatures();
 
     btTransform transform=trans;
+
+    hull->setLocalScaling(scale);
 
     //rigidbody is dynamic if and only if mass is non zero, otherwise static
     bool is_dynamic = (mass != 0.f);

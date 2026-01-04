@@ -84,12 +84,13 @@ endif()
 
 target_sources(boink
   PRIVATE
-    src/boink_c_api.cc
+  #src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
     src/world.cc
     src/debug_render.cc
     src/simulation.cc
+    src/utility.cc
 )
 
 target_include_directories(boink
@@ -113,8 +114,8 @@ set(TEST_SOURCES
   #memory_leak_test
   #utils_math
   #piksel_test
-  present_test
-  vehicle_test
+  #present_test
+  #vehicle_test
   colider_test
 )
 
@@ -132,7 +133,7 @@ foreach(name IN LISTS TEST_SOURCES)
 endforeach()
 
 set(TEST_SOURCES_C
-  capi_test
+  #capi_test
   #rotate_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <piksel/model.hh>
 
 #ifdef MEMORY_TEST
 #include <iostream>
@@ -94,7 +95,15 @@ namespace boink
         std::cout << "CarModel dtor           this=" << this << std::endl;
     }
 #endif
+    CarModel(double mass,std::string_view filepath)
+      :model(filepath,1.f),mass(mass)
+    {
+    }
 
+    static constexpr std::string_view BODY_NAME="Cylinder.002";
+
+    piksel::Model model;
+    double mass;
     // TODO
     // Make it vars const and create ctor
     Eigen::Vector3d rear_left_wheel{};

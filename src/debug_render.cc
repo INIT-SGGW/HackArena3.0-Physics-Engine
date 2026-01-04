@@ -27,7 +27,7 @@ namespace boink
     debug_mode_(btIDebugDraw::DebugDrawModes::DBG_DrawWireframe),
     prev_time_(glfwGetTime())
   {
-    gfx_.setBackground(piksel::Color::Blue);
+    gfx_.setBackground(piksel::Color::Black);
   }
 
   void DebugRender::drawLine(
@@ -83,6 +83,20 @@ namespace boink
     prev_mouse_pos.x=mouse_pos.x;
     cam_.rotatePitch((prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
     prev_mouse_pos.y=mouse_pos.y;
+
+    // Render axis
+    gfx_.drawLine(piksel::Line{
+        {0.f,0.f,0.f},
+        {10.f,0.f,0.f},
+        {1.f,0.f,0.f}});
+    gfx_.drawLine(piksel::Line{
+        {0.f,0.f,0.f},
+        {0.f,10.f,0.f},
+        {0.f,1.f,0.f}});
+    gfx_.drawLine(piksel::Line{
+        {0.f,0.f,0.f},
+        {0.f,0.f,10.f},
+        {0.f,0.f,1.f}});
 
     gfx_.render();
     wnd_.update();
