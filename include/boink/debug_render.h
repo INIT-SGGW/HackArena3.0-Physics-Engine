@@ -53,6 +53,7 @@ namespace boink
     void update(float dt);
     void setCameraSpeed(float speed);
     void addObject(std::shared_ptr<piksel::Object> obj);
+    void removeObject(std::shared_ptr<piksel::Object> obj);
     float getDeltaTime() const;
   private:
     piksel::Window wnd_;
@@ -61,7 +62,7 @@ namespace boink
 
     int debug_mode_;
 
-    float cam_speed_=15.f;
+    float cam_speed_=5.f;
     float mouse_speed_=0.3f;
 
     mutable float prev_time_;

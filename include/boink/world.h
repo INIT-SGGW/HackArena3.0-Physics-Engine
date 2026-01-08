@@ -1,9 +1,6 @@
 #pragma once
 
-#include <iterator>
 #include <type_traits>
-#include <vector>
-#include <algorithm>
 
 #if !defined(BOINK_API)
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -26,12 +23,9 @@
 #include "boink/components/rigidbody.h"
 
 #include "boink/car_manager.h"
-#include "boink/systems/car_spawn_system.h"
-#include "boink/systems/movement_system.h"
 #include "boink/simulation.h"
 #include "boink/debug_render.h"
 #include "boink/utils/tuple_unpack.h"
-#include "boink/utils/utility.h"
 
 namespace boink
 {
@@ -43,7 +37,7 @@ namespace boink
   {
   public:
     using CarComponents=std::tuple<CarInput,Rigidbody,Transform,Kinematics>;
-    using CarSystems=std::tuple<CarSpawnSystem,MovementSystem>;
+    using CarSystems=std::tuple<>;
   public:
     World(CarModel&& car_model);
 
@@ -67,6 +61,8 @@ namespace boink
      */
     void setDebuger(DebugRender* dbg);
 
+    CarManager<CarComponents,CarSystems>& getCarManager();
+
     template<typename... Ts_>
     Entity::ID addCar(Ts_&&... components)
     {
@@ -88,33 +84,11 @@ namespace boink
           "The Rigidbody componet cannot be const.");
 
       const CarModel& car_model=
-        std::get<0>(car_manager.getCarStaticComponents<CarModel>());
+        std::get<0>(car_manager_.getCarStaticComponents<CarModel>());
 
-      std::vector<piksel::Mesh::Vertex> vertices;
-      glm::mat4 transform;
-      for(const auto& mesh : car_model.model.getMeshes())
-      {
-        if(mesh.getName()==CarModel::BODY_NAME)
-        {
-          vertices=mesh.getVertices();
-          transform=mesh.getTransform();
-        }
-      }
-      
-      std::vector<btVector3> bt_vertices;
-      bt_vertices.reserve(vertices.size());
-      std::transform(
-          vertices.cbegin(),vertices.cend(),
-          std::back_inserter(bt_vertices),
-          [](const piksel::Mesh::Vertex& vertex)
-          {
-            return glm2bt(vertex.pos);
-          }
-      );
-      auto [bt_scale,bt_transform]=glm2bt(transform);
-      rb=simulation.createCarRigidbody(
-          bt_vertices,bt_transform,bt_scale,car_model.mass);
-      return car_manager.addCar(std::forward<Ts_>(components)...);
+      rb=simulation.createCarRigidbody(car_model);
+
+      return car_manager_.addCar(std::forward<Ts_>(components)...);
     }
 
     void addGround(const btVector3& dims, const btVector3& pos);
@@ -124,7 +98,7 @@ namespace boink
     // must be preserved because custom deleter of Rigidbody object
     // needs dynamic_world to exists.
     Simulation simulation;
-    CarManager<CarComponents,CarSystems> car_manager;
+    CarManager<CarComponents,CarSystems> car_manager_;
     double time_passed_=0.0;
   };
 }

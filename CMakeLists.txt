@@ -91,6 +91,7 @@ target_sources(boink
     src/debug_render.cc
     src/simulation.cc
     src/utility.cc
+    src/car_model.cc
 )
 
 target_include_directories(boink

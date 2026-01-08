@@ -15,8 +15,6 @@ namespace boink
     btScalar mass;
     btVector3 local_inertia;
 
-    //std::shared_ptr<btCollisionShape> collision_shape;
-    //std::shared_ptr<btDefaultMotionState> motion_state;
     std::shared_ptr<btRigidBody> rigidbody;
   };
 }

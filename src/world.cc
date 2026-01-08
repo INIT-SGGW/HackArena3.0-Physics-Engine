@@ -1,9 +1,10 @@
 #include "boink/world.h"
+#include "boink/components/car_model.h"
 
 namespace boink
 {
   World::World(CarModel&& car_model)
-    :car_manager(std::move(car_model))
+    :car_manager_(std::move(car_model))
   {}
 
   void World::setDebuger(DebugRender* dbg)
@@ -13,14 +14,19 @@ namespace boink
 
   void World::start(double dt)
   {
-    car_manager.SetupSystems(dt);
+    car_manager_.SetupSystems(dt);
     time_passed_+=dt;
   }
   void World::update(double dt)
   {
-    car_manager.UpdateSystems(dt);
+    car_manager_.UpdateSystems(dt);
     simulation.step(dt);
     time_passed_+=dt;
+  }
+
+  CarManager<World::CarComponents,World::CarSystems>& World::getCarManager()
+  {
+    return car_manager_;
   }
 
   void World::addGround(const btVector3& dims, const btVector3& pos)

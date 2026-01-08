@@ -84,20 +84,6 @@ namespace boink
     cam_.rotatePitch((prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
     prev_mouse_pos.y=mouse_pos.y;
 
-    // Render axis
-    gfx_.drawLine(piksel::Line{
-        {0.f,0.f,0.f},
-        {10.f,0.f,0.f},
-        {1.f,0.f,0.f}});
-    gfx_.drawLine(piksel::Line{
-        {0.f,0.f,0.f},
-        {0.f,10.f,0.f},
-        {0.f,1.f,0.f}});
-    gfx_.drawLine(piksel::Line{
-        {0.f,0.f,0.f},
-        {0.f,0.f,10.f},
-        {0.f,0.f,1.f}});
-
     gfx_.render();
     wnd_.update();
   }

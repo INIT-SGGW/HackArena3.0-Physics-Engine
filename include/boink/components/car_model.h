@@ -1,119 +1,54 @@
 #pragma once
 
-#include <Eigen/Core>
+#include <glm/geometric.hpp>
+#include <LinearMath/btVector3.h>
 #include <piksel/model.hh>
 
-#ifdef MEMORY_TEST
-#include <iostream>
-#endif
 namespace boink
 {
   /**
    * @brief Represents model of a car which is constant during simulation.
    */
-  struct CarModel
+  class CarModel
   {
-#ifdef MEMORY_TEST
-    CarModel()
-    {
-        std::cout << "CarModel default ctor   this=" << this << std::endl;
-    }
+  public:
+    CarModel(
+        double mass,
+        double radius,
+        double steer_angle_deg,
+        std::string_view filepath);
 
-    CarModel(const CarModel& other)
-        : rear_left_wheel(other.rear_left_wheel),
-          rear_right_wheel(other.rear_right_wheel),
-          front_left_wheel(other.front_left_wheel),
-          front_right_wheel(other.front_right_wheel),
-          max_steer_angle_deg(other.max_steer_angle_deg),
-          front(other.front),
-          direction(other.direction),
-          normal(other.normal)
-    {
-        std::cout << "CarModel copy ctor      this=" << this
-                  << "  from=" << &other << std::endl;
-    }
+    const btVector3& getRearLeftWheel() const {return rear_left_wheel_;}
+    const btVector3& getRearRightWheel() const {return rear_right_wheel_;}
+    const btVector3& getFrontLeftWheel() const {return front_left_wheel_;}
+    const btVector3& getFrontRightWheel() const {return front_right_wheel_;}
 
-    CarModel(CarModel&& other) noexcept
-        : rear_left_wheel(std::move(other.rear_left_wheel)),
-          rear_right_wheel(std::move(other.rear_right_wheel)),
-          front_left_wheel(std::move(other.front_left_wheel)),
-          front_right_wheel(std::move(other.front_right_wheel)),
-          max_steer_angle_deg(other.max_steer_angle_deg),
-          front(std::move(other.front)),
-          direction(std::move(other.direction)),
-          normal(std::move(other.normal))
-    {
-        std::cout << "CarModel move ctor      this=" << this
-                  << "  from=" << &other << std::endl;
-    }
+    double getMaxSteerAngleDegrees() const {return max_steer_angle_deg_;}
+    double getWheelRadius() const {return radius_;}
 
-    CarModel& operator=(const CarModel& other)
-    {
-        if (this != &other)
-        {
-            std::cout << "CarModel copy assign    this=" << this
-                      << "  from=" << &other << std::endl;
+    double getMass() const {return mass_;}
 
-            rear_left_wheel   = other.rear_left_wheel;
-            rear_right_wheel  = other.rear_right_wheel;
-            front_left_wheel  = other.front_left_wheel;
-            front_right_wheel = other.front_right_wheel;
-            max_steer_angle_deg = other.max_steer_angle_deg;
-
-            front = other.front;
-            direction = other.direction;
-            normal = other.normal;
-        }
-
-        return *this;
-    }
-
-    CarModel& operator=(CarModel&& other) noexcept
-    {
-        if (this != &other)
-        {
-            std::cout << "CarModel move assign    this=" << this
-                      << "  from=" << &other << std::endl;
-
-            rear_left_wheel   = std::move(other.rear_left_wheel);
-            rear_right_wheel  = std::move(other.rear_right_wheel);
-            front_left_wheel  = std::move(other.front_left_wheel);
-            front_right_wheel = std::move(other.front_right_wheel);
-
-            max_steer_angle_deg = other.max_steer_angle_deg;
-
-            front = std::move(other.front);
-            direction = std::move(other.direction);
-            normal = std::move(other.normal);
-        }
-
-        return *this;
-    }
-
-    ~CarModel()
-    {
-        std::cout << "CarModel dtor           this=" << this << std::endl;
-    }
-#endif
-    CarModel(double mass,std::string_view filepath)
-      :model(filepath,1.f),mass(mass)
-    {
-    }
-
+    const piksel::Model& getModel() const {return model_;}
+  public:
     static constexpr std::string_view BODY_NAME="Cylinder.002";
+    static constexpr std::string_view REAR_LEFT_WHEEL_NAME="Cylinder.005";
+    static constexpr std::string_view REAR_RIGHT_WHEEL_NAME="Cylinder.004";
+    static constexpr std::string_view FRONT_LEFT_WHEEL_NAME="Cylinder.003";
+    static constexpr std::string_view FRONT_RIGHT_WHEEL_NAME="Cylinder.007";
 
-    piksel::Model model;
-    double mass;
-    // TODO
-    // Make it vars const and create ctor
-    Eigen::Vector3d rear_left_wheel{};
-    Eigen::Vector3d rear_right_wheel{};
-    Eigen::Vector3d front_left_wheel{};
-    Eigen::Vector3d front_right_wheel{};
-    double max_steer_angle_deg{};
+  private:
+    piksel::Model model_;
+    double mass_;
 
-    Eigen::Vector3d front{};
-    Eigen::Vector3d direction{}; // Normalized vector
-    Eigen::Vector3d normal{}; // Normalized. Points to the top of a car 
+    btVector3 rear_left_wheel_{};
+    btVector3 rear_right_wheel_{};
+    btVector3 front_left_wheel_{};
+    btVector3 front_right_wheel_{};
+    double max_steer_angle_deg_{};
+    double radius_;
+
+    btVector3 front_{};
+    btVector3 direction_{}; // Normalized vector
+    btVector3 normal_{}; // Normalized. Points to the top of a car 
   };
 }

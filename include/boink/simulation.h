@@ -10,10 +10,12 @@
 
 #include "LinearMath/btIDebugDraw.h"
 
-#include "boink/components/rigidbody.h"
+#include "boink/components/car_model.h"
 
+#include <BulletDynamics/Dynamics/btRigidBody.h>
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include <BulletDynamics/Vehicle/btVehicleRaycaster.h>
 #include <memory>
-#include <vector>
 
 namespace boink
 {
@@ -25,13 +27,13 @@ namespace boink
 
     void addGround(const btVector3& dims, const btVector3& pos);
     void addSphere(btScalar radius, const btVector3& pos);
-    Rigidbody createCarRigidbody(
-        const std::vector<btVector3>& vertices, 
-        const btTransform& trans,
-        const btVector3& scale,
-        btScalar mass);
+
+    void addCar(const CarModel& car_model);
+
     void step(double dt);
     void registerDebugDrawer(btIDebugDraw* dbg);
+  private:
+    btRigidBody* createCarRigidbody(const CarModel& car_model);
   public:
     static constexpr double GRAVITATIONAL_ACCELERATION=10.;
   private:
@@ -41,6 +43,13 @@ namespace boink
     std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
 
     std::unique_ptr<btDiscreteDynamicsWorld> dynamics_world;
-    btAlignedObjectArray<std::shared_ptr<btCollisionShape>> collision_shapes;
+
+    btAlignedObjectArray<std::shared_ptr<btRigidBody>> rigidbodies_;
+
+    btAlignedObjectArray<
+      std::pair<
+      std::shared_ptr<btRaycastVehicle>,
+      std::shared_ptr<btVehicleRaycaster>>>
+        vehicles_;
   };
 }
