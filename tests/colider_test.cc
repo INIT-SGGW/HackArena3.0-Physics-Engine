@@ -22,9 +22,8 @@ int main()
 
   boink::CarModel car_model(800.,0.36,30.,car_model_path);
 
-  Simulation sim;
+  Simulation sim("Bolid_Tor_test.glb");
   btVector3 dims(100.f,100.f,100.f);
-  sim.addGround(dims,{0.f,0.f,0.f});
   //sim.addSphere(5.f,{50.f,150.f,0.f});
 
   sim.addCar(car_model);

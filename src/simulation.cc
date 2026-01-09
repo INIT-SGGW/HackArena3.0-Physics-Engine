@@ -8,43 +8,34 @@
 #include "BulletCollision/CollisionShapes/btConvexHullShape.h"
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 
+#include "boink/simulation/track.h"
 #include "boink/utils/utility.h"
 
 #include <memory>
 #include <algorithm>
+#include <piksel/model.hh>
+#include <vector>
 
 namespace boink
 {
-  Simulation::Simulation()
-    :collision_configuration(new btDefaultCollisionConfiguration()),
-    dispatcher(new btCollisionDispatcher(collision_configuration.get())),
-    overlapping_pair_cache(new btDbvtBroadphase()),
-    solver(new btSequentialImpulseConstraintSolver()),
-    dynamics_world(new btDiscreteDynamicsWorld(
-          dispatcher.get(),overlapping_pair_cache.get(),
-          solver.get(),collision_configuration.get()))
+  Simulation::Simulation(
+      std::string_view track_filepath)
+    :collision_configuration_(new btDefaultCollisionConfiguration()),
+    dispatcher_(new btCollisionDispatcher(collision_configuration_.get())),
+    overlapping_pair_cache_(new btDbvtBroadphase()),
+    solver_(new btSequentialImpulseConstraintSolver()),
+    dynamics_world_(new btDiscreteDynamicsWorld(
+          dispatcher_.get(),overlapping_pair_cache_.get(),
+          solver_.get(),collision_configuration_.get())),
+    track_(track_filepath,dynamics_world_)
   {
-    dynamics_world->setGravity(btVector3(0, -GRAVITATIONAL_ACCELERATION, 0));
-  } 
+    dynamics_world_->setGravity(btVector3(0, -GRAVITATIONAL_ACCELERATION, 0));
 
-  Simulation::~Simulation() noexcept
-  {
-    for (int i=0;i<rigidbodies_.size();i++)
-    {
-      btRigidBody* body = rigidbodies_[i].get();
-      if (body && body->getMotionState())
-      {
-        delete body->getMotionState();
-      }
-      //dynamics_world->removeCollisionObject(body);
-      dynamics_world->removeRigidBody(body);
-      delete body->getCollisionShape();
-    }
-  }
+  } 
 
   void Simulation::registerDebugDrawer(btIDebugDraw* dbg)
   {
-    dynamics_world->setDebugDrawer(dbg);
+    dynamics_world_->setDebugDrawer(dbg);
     dbg->setDebugMode(
         btIDebugDraw::DBG_DrawWireframe |
         btIDebugDraw::DBG_DrawConstraints |
@@ -54,10 +45,9 @@ namespace boink
 
   void Simulation::step(double dt)
   {
-    dynamics_world->stepSimulation(dt, 5);
-    dynamics_world->debugDrawWorld();
+    dynamics_world_->stepSimulation(dt, 5);
+    dynamics_world_->debugDrawWorld();
   }
-
 
   void Simulation::addGround(
       const btVector3& dimensions,
@@ -89,7 +79,7 @@ namespace boink
     std::shared_ptr<btRigidBody> body (new btRigidBody(rb_info));
 
 		//add the body to the dynamics world
-		dynamics_world->addRigidBody(body.get());
+		dynamics_world_->addRigidBody(body.get());
 
 		rigidbodies_.push_back(body);
   }
@@ -122,7 +112,7 @@ namespace boink
     btRigidBody* body = new btRigidBody(rb_info);
 
     //add the body to the dynamics world
-    dynamics_world->addRigidBody(body);
+    dynamics_world_->addRigidBody(body);
 
     //collision_shapes.push_back(col_shape);
   }
@@ -132,12 +122,12 @@ namespace boink
     auto rigibody=createCarRigidbody(car_model);
     
     std::shared_ptr<btVehicleRaycaster> raycaster(
-        new btDefaultVehicleRaycaster(dynamics_world.get()));
+        new btDefaultVehicleRaycaster(dynamics_world_.get()));
 
     btRaycastVehicle::btVehicleTuning tuning;
     std::shared_ptr<btRaycastVehicle> vehicle(
         new btRaycastVehicle(tuning, rigibody, raycaster.get()),
-        [world=dynamics_world.get()](btRaycastVehicle* ptr)
+        [world=dynamics_world_.get()](btRaycastVehicle* ptr)
         {
           world->removeVehicle(ptr);
 
@@ -161,7 +151,7 @@ namespace boink
         2  // forward (Z)
     );
 
-    dynamics_world->addVehicle(vehicle.get());
+    dynamics_world_->addVehicle(vehicle.get());
     vehicles_.push_back({vehicle,raycaster});
 
     btVector3 wheelDirectionCS0(0, -1, 0);
@@ -284,7 +274,7 @@ namespace boink
     btRigidBody* body =new btRigidBody(rb_info);
 
     //add the body to the dynamics world
-    dynamics_world->addRigidBody(body);
+    dynamics_world_->addRigidBody(body);
 
     return body;
   }

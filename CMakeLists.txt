@@ -92,6 +92,7 @@ target_sources(boink
     src/simulation.cc
     src/utility.cc
     src/car_model.cc
+    src/track.cc
 )
 
 target_include_directories(boink

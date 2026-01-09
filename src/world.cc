@@ -1,10 +1,11 @@
 #include "boink/world.h"
 #include "boink/components/car_model.h"
+#include "boink/simulation.h"
 
 namespace boink
 {
   World::World(CarModel&& car_model)
-    :car_manager_(std::move(car_model))
+    :simulation(""),car_manager_(std::move(car_model))
   {}
 
   void World::setDebuger(DebugRender* dbg)
