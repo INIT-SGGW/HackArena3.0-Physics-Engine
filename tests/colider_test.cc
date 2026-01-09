@@ -26,7 +26,7 @@ int main()
   btVector3 dims(100.f,100.f,100.f);
   //sim.addSphere(5.f,{50.f,150.f,0.f});
 
-  sim.addCar(car_model);
+  sim.addCar(car_model_path,800.);
 
   sim.registerDebugDrawer(&dbg);
   

@@ -12,9 +12,11 @@
 
 #include "boink/components/car_model.h"
 #include "boink/simulation/track.h"
+#include "boink/simulation/vehicle.h"
 
 #include <memory>
 #include <string_view>
+#include <vector>
 
 namespace boink
 {
@@ -30,9 +32,7 @@ namespace boink
 
     ~Simulation() noexcept=default;
 
-    void addCar(const CarModel& car_model);
-
-    void addGround(const btVector3& dims, const btVector3& pos);
+    void addCar(std::string_view filename, float mass);
     void addSphere(btScalar radius, const btVector3& pos);
 
     void step(double dt);
@@ -49,14 +49,7 @@ namespace boink
 
     std::shared_ptr<btDiscreteDynamicsWorld> dynamics_world_;
 
-    btAlignedObjectArray<std::shared_ptr<btRigidBody>> rigidbodies_;
-
-    btAlignedObjectArray<
-      std::pair<
-      std::shared_ptr<btRaycastVehicle>,
-      std::shared_ptr<btVehicleRaycaster>>>
-        vehicles_;
-
     Track track_;
+    std::vector<Vehicle> vehicles_;
   };
 }

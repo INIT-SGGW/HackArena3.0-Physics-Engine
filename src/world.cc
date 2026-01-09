@@ -30,10 +30,6 @@ namespace boink
     return car_manager_;
   }
 
-  void World::addGround(const btVector3& dims, const btVector3& pos)
-  {
-    simulation.addGround(dims,pos);
-  }
   void World::addSphere(btScalar radius, const btVector3& pos)
   {
     simulation.addSphere(radius,pos);

@@ -93,6 +93,7 @@ target_sources(boink
     src/utility.cc
     src/car_model.cc
     src/track.cc
+    src/vehicle.cc
 )
 
 target_include_directories(boink

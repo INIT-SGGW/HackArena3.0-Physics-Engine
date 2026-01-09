@@ -16,6 +16,7 @@ namespace boink
       mesh_(new btTriangleMesh()),
       world_(world)
   {
+    // This is not optimal but it is run once on the start.
     piksel::Model model(filename,1.f);
     std::vector<btVector3> vertices;
     std::vector<unsigned int> indices;
