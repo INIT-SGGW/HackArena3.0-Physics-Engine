@@ -29,8 +29,10 @@ namespace boink
     {
       if(mesh.getName()==BODY_NAME)
       {
+        btTransform start_transform(glm2bt(mesh.getTransform()).second);
         motion_state_=std::unique_ptr<btDefaultMotionState>(
-            new btDefaultMotionState(glm2bt(mesh.getTransform()).second));
+            new btDefaultMotionState(start_transform));
+
         mesh_vertices=mesh.getVertices();
         mesh_transform=mesh.getTransform();
       }
@@ -42,7 +44,7 @@ namespace boink
 
       avg_vec/=vertices.size();
 
-      glm::vec3 vec=avg_vec+glm::vec3(mesh.translate[3])-model_pos;
+      glm::vec3 vec=avg_vec+glm::vec3(mesh.translate[3])+model_pos;
       if(mesh.getName()==REAR_LEFT_WHEEL_NAME)
         rear_left_wheel=btVector3(vec.x,vec.y,vec.z);
       else if(mesh.getName()==REAR_RIGHT_WHEEL_NAME)

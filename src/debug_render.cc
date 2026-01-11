@@ -120,4 +120,20 @@ namespace boink
 
     return dt;
   }
+
+  void DebugRender::drawFrameOrigin()
+  {
+    drawLine(
+        {0.f,0.f,0.f},
+        {10.f,0.f,0.f},
+        {1.f,0.f,0.f});
+    drawLine(
+        {0.f,0.f,0.f},
+        {0.f,10.f,0.f},
+        {0.f,1.f,0.f});
+    drawLine(
+        {0.f,0.f,0.f},
+        {0.f,0.f,10.f},
+        {0.f,0.f,1.f});
+  }
 }

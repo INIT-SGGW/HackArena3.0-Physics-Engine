@@ -59,6 +59,8 @@ namespace boink
     void addObject(std::shared_ptr<piksel::Object> obj);
     void removeObject(std::shared_ptr<piksel::Object> obj);
     float getDeltaTime() const;
+
+    void drawFrameOrigin();
   private:
     piksel::Window wnd_;
     piksel::Camera cam_;
