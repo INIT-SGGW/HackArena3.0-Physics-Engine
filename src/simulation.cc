@@ -38,15 +38,33 @@ namespace boink
     );
   }
 
-  void Simulation::step(double dt)
+  void Simulation::step(double dt )
   {
     dynamics_world_->stepSimulation(dt, 5);
     dynamics_world_->debugDrawWorld();
   }
 
-  void Simulation::addCar(std::string_view filename, float mass)
+  Simulation::ObjectID Simulation::addCar(std::string_view filename, float mass)
   {
     vehicles_.emplace_back(filename,mass,dynamics_world_);
+    return vehicles_.size()-1;
+  }
+
+  void Simulation::removeCar(ObjectID id)
+  {
+    assert(id<vehicles_.size());
+    vehicles_.erase(vehicles_.cbegin()+id);
+  }
+
+  Vehicle& Simulation::getCar(Simulation::ObjectID id)
+  {
+    assert(id<vehicles_.size());
+    return vehicles_[id];
+  }
+
+  Track& Simulation::getTrack()
+  {
+    return track_;
   }
 
   void Simulation::addSphere(btScalar radius, const btVector3& origin)

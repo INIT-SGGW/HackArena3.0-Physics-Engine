@@ -48,6 +48,10 @@ namespace boink
 
     /////// Mine /////
 
+    void drawPoint(
+        const btVector3& point, 
+        const btVector3& color);
+
     explicit operator bool() const;
 
     void update(float dt);

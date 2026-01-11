@@ -23,6 +23,8 @@ namespace boink
   class Simulation
   {
   public:
+    typedef unsigned int ObjectID;
+  public:
     Simulation(std::string_view track_filepath);
     Simulation(const Simulation&)=delete;
     Simulation(Simulation&&)=default;
@@ -32,7 +34,13 @@ namespace boink
 
     ~Simulation() noexcept=default;
 
-    void addCar(std::string_view filename, float mass);
+    ObjectID addCar(std::string_view filename, float mass);
+    void removeCar(ObjectID id);
+    Vehicle& getCar(ObjectID id);
+    size_t getCarNumber() const { return vehicles_.size();}
+
+    Track& getTrack();
+
     void addSphere(btScalar radius, const btVector3& pos);
 
     void step(double dt);

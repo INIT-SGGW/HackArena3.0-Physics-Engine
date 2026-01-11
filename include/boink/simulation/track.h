@@ -25,6 +25,9 @@ namespace boink
     Track& operator=(Track&&)=default;
 
     ~Track() noexcept;
+
+    const btVector3& getPosition() const;
+    void setPosition(const btVector3& position);
   private:
     std::unique_ptr<btTriangleMesh> mesh_;
     std::unique_ptr<btBvhTriangleMeshShape> collision_shape_;

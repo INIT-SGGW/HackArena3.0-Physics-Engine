@@ -27,13 +27,22 @@ namespace boink
     Vehicle& operator=(Vehicle&&)=default;
 
     ~Vehicle() noexcept;
+
+    btVector3 getPosition() const;
+    void setPosition(const btVector3& position);
+
+    btTransform getWorldTransform() const;
+
+    const btVector3& getCenterOfMass() const;
+    const btVector3& getChassisPosition() const;
+    const btVector3& getLeftRearWheelPosition() const{return left_rear_wheel_;}
   private:
     std::unique_ptr<btCollisionShape> createCollisonShape(
         const btVector3& scale,
         const std::vector<btVector3>& vertices);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
-  private:
+  public:
     static constexpr std::string_view BODY_NAME="Cylinder.002";
     static constexpr std::string_view REAR_LEFT_WHEEL_NAME="Cylinder.005";
     static constexpr std::string_view REAR_RIGHT_WHEEL_NAME="Cylinder.004";
@@ -49,5 +58,8 @@ namespace boink
     std::unique_ptr<btRaycastVehicle> vehicle_;
 
     btRaycastVehicle::btVehicleTuning tuning_;
+    // TODO
+    // Delete
+    btVector3 left_rear_wheel_;
   };
 }

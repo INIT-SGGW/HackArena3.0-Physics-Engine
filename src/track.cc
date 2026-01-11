@@ -75,4 +75,15 @@ namespace boink
     if(world_)
       world_->removeRigidBody(rigidbody_.get());
   }
+
+  const btVector3& Track::getPosition() const
+  {
+     return rigidbody_->getWorldTransform().getOrigin();
+  }
+
+  void Track::setPosition(const btVector3& position)
+  {
+    rigidbody_->getWorldTransform().setOrigin(position);
+  }
+
 }

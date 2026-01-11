@@ -2,10 +2,11 @@
 
 #include <LinearMath/btQuaternion.h>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/quaternion_geometric.hpp>
+#include <glm/ext/vector_float3.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-
 
 namespace boink
 {
@@ -74,5 +75,24 @@ namespace boink
         glm_vec.x,
         glm_vec.y,
         glm_vec.z);
+  }
+
+  std::tuple<glm::mat4,glm::mat4,glm::mat4> 
+  decomposeMatrix(const glm::mat4& transform)
+  {
+    glm::mat4 translate=
+      glm::translate(glm::mat4(1.f),glm::vec3(transform[3]));
+    
+    glm::mat4 scale(1.f);
+    scale[0][0]=glm::length(transform[0]);
+    scale[1][1]=glm::length(transform[1]);
+    scale[2][2]=glm::length(transform[2]);
+
+    glm::mat4 rotation(1.f);
+    rotation[0]=transform[0]/scale[0][0];
+    rotation[1]=transform[1]/scale[1][1];
+    rotation[2]=transform[2]/scale[2][2];
+
+    return {translate,rotation,scale};
   }
 }

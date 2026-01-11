@@ -52,6 +52,20 @@ namespace boink
     );
   }
 
+  void DebugRender::drawPoint(
+      const btVector3& point, 
+      const btVector3& color)
+  {
+    drawLine(
+        point,
+        point+btVector3{5.f,0.f,0.f},
+        color);
+    drawLine(
+        point,
+        point+btVector3{0.f,5.f,0.f},
+        color);
+  }
+
   DebugRender::operator bool() const
   {
     return (bool)wnd_;

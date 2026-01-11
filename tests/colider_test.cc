@@ -7,7 +7,10 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <Eigen/Core>
+#include <glm/matrix.hpp>
 #include <memory>
+
+#include <boink/utils/utility.h>
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -20,13 +23,10 @@ int main()
   std::string_view car_model_path="Bolid_F1.glb";
   DebugRender dbg;
 
-  boink::CarModel car_model(800.,0.36,30.,car_model_path);
-
   Simulation sim("Bolid_Tor_test.glb");
-  btVector3 dims(100.f,100.f,100.f);
   //sim.addSphere(5.f,{50.f,150.f,0.f});
 
-  sim.addCar(car_model_path,800.);
+  Simulation::ObjectID car_id=sim.addCar(car_model_path,800.);
 
   sim.registerDebugDrawer(&dbg);
   
@@ -36,7 +36,7 @@ int main()
   //const Mesh& mesh=car->getMeshes()[0];
   //std::shared_ptr<Mesh> chuj(const_cast<Mesh*>(&mesh),[](const Mesh*){});
   //dbg.addObject(chuj);
-  //dbg.addObject(car);
+  dbg.addObject(car);
 
   //glm::mat4 mesh_transform=mesh.getTransform();
   //glm::mat4 transform=car->getTransform()*mesh_transform;
@@ -49,18 +49,31 @@ int main()
 
   //glLineWidth(1.f);
 
-  btVector3 pos={
-    (float)car_model.getRearRightWheel().x(),
-    (float)car_model.getRearRightWheel().y(),
-    (float)car_model.getRearRightWheel().z()};
-
+  btVector3 pos=btVector3(0.f,0.f,0.f);
   //btVector3 edge(0.f,car_model.radius,0.f);
   btVector3 edge(0.f,0.f,0.f);
   
+  Vehicle& vehicle=sim.getCar(car_id);
+  auto it=std::find_if(car->getMeshes().cbegin(),car->getMeshes().cend(),
+      [](const Mesh& mesh)
+      {
+        return mesh.getName()==Vehicle::BODY_NAME;
+      }
+  );
+  auto body_translate=it->translate;
+
+  Track& track=sim.getTrack();
+  track.setPosition({5.f,0.f,0.f});
   dbg.getDeltaTime();
   while(dbg)
   {
     float dt=dbg.getDeltaTime();
+    auto [translate,rotation,scale]=decomposeMatrix(
+        bt2glm(vehicle.getWorldTransform()));
+
+    car->translate=translate;
+    car->rotate=rotation;
+    car->scale=scale;
 
     //// Render axis
     dbg.drawLine(

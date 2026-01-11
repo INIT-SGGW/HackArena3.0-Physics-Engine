@@ -20,4 +20,7 @@ namespace boink
   std::pair<btVector3,btTransform> glm2bt(const glm::mat4& glm_mat);
   btMatrix3x3 glm2bt(const glm::mat3& glm_mat);
   btVector3 glm2bt(const glm::vec3& glm_vec);
+
+  std::tuple<glm::mat4,glm::mat4,glm::mat4> 
+  decomposeMatrix(const glm::mat4& transform);
 }
