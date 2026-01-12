@@ -34,7 +34,8 @@ namespace boink
     dbg->setDebugMode(
         btIDebugDraw::DBG_DrawWireframe |
         btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawContactPoints
+        btIDebugDraw::DBG_DrawContactPoints |
+        btIDebugDraw::DBG_DrawAabb
     );
   }
 
@@ -44,9 +45,9 @@ namespace boink
     dynamics_world_->debugDrawWorld();
   }
 
-  Simulation::ObjectID Simulation::addCar(std::string_view filename, float mass)
+  Simulation::ObjectID Simulation::addCar(const Vehicle::CreationInfo& info)
   {
-    vehicles_.emplace_back(filename,mass,dynamics_world_);
+    vehicles_.emplace_back(info,dynamics_world_);
     return vehicles_.size()-1;
   }
 

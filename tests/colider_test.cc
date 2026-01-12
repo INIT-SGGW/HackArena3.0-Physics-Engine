@@ -3,8 +3,9 @@
 #include "boink/simulation.h"
 
 #include "piksel/color.hh"
-#include "piksel/model.hh"
+#include "piksel/vehicle_model.hh"
 
+#include <LinearMath/btTransform.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <Eigen/Core>
@@ -12,58 +13,63 @@
 #include <memory>
 
 #include <boink/utils/utility.h>
-#include "boink/simulation/vehicle_model.h"
+#include "boink/simulation/vehicle_mesh.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 
 using namespace boink;
 using namespace piksel;
-using namespace Eigen;
 
 std::vector<Mesh::Vertex> boink2piksel(const std::vector<btVector3> vertices);
+std::shared_ptr<VehicleModel> createVehicleModel(const VehicleMesh& vehicle_mesh);
 int main()
 {
   std::string_view car_model_path="Bolid_F1.glb";
 
   DebugRender dbg;
-  //Simulation sim("Bolid_Tor_test.glb");
-  //Simulation::ObjectID car_id=sim.addCar(car_model_path,800.);
+  Simulation sim("Bolid_Tor_test.glb");
 
-  //sim.registerDebugDrawer(&dbg);
+  sim.registerDebugDrawer(&dbg);
   
   ////////////// Car //////////////
-  VehicleModel vehicle_model(car_model_path);
-  Mesh chassis_mesh(
-      "chassis",
-      boink2piksel(vehicle_model.getChassis().vertices),
-      vehicle_model.getChassis().indices);
+  VehicleMesh vehicle_mesh(car_model_path);
+  Simulation::ObjectID car_id=sim.addCar({
+      .mesh=std::shared_ptr<VehicleMesh>(&vehicle_mesh,[](const VehicleMesh*){}),
+      .mass=800.,
+      .wheel_radius=0.36f,
+      .suspension_rest_length=0.42f});
 
-  auto car = std::make_shared<Model>(1.f);
-  car->addMesh(std::move(chassis_mesh));
-  car->color=Color::White;
-  car->translate=bt2glm(vehicle_model.getChassis().transform);
-  car->scale=glm::mat4(1.f);
-  car->rotate=glm::mat4(1.f);
+  auto vehicle_model=createVehicleModel(vehicle_mesh);
+  dbg.addObject(vehicle_model);
 
-  dbg.addObject(car);
+  Vehicle& vehicle=sim.getCar(car_id);
+  vehicle.setPosition({0.f,13.f,0.f});
 
-  auto car2=std::make_shared<Model>(car_model_path,1.f);
-  car2->color=Color::Green;
-  dbg.addObject(car2);
-
-  //Vehicle& vehicle=sim.getCar(car_id);
-
-  //Track& track=sim.getTrack();
-  //track.setPosition({5.f,0.f,0.f});
+  Track& track=sim.getTrack();
+  track.setPosition({5.f,0.f,0.f});
 
   dbg.getDeltaTime();
   while(dbg)
   {
     float dt=dbg.getDeltaTime();
 
+    vehicle_model->setTransform(bt2glm(vehicle.getWorldTransform()));
+    vehicle_model->setWheelWorldTransform(
+        VehicleModel::WheelPosition::RearLeft,
+        bt2glm(vehicle.getWheelWorldTransform(WheelPosition::RearLeft)));
+    vehicle_model->setWheelWorldTransform(
+        VehicleModel::WheelPosition::RearRight,
+        bt2glm(vehicle.getWheelWorldTransform(WheelPosition::RearRight)));
+    vehicle_model->setWheelWorldTransform(
+        VehicleModel::WheelPosition::FrontLeft,
+        bt2glm(vehicle.getWheelWorldTransform(WheelPosition::FrontLeft)));
+    vehicle_model->setWheelWorldTransform(
+        VehicleModel::WheelPosition::FrontRight,
+        bt2glm(vehicle.getWheelWorldTransform(WheelPosition::FrontRight)));
+
     dbg.drawFrameOrigin();
-    //sim.step(dt);
+    sim.step(dt);
     dbg.update(dt);
   }
   return 0;
@@ -84,3 +90,36 @@ std::vector<Mesh::Vertex> boink2piksel(const std::vector<btVector3> vertices)
   return pik_vertices;
 }
 
+std::shared_ptr<VehicleModel> createVehicleModel(const VehicleMesh& vehicle_mesh)
+{
+  Mesh chassis_mesh(
+      "",
+      boink2piksel(vehicle_mesh.getChassis().vertices),
+      vehicle_mesh.getChassis().indices);
+  Mesh wheel_rear_left_mesh(
+      "",
+      boink2piksel(vehicle_mesh.getWheel(WheelPosition::RearLeft).vertices),
+      vehicle_mesh.getWheel(WheelPosition::RearLeft).indices);
+  Mesh wheel_rear_right_mesh(
+      "",
+      boink2piksel(vehicle_mesh.getWheel(WheelPosition::RearRight).vertices),
+      vehicle_mesh.getWheel(WheelPosition::RearRight).indices);
+  Mesh wheel_front_left_mesh(
+      "",
+      boink2piksel(vehicle_mesh.getWheel(WheelPosition::FrontLeft).vertices),
+      vehicle_mesh.getWheel(WheelPosition::FrontLeft).indices);
+  Mesh wheel_front_right_mesh(
+      "",
+      boink2piksel(vehicle_mesh.getWheel(WheelPosition::FrontRight).vertices),
+      vehicle_mesh.getWheel(WheelPosition::FrontRight).indices);
+
+  auto vehicle=std::make_shared<VehicleModel>(
+    std::move(wheel_rear_left_mesh),
+    std::move(wheel_rear_right_mesh),
+    std::move(wheel_front_left_mesh),
+    std::move(wheel_front_right_mesh),
+    std::move(chassis_mesh));
+  vehicle->color=Color{{1.f,0.f,1.f,1.f}};
+
+  return vehicle;
+}

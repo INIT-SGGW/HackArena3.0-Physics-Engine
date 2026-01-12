@@ -9,7 +9,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/boink/version.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/generated/boink/version.h
@@ -95,7 +94,7 @@ target_sources(boink
     src/car_model.cc
     src/track.cc
     src/vehicle.cc
-    src/vehicle_model.cc
+    src/vehicle_mesh.cc
 )
 
 target_include_directories(boink

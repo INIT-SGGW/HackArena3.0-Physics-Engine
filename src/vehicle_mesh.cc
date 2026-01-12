@@ -1,4 +1,4 @@
-#include "boink/simulation/vehicle_model.h"
+#include "boink/simulation/vehicle_mesh.h"
 
 #include <LinearMath/btMatrix3x3.h>
 #include <LinearMath/btQuaternion.h>
@@ -8,7 +8,7 @@
 
 namespace boink
 {
-  VehicleModel::VehicleModel(std::string_view filename)
+  VehicleMesh::VehicleMesh(std::string_view filename)
   {
     tinygltf::Model model=loadModel(filename);
 
@@ -23,17 +23,22 @@ namespace boink
     }
   }
 
-  const VehicleModel::Element& VehicleModel::getChassis() const
+  const VehicleMesh::Element& VehicleMesh::getChassis() const
   {
     return chassis_;
   }
 
-  const VehicleModel::Element& VehicleModel::getWheel(Wheel wheel) const
+  const VehicleMesh::Element& VehicleMesh::getWheel(WheelPosition wheel) const
   {
     return wheels_.at(wheel);
   }
 
-  void VehicleModel::bindNode(
+  btTransform VehicleMesh::getLocalWheelTransform(WheelPosition wheel) const
+  {
+    return chassis_.transform.inverse()*wheels_.at(wheel).transform;
+  }
+
+  void VehicleMesh::bindNode(
       const tinygltf::Model& model,
       const tinygltf::Node& node, 
       btTransform transform)
@@ -71,7 +76,7 @@ namespace boink
       bindNode(model,model.nodes[index],transform);
   }
 
-  tinygltf::Model VehicleModel::loadModel(std::string_view filename)
+  tinygltf::Model VehicleMesh::loadModel(std::string_view filename)
   {
     tinygltf::TinyGLTF loader;
     tinygltf::Model model;
@@ -96,7 +101,7 @@ namespace boink
     return model;
   }
 
-  bool VehicleModel::isNamePresent(std::string_view name)
+  bool VehicleMesh::isNamePresent(std::string_view name)
   {
     if(s_wheel_names_.find(name)!=s_wheel_names_.end())
       return true;
@@ -104,7 +109,7 @@ namespace boink
     return name==CHASSIS_NAME;
   }
 
-  btTransform VehicleModel::getNodeTransform(
+  btTransform VehicleMesh::getNodeTransform(
       const tinygltf::Node& node)
   {
     assert(node.matrix.size()==0);
@@ -133,7 +138,7 @@ namespace boink
     return transform;
   }
 
-  btVector3 VehicleModel::getNodeScale(const tinygltf::Node& node)
+  btVector3 VehicleMesh::getNodeScale(const tinygltf::Node& node)
   {
     if(node.scale.size()==3)
       return btVector3(node.scale[0],node.scale[1],node.scale[2]);
@@ -141,7 +146,7 @@ namespace boink
       return btVector3(1.f,1.f,1.f);
   }
 
-  void VehicleModel::loadVertices(
+  void VehicleMesh::loadVertices(
       const tinygltf::Accessor accessor,
       const tinygltf::Model& model,
       Element& element,
@@ -175,7 +180,7 @@ namespace boink
     }
   }
 
-  void VehicleModel::loadIndices(
+  void VehicleMesh::loadIndices(
       const tinygltf::Accessor accessor,
       const tinygltf::Model& model,
       Element& element,

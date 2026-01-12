@@ -1,74 +1,28 @@
 #include "boink/simulation/vehicle.h"
+
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <LinearMath/btDefaultMotionState.h>
-#include <piksel/model.hh>
-#include "boink/utils/utility.h"
+
+#include <memory>
 
 namespace boink
 {
   Vehicle::Vehicle(
-      std::string_view filename, 
-      btScalar mass,
+      const CreationInfo& create_info,
       std::shared_ptr<btDynamicsWorld> world)
-    :world_(world),
-    raycaster_(new btDefaultVehicleRaycaster(world_.get()))
+    :
+      mesh_(create_info.mesh),
+      world_(world),
+      motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
+      raycaster_(new btDefaultVehicleRaycaster(world_.get()))
   {
-    piksel::Model model(filename,1.f);
+    collision_shape_=createCollisonShape(mesh_->getChassis().vertices);
+    rigidbody_=createRigidbody(create_info.mass);
 
-    // TODO do this once not for every vehicle created
-    std::vector<piksel::Mesh::Vertex> mesh_vertices;
-    glm::mat4 mesh_transform;
-    btVector3 rear_left_wheel{};
-    btVector3 rear_right_wheel{};
-    btVector3 front_left_wheel{};
-    btVector3 front_right_wheel{};
-
-    glm::vec3 model_pos(model.translate[3]);
-    for(const auto& mesh : model.getMeshes())
-    {
-      if(mesh.getName()==BODY_NAME)
-      {
-        btTransform start_transform(glm2bt(mesh.getTransform()).second);
-        motion_state_=std::unique_ptr<btDefaultMotionState>(
-            new btDefaultMotionState(start_transform));
-
-        mesh_vertices=mesh.getVertices();
-        mesh_transform=mesh.getTransform();
-      }
-
-      glm::vec3 avg_vec(0.f);
-      auto vertices=mesh.getVertices();
-      for(const auto& vertex:vertices)
-        avg_vec+=vertex.pos;
-
-      avg_vec/=vertices.size();
-
-      glm::vec3 vec=avg_vec+glm::vec3(mesh.translate[3])+model_pos;
-      if(mesh.getName()==REAR_LEFT_WHEEL_NAME)
-        rear_left_wheel=btVector3(vec.x,vec.y,vec.z);
-      else if(mesh.getName()==REAR_RIGHT_WHEEL_NAME)
-        rear_right_wheel=btVector3(vec.x,vec.y,vec.z);
-      else if(mesh.getName()==FRONT_LEFT_WHEEL_NAME)
-        front_left_wheel=btVector3(vec.x,vec.y,vec.z);
-      else if(mesh.getName()==FRONT_RIGHT_WHEEL_NAME)
-        front_right_wheel=btVector3(vec.x,vec.y,vec.z);
-    }
-
-    std::vector<btVector3> vertices; 
-    vertices.reserve(mesh_vertices.size());
-    std::transform(
-        mesh_vertices.cbegin(),mesh_vertices.cend(),
-        std::back_inserter(vertices),
-        [](const piksel::Mesh::Vertex& vertex)
-        {
-          return glm2bt(vertex.pos);
-        }
-    );
-    auto [scale,transform]=glm2bt(mesh_transform);
-
-    collision_shape_=createCollisonShape(scale,vertices);
-    rigidbody_=createRigidbody(mass);
+    // I dont know why but everybody does this.
+    rigidbody_->setActivationState(DISABLE_DEACTIVATION);
 
     vehicle_=std::unique_ptr<btRaycastVehicle>(
         new btRaycastVehicle(tuning_, rigidbody_.get(), raycaster_.get())
@@ -82,67 +36,60 @@ namespace boink
 
     world_->addVehicle(vehicle_.get());
 
-    btVector3 wheelDirectionCS0(0, -1, 0);
-    btVector3 wheelAxleCS(-1, 0, 0);
+    btVector3 wheel_direction_cs0(0, -1, 0);
+    btVector3 wheel_axle_cs(-1, 0, 0);
 
-    btScalar suspensionRestLength = 4.02f;
-    btScalar wheelRadius = 0.40f;
-    //btVector3 wheel_center_ajust=
-    //  wheelDirectionCS0*(suspensionRestLength+wheelRadius);
-    //wheel_center_ajust=btVector3(0.f,0.f,0.f);
+    btScalar suspension_rest_length=create_info.suspension_rest_length;
+    btScalar wheel_radius=create_info.wheel_radius;
 
-    btVector3 wheel_center_ajust=vehicle_->getChassisWorldTransform().getOrigin();
+    bool is_front_wheel=false;
 
-    bool isFrontWheel = true;
-
-    // TODO
-    // delete
-    left_rear_wheel_=front_left_wheel;
-    
-    // Front-left
-    vehicle_->addWheel(
-        front_left_wheel-wheel_center_ajust,
-        wheelDirectionCS0,
-        wheelAxleCS,
-        suspensionRestLength,
-        wheelRadius,
-        tuning_,
-        isFrontWheel
-    );
-
-    // Front-right
-    vehicle_->addWheel(
-        front_right_wheel-wheel_center_ajust,
-        wheelDirectionCS0,
-        wheelAxleCS,
-        suspensionRestLength,
-        wheelRadius,
-        tuning_,
-        isFrontWheel
-    );
-
-    isFrontWheel = false;
+    // ORDER OF CREATION OF THE WHEELS MUST MATCH WITH WHEELPOSITION ENUM
 
     // Rear-left
     vehicle_->addWheel(
-        rear_left_wheel-wheel_center_ajust,
-        wheelDirectionCS0,
-        wheelAxleCS,
-        suspensionRestLength,
-        wheelRadius,
+        mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin(),
+        wheel_direction_cs0,
+        wheel_axle_cs,
+        suspension_rest_length,
+        wheel_radius,
         tuning_,
-        isFrontWheel
+        is_front_wheel
     );
 
     // Rear-right
     vehicle_->addWheel(
-        rear_right_wheel-wheel_center_ajust,
-        wheelDirectionCS0,
-        wheelAxleCS,
-        suspensionRestLength,
-        wheelRadius,
+        mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin(),
+        wheel_direction_cs0,
+        wheel_axle_cs,
+        suspension_rest_length,
+        wheel_radius,
         tuning_,
-        isFrontWheel
+        is_front_wheel
+    );
+
+    is_front_wheel=true;
+
+    // Front-left
+    vehicle_->addWheel(
+        mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin(),
+        wheel_direction_cs0,
+        wheel_axle_cs,
+        suspension_rest_length,
+        wheel_radius,
+        tuning_,
+        is_front_wheel
+    );
+
+    // Front-right
+    vehicle_->addWheel(
+        mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin(),
+        wheel_direction_cs0,
+        wheel_axle_cs,
+        suspension_rest_length,
+        wheel_radius,
+        tuning_,
+        is_front_wheel
     );
   }
 
@@ -150,11 +97,6 @@ namespace boink
   {
     world_->removeVehicle(vehicle_.get());
     world_->removeRigidBody(rigidbody_.get());
-  }
-
-  btVector3 Vehicle::getPosition() const
-  {
-    return btVector3(this->getWorldTransform().getOrigin());
   }
 
   void Vehicle::setPosition(const btVector3& position)
@@ -169,18 +111,22 @@ namespace boink
     return transform;
   }
 
-  const btVector3& Vehicle::getCenterOfMass() const
+  const btTransform& Vehicle::getChassisWorldTransform() const
   {
-    return rigidbody_->getCenterOfMassPosition();
+    return vehicle_->getChassisWorldTransform();
   }
 
-  const btVector3& Vehicle::getChassisPosition() const
+  const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) const
   {
-    return vehicle_->getChassisWorldTransform().getOrigin();
+    return vehicle_->getWheelTransformWS((int)wheel_pos);
+  }
+
+  const btTransform& Vehicle::getCenterOfMassTransform() const
+  {
+    return rigidbody_->getCenterOfMassTransform();
   }
 
   std::unique_ptr<btCollisionShape> Vehicle::createCollisonShape(
-      const btVector3& scale,
       const std::vector<btVector3>& vertices)
   {
     std::unique_ptr<btConvexHullShape> hull(new btConvexHullShape());
@@ -193,8 +139,6 @@ namespace boink
     hull->recalcLocalAabb();
     hull->optimizeConvexHull();
     hull->initializePolyhedralFeatures();
-
-    hull->setLocalScaling(scale);
 
     return hull;
   }

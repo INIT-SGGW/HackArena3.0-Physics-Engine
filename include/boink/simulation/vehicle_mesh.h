@@ -4,12 +4,15 @@
 #include <tiny_gltf.h>
 #include <unordered_map>
 #include <vector>
+
 #include <LinearMath/btVector3.h>
 #include <LinearMath/btTransform.h>
 
+#include "boink/simulation/wheel_position.h"
+
 namespace boink
 {
-  class VehicleModel
+  class VehicleMesh
   {
   public:
     struct Element
@@ -19,18 +22,13 @@ namespace boink
 
       btTransform transform;
     };
-    enum class Wheel
-    {
-      RearLeft,
-      RearRight,
-      FrontLeft,
-      FrontRight,
-    };
   public:
-    VehicleModel(std::string_view filename);
+    VehicleMesh(std::string_view filename);
 
     const Element& getChassis() const;
-    const Element& getWheel(Wheel wheel) const;
+    const Element& getWheel(WheelPosition wheel) const;
+
+    btTransform getLocalWheelTransform(WheelPosition wheel) const;
   private:
     void bindNode(
         const tinygltf::Model& model,
@@ -54,14 +52,14 @@ namespace boink
         uint32_t base_vertex);
   private:
     static constexpr std::string_view CHASSIS_NAME="Cylinder.002";
-    inline static const std::unordered_map<std::string_view, Wheel> s_wheel_names_{
-        {"Cylinder.004", Wheel::RearRight},
-        {"Cylinder.005", Wheel::RearLeft},
-        {"Cylinder.007", Wheel::FrontRight},
-        {"Cylinder.003", Wheel::FrontLeft},
+    inline static const std::unordered_map<std::string_view, WheelPosition> s_wheel_names_{
+        {"Cylinder.004", WheelPosition::RearRight},
+        {"Cylinder.005", WheelPosition::RearLeft},
+        {"Cylinder.007", WheelPosition::FrontRight},
+        {"Cylinder.003", WheelPosition::FrontLeft},
 };
   private:
-    std::unordered_map<Wheel,Element> wheels_;
+    std::unordered_map<WheelPosition,Element> wheels_;
     Element chassis_;
   };
 }

@@ -8,17 +8,27 @@
 #include <BulletDynamics/Vehicle/btVehicleRaycaster.h>
 #include <LinearMath/btDefaultMotionState.h>
 #include <LinearMath/btMotionState.h>
+
+#include "boink/simulation/vehicle_mesh.h"
+#include "boink/simulation/wheel_position.h"
+
 #include <memory>
-#include <vector>
 
 namespace boink
 {
   class Vehicle
   {
   public:
+    struct CreationInfo
+    {
+      std::shared_ptr<VehicleMesh> mesh;
+      btScalar mass;
+      btScalar wheel_radius;
+      btScalar suspension_rest_length;
+    };
+  public:
     Vehicle(
-        std::string_view filename, 
-        btScalar mass,
+        const CreationInfo& create_info,
         std::shared_ptr<btDynamicsWorld> world);
     Vehicle(const Vehicle&)=delete;
     Vehicle(Vehicle&&)=default;
@@ -28,27 +38,19 @@ namespace boink
 
     ~Vehicle() noexcept;
 
-    btVector3 getPosition() const;
     void setPosition(const btVector3& position);
 
     btTransform getWorldTransform() const;
-
-    const btVector3& getCenterOfMass() const;
-    const btVector3& getChassisPosition() const;
-    const btVector3& getLeftRearWheelPosition() const{return left_rear_wheel_;}
+    const btTransform& getChassisWorldTransform() const;
+    const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
+    const btTransform& getCenterOfMassTransform() const;
   private:
     std::unique_ptr<btCollisionShape> createCollisonShape(
-        const btVector3& scale,
         const std::vector<btVector3>& vertices);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
-  public:
-    static constexpr std::string_view BODY_NAME="Cylinder.002";
-    static constexpr std::string_view REAR_LEFT_WHEEL_NAME="Cylinder.005";
-    static constexpr std::string_view REAR_RIGHT_WHEEL_NAME="Cylinder.004";
-    static constexpr std::string_view FRONT_LEFT_WHEEL_NAME="Cylinder.003";
-    static constexpr std::string_view FRONT_RIGHT_WHEEL_NAME="Cylinder.007";
   private:
+    std::shared_ptr<VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
 
     std::unique_ptr<btCollisionShape> collision_shape_;
@@ -58,8 +60,5 @@ namespace boink
     std::unique_ptr<btRaycastVehicle> vehicle_;
 
     btRaycastVehicle::btVehicleTuning tuning_;
-    // TODO
-    // Delete
-    btVector3 left_rear_wheel_;
   };
 }

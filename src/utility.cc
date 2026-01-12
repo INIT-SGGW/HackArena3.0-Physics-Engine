@@ -13,11 +13,9 @@ namespace boink
 
   glm::mat4 bt2glm(const btTransform& bt_trans)
   {
-    // Rotation
-    glm::mat4 glm_mat(
-        bt2glm(bt_trans.getBasis()));
-    
-    return glm::translate(glm_mat,bt2glm(bt_trans.getOrigin()));
+    return 
+      glm::translate(glm::mat4(1.f),bt2glm(bt_trans.getOrigin()))*
+      glm::mat4(bt2glm(bt_trans.getBasis()));
   }
 
   glm::mat3 bt2glm(const btMatrix3x3& bt_mat)
@@ -87,6 +85,10 @@ namespace boink
     scale[0][0]=glm::length(transform[0]);
     scale[1][1]=glm::length(transform[1]);
     scale[2][2]=glm::length(transform[2]);
+
+    assert(scale[0][0]>=0);
+    assert(scale[1][1]>=0);
+    assert(scale[2][2]>=0);
 
     glm::mat4 rotation(1.f);
     rotation[0]=transform[0]/scale[0][0];

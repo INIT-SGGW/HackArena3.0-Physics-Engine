@@ -34,7 +34,7 @@ namespace boink
 
     ~Simulation() noexcept=default;
 
-    ObjectID addCar(std::string_view filename, float mass);
+    ObjectID addCar(const Vehicle::CreationInfo& info);
     void removeCar(ObjectID id);
     Vehicle& getCar(ObjectID id);
     size_t getCarNumber() const { return vehicles_.size();}
