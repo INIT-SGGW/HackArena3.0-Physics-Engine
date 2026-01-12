@@ -2,6 +2,7 @@
 
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <LinearMath/btDefaultMotionState.h>
 
@@ -16,9 +17,12 @@ namespace boink
       mesh_(create_info.mesh),
       world_(world),
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
-      raycaster_(new btDefaultVehicleRaycaster(world_.get()))
+      raycaster_(new btDefaultVehicleRaycaster(world_.get())),
+      center_of_mass_(create_info.center_of_mass)
   {
-    collision_shape_=createCollisonShape(mesh_->getChassis().vertices);
+    collision_shape_=createCollisonShape(
+        mesh_->getChassis().vertices,
+        center_of_mass_);
     rigidbody_=createRigidbody(create_info.mass);
 
     // I dont know why but everybody does this.
@@ -46,9 +50,11 @@ namespace boink
 
     // ORDER OF CREATION OF THE WHEELS MUST MATCH WITH WHEELPOSITION ENUM
 
+    btVector3 chuj(0.f,1.f,0.f);
     // Rear-left
     vehicle_->addWheel(
-        mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin(),
+        mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin()
+        +chuj,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -59,7 +65,8 @@ namespace boink
 
     // Rear-right
     vehicle_->addWheel(
-        mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin(),
+        mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin()
+        +chuj,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -72,7 +79,8 @@ namespace boink
 
     // Front-left
     vehicle_->addWheel(
-        mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin(),
+        mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin()
+        +chuj,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -83,7 +91,8 @@ namespace boink
 
     // Front-right
     vehicle_->addWheel(
-        mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin(),
+        mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin()
+        +chuj,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -111,9 +120,14 @@ namespace boink
     return transform;
   }
 
-  const btTransform& Vehicle::getChassisWorldTransform() const
+  btTransform Vehicle::getChassisWorldTransform() const
   {
-    return vehicle_->getChassisWorldTransform();
+    // Because we moved out center of mass via
+    // compund shape we have to move also the chassis.
+    btTransform transform=vehicle_->getChassisWorldTransform();
+    transform.setOrigin(transform.getOrigin()+center_of_mass_);
+
+    return transform;
   }
 
   const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) const
@@ -126,10 +140,25 @@ namespace boink
     return rigidbody_->getCenterOfMassTransform();
   }
 
-  std::unique_ptr<btCollisionShape> Vehicle::createCollisonShape(
-      const std::vector<btVector3>& vertices)
+  std::shared_ptr<btCollisionShape> Vehicle::createCollisonShape(
+      const std::vector<btVector3>& vertices,
+      const btVector3& center_of_mass)
   {
-    std::unique_ptr<btConvexHullShape> hull(new btConvexHullShape());
+    std::shared_ptr<btCompoundShape> compound(
+        new btCompoundShape(),
+        [](btCompoundShape* ptr)
+        {
+          if(!ptr)
+            return;
+
+          for(int i=0;i<ptr->getNumChildShapes();i++)
+          {
+            delete ptr->getChildShape(i);
+          }
+          delete ptr;
+        }
+        );
+    btConvexHullShape* hull=new btConvexHullShape();
 
     for (const btVector3& v : vertices)
     {
@@ -140,7 +169,18 @@ namespace boink
     hull->optimizeConvexHull();
     hull->initializePolyhedralFeatures();
 
-    return hull;
+    btTransform localTransform;
+		localTransform.setIdentity();
+		localTransform.setOrigin(center_of_mass);
+
+		//The center of gravity of the compound shape is the origin. 
+    //When we add a rigidbody to the compound shape
+		//it's center of gravity does not change. 
+    //This way we can add the chassis rigidbody one unit above our center of gravity
+		//keeping it under our chassis, and not in the middle of it
+		compound->addChildShape(localTransform, hull);
+
+    return compound;
   }
 
   std::unique_ptr<btRigidBody> Vehicle::createRigidbody(

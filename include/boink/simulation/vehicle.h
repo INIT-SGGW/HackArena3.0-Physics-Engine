@@ -25,6 +25,7 @@ namespace boink
       btScalar mass;
       btScalar wheel_radius;
       btScalar suspension_rest_length;
+      btVector3 center_of_mass;
     };
   public:
     Vehicle(
@@ -41,24 +42,27 @@ namespace boink
     void setPosition(const btVector3& position);
 
     btTransform getWorldTransform() const;
-    const btTransform& getChassisWorldTransform() const;
+    btTransform getChassisWorldTransform() const;
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
   private:
-    std::unique_ptr<btCollisionShape> createCollisonShape(
-        const std::vector<btVector3>& vertices);
+    std::shared_ptr<btCollisionShape> createCollisonShape(
+        const std::vector<btVector3>& vertices,
+        const btVector3& center_of_mass);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
   private:
     std::shared_ptr<VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
 
-    std::unique_ptr<btCollisionShape> collision_shape_;
+    std::shared_ptr<btCollisionShape> collision_shape_;
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<btVehicleRaycaster> raycaster_;
     std::unique_ptr<btRaycastVehicle> vehicle_;
 
     btRaycastVehicle::btVehicleTuning tuning_;
+
+    btVector3 center_of_mass_;
   };
 }

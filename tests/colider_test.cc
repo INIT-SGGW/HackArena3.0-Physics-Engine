@@ -38,13 +38,14 @@ int main()
       .mesh=std::shared_ptr<VehicleMesh>(&vehicle_mesh,[](const VehicleMesh*){}),
       .mass=800.,
       .wheel_radius=0.36f,
-      .suspension_rest_length=0.42f});
+      .suspension_rest_length=0.42f,
+      .center_of_mass={0.f,1.f,0.f}});
 
   auto vehicle_model=createVehicleModel(vehicle_mesh);
   dbg.addObject(vehicle_model);
 
   Vehicle& vehicle=sim.getCar(car_id);
-  vehicle.setPosition({0.f,13.f,0.f});
+  vehicle.setPosition({0.f,23.f,0.f});
 
   Track& track=sim.getTrack();
   track.setPosition({5.f,0.f,0.f});
@@ -54,7 +55,7 @@ int main()
   {
     float dt=dbg.getDeltaTime();
 
-    vehicle_model->setTransform(bt2glm(vehicle.getWorldTransform()));
+    vehicle_model->setTransform(bt2glm(vehicle.getChassisWorldTransform()));
     vehicle_model->setWheelWorldTransform(
         VehicleModel::WheelPosition::RearLeft,
         bt2glm(vehicle.getWheelWorldTransform(WheelPosition::RearLeft)));
