@@ -82,8 +82,7 @@ target_sources(boink
     src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
     src/math.cc
-    src/world.cc
-)
+    src/world.cc)
 
 target_include_directories(boink
   PUBLIC 

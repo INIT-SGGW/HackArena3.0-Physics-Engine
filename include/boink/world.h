@@ -14,50 +14,51 @@
 #endif
 #endif
 
-#include "boink/components/transform.h"
-#include "boink/components/kinematics.h"
+#include "boink/car_manager.h"
+#include "boink/components/car_drive_parts.h"
 #include "boink/components/car_inputs.h"
 #include "boink/components/car_model.h"
-
-#include "boink/car_manager.h"
+#include "boink/components/kinematics.h"
+#include "boink/components/transform.h"
 #include "boink/systems/car_spawn_system.h"
-#include "boink/systems/movement_system.h"
 #include "boink/systems/debug_system.h"
+#include "boink/systems/movement_system.h"
 
-namespace boink
-{
+namespace boink {
+/**
+ * @brief Represents the world simulation containing all entities and systems.
+ *
+ */
+class BOINK_API World {
+ public:
+  using CarComponents =
+      std::tuple<CarInput, Transform, Kinematics, CarDriveParts>;
+  using CarSystems = std::tuple<CarSpawnSystem, MovementSystem>;
+
+ public:
+  World(const CarModel& car_model);
+  World(CarModel&& car_model);
+
   /**
-   * @brief Represents the world simulation containing all entities and systems.
+   * @brief Start simulation.
    *
    */
-  class BOINK_API World
-  {
-  public:
-    using CarComponents=std::tuple<CarInput,Transform,Kinematics>;
-    using CarSystems=std::tuple<CarSpawnSystem,MovementSystem>;
-  public:
-    World(const CarModel& car_model);
-    World(CarModel&& car_model);
+  void start(double dt);
 
-    /**
-     * @brief Start simulation.
-     *
-     */
-    void start(double dt);
+  /**
+   * @brief Update the world for a simulation step.
+   *
+   * @param dt Delta time in seconds.
+   */
+  void update(double dt);
 
-    /**
-     * @brief Update the world for a simulation step.
-     *
-     * @param dt Delta time in seconds.
-     */
-    void update(double dt);
-  public:
-    /**
-     * @brief Manages car entities and systems.
-     */
-    CarManager<CarComponents,CarSystems> car_manager;
-  private:
-    double time_passed_=0.0;
-  };
-}
+ public:
+  /**
+   * @brief Manages car entities and systems.
+   */
+  CarManager<CarComponents, CarSystems> car_manager;
 
+ private:
+  double time_passed_ = 0.0;
+};
+}  // namespace boink
