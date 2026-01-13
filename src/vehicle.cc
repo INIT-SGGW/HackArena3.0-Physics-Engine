@@ -1,9 +1,12 @@
 #include "boink/simulation/vehicle.h"
+#include "boink/simulation/wheel_position.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
+
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+
 #include <LinearMath/btDefaultMotionState.h>
 
 #include <memory>
@@ -50,11 +53,10 @@ namespace boink
 
     // ORDER OF CREATION OF THE WHEELS MUST MATCH WITH WHEELPOSITION ENUM
 
-    btVector3 chuj(0.f,1.f,0.f);
     // Rear-left
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin()
-        +chuj,
+        +center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -66,7 +68,7 @@ namespace boink
     // Rear-right
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin()
-        +chuj,
+        +center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -80,7 +82,7 @@ namespace boink
     // Front-left
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin()
-        +chuj,
+        +center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -92,7 +94,7 @@ namespace boink
     // Front-right
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin()
-        +chuj,
+        +center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -104,8 +106,21 @@ namespace boink
 
   Vehicle::~Vehicle() noexcept
   {
-    world_->removeVehicle(vehicle_.get());
-    world_->removeRigidBody(rigidbody_.get());
+    if(vehicle_)
+    {
+      world_->removeVehicle(vehicle_.get());
+    }
+    
+    if(rigidbody_)
+      world_->removeRigidBody(rigidbody_.get());
+
+    if(collision_shape_)
+    {
+      for(int i=0;i<collision_shape_->getNumChildShapes();i++)
+      {
+        delete collision_shape_->getChildShape(i);
+      }
+    }
   }
 
   void Vehicle::setPosition(const btVector3& position)
@@ -124,10 +139,12 @@ namespace boink
   {
     // Because we moved out center of mass via
     // compund shape we have to move also the chassis.
-    btTransform transform=vehicle_->getChassisWorldTransform();
-    transform.setOrigin(transform.getOrigin()+center_of_mass_);
+    btTransform translate;
+    translate.setIdentity();
+    translate.setOrigin(center_of_mass_);
 
-    return transform;
+    // we must translate before rotation
+    return vehicle_->getChassisWorldTransform()*translate;
   }
 
   const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) const
@@ -140,24 +157,34 @@ namespace boink
     return rigidbody_->getCenterOfMassTransform();
   }
 
-  std::shared_ptr<btCollisionShape> Vehicle::createCollisonShape(
+  void Vehicle::setSteering(btScalar radians, TurnDirection dir)
+  {
+    if(dir==TurnDirection::Right)
+      radians*=-1;
+
+    vehicle_->setSteeringValue(radians,(int)WheelPosition::FrontLeft);
+    vehicle_->setSteeringValue(radians,(int)WheelPosition::FrontRight);
+  }
+
+  void Vehicle::setEngineForce(btScalar force)
+  {
+    vehicle_->applyEngineForce(force,(int)WheelPosition::RearLeft);
+    vehicle_->applyEngineForce(force,(int)WheelPosition::RearRight);
+  }
+
+  void Vehicle::setBrake(btScalar brake)
+  {
+    vehicle_->setBrake(brake,(int)WheelPosition::RearLeft);
+    vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
+    //vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
+    //vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
+  }
+
+  std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(
       const std::vector<btVector3>& vertices,
       const btVector3& center_of_mass)
   {
-    std::shared_ptr<btCompoundShape> compound(
-        new btCompoundShape(),
-        [](btCompoundShape* ptr)
-        {
-          if(!ptr)
-            return;
-
-          for(int i=0;i<ptr->getNumChildShapes();i++)
-          {
-            delete ptr->getChildShape(i);
-          }
-          delete ptr;
-        }
-        );
+    std::unique_ptr<btCompoundShape> compound(new btCompoundShape());
     btConvexHullShape* hull=new btConvexHullShape();
 
     for (const btVector3& v : vertices)

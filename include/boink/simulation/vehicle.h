@@ -1,6 +1,7 @@
 #pragma once
 
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
@@ -21,21 +22,27 @@ namespace boink
   public:
     struct CreationInfo
     {
-      std::shared_ptr<VehicleMesh> mesh;
+      std::shared_ptr<const VehicleMesh> mesh;
       btScalar mass;
       btScalar wheel_radius;
       btScalar suspension_rest_length;
       btVector3 center_of_mass;
+    };
+    
+    enum class TurnDirection
+    {
+      Left,
+      Right
     };
   public:
     Vehicle(
         const CreationInfo& create_info,
         std::shared_ptr<btDynamicsWorld> world);
     Vehicle(const Vehicle&)=delete;
-    Vehicle(Vehicle&&)=default;
+    Vehicle(Vehicle&&)noexcept=default;
 
     Vehicle& operator=(const Vehicle&)=delete;
-    Vehicle& operator=(Vehicle&&)=default;
+    Vehicle& operator=(Vehicle&&)noexcept=default;
 
     ~Vehicle() noexcept;
 
@@ -43,19 +50,24 @@ namespace boink
 
     btTransform getWorldTransform() const;
     btTransform getChassisWorldTransform() const;
+
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
+
+    void setSteering(btScalar radians, TurnDirection dir);
+    void setEngineForce(btScalar force);
+    void setBrake(btScalar brake);
   private:
-    std::shared_ptr<btCollisionShape> createCollisonShape(
+    std::unique_ptr<btCompoundShape> createCollisonShape(
         const std::vector<btVector3>& vertices,
         const btVector3& center_of_mass);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
   private:
-    std::shared_ptr<VehicleMesh> mesh_;
+    std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
 
-    std::shared_ptr<btCollisionShape> collision_shape_;
+    std::unique_ptr<btCompoundShape> collision_shape_;
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<btVehicleRaycaster> raycaster_;

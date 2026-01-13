@@ -7,6 +7,7 @@
 #include <LinearMath/btIDebugDraw.h>
 #include <glm/glm.hpp>
 
+#include <piksel/IDrawable.hh>
 #include <piksel/object.hh>
 
 #include <memory>
@@ -56,11 +57,13 @@ namespace boink
 
     void update(float dt);
     void setCameraSpeed(float speed);
-    void addObject(std::shared_ptr<piksel::Object> obj);
-    void removeObject(std::shared_ptr<piksel::Object> obj);
+    void addObject(std::shared_ptr<piksel::IDrawable> obj);
+    //void removeObject(std::shared_ptr<piksel::IDrawable> obj);
     float getDeltaTime() const;
 
     void drawFrameOrigin();
+
+    piksel::Window::KeyState getKey(int glfw_key) const;
   private:
     piksel::Window wnd_;
     piksel::Camera cam_;

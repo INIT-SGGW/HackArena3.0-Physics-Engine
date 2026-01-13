@@ -3,8 +3,10 @@
 #include "piksel/config.hh"
 #include <LinearMath/btIDebugDraw.h>
 #include <memory>
+#include <piksel/IDrawable.hh>
 #include <piksel/color.hh>
 #include <piksel/object.hh>
+#include <piksel/window.hh>
 
 namespace boink
 {
@@ -107,9 +109,9 @@ namespace boink
     cam_speed_=speed;
   }
 
-  void DebugRender::addObject(std::shared_ptr<piksel::Object> obj)
+  void DebugRender::addObject(std::shared_ptr<piksel::IDrawable> obj)
   {
-    gfx_.addObject(obj);
+    gfx_.addDrawable(obj);
   }
 
   float DebugRender::getDeltaTime() const
@@ -135,5 +137,10 @@ namespace boink
         {0.f,0.f,0.f},
         {0.f,0.f,10.f},
         {0.f,0.f,1.f});
+  }
+
+  piksel::Window::KeyState DebugRender::getKey(int glfw_key) const
+  {
+    return wnd_.getKey(glfw_key);
   }
 }

@@ -3,9 +3,10 @@
 
 #include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
 #include <LinearMath/btDefaultMotionState.h>
-#include "boink/utils/utility.h"
+
+#include "boink/gltf_extractor.h"
+
 #include <memory>
-#include <piksel/model.hh>
 #include <vector>
 
 namespace boink
@@ -16,30 +17,13 @@ namespace boink
       mesh_(new btTriangleMesh()),
       world_(world)
   {
-    // This is not optimal but it is run once on the start.
-    piksel::Model model(filename,1.f);
-    std::vector<btVector3> vertices;
-    std::vector<unsigned int> indices;
-    for(const auto& mesh:model.getMeshes())
-    {
-      auto [scale,transform]=glm2bt(mesh.getTransform());
-      for(const auto& vertex:mesh.getVertices())
-      {
-        btVector3 bt_vertex=glm2bt(vertex.pos);
-        bt_vertex.setX(bt_vertex.getX()*scale.getX());
-        bt_vertex.setY(bt_vertex.getY()*scale.getY());
-        bt_vertex.setZ(bt_vertex.getZ()*scale.getZ());
-        bt_vertex=transform*bt_vertex;
-        vertices.push_back(bt_vertex);
-      }
-      for(const auto& index:mesh.getIndices())
-      {
-        indices.push_back(index);
-      }
-    }
+    GltfExtractor extractor(filename);
+    const auto& node=extractor.getNode(TRACK_NAME);
+    std::vector<btVector3> vertices=node.vertices;
+    std::vector<unsigned int> indices=node.indices;
 
     motion_state_=std::unique_ptr<btDefaultMotionState>(
-        new btDefaultMotionState(glm2bt(model.getTransform()).second));
+        new btDefaultMotionState(node.transform));
 
     assert(indices.size()%3==0);
     for(size_t i=0;i<indices.size();i+=3)

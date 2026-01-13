@@ -1,61 +1,54 @@
-#include "boink/simulation/vehicle_mesh.h"
+#include "boink/gltf_extractor.h"
 
-#include <LinearMath/btMatrix3x3.h>
-#include <LinearMath/btQuaternion.h>
 #include <sstream>
+#include <algorithm>
 #include <stdexcept>
-#include <vector>
 
 namespace boink
 {
-  VehicleMesh::VehicleMesh(std::string_view filename)
+  GltfExtractor::GltfExtractor(std::string_view filename)
+    :model_(loadModel(filename))
   {
-    tinygltf::Model model=loadModel(filename);
-
-    assert(model.scenes.size()==1);
-    const tinygltf::Scene& scene=model.scenes[model.defaultScene];
+    assert(model_.scenes.size()==1);
+    const tinygltf::Scene& scene=model_.scenes[model_.defaultScene];
     
     for(auto node_index:scene.nodes)
     {
       btTransform transform;
       transform.setIdentity();
-      bindNode(model,model.nodes[node_index],transform);
+      bindNode(model_.nodes[node_index],transform);
     }
   }
 
-  const VehicleMesh::Element& VehicleMesh::getChassis() const
+  const GltfExtractor::Node& GltfExtractor::getNode(std::string_view name) const
   {
-    return chassis_;
+    auto it=std::find_if(nodes_.begin(),nodes_.end(),
+        [=](const Node& node)
+        {
+          return node.name==name;
+        });
+    if(it==nodes_.end())
+      throw std::runtime_error("Node with a given name was not found");
+
+    return *it;
   }
 
-  const VehicleMesh::Element& VehicleMesh::getWheel(WheelPosition wheel) const
-  {
-    return wheels_.at(wheel);
-  }
-
-  btTransform VehicleMesh::getLocalWheelTransform(WheelPosition wheel) const
-  {
-    return chassis_.transform.inverse()*wheels_.at(wheel).transform;
-  }
-
-  void VehicleMesh::bindNode(
-      const tinygltf::Model& model,
+  void GltfExtractor::bindNode(
       const tinygltf::Node& node, 
       btTransform transform)
   {
-    if(!isNamePresent(node.name))
-      return;
-    Element& element=
-      CHASSIS_NAME==node.name?chassis_:wheels_[s_wheel_names_.at(node.name)];
+    Node new_node;
+    new_node.name=node.name;
 
     transform=getNodeTransform(node)*transform;
-    element.transform=transform;
+    new_node.transform=transform;
 
     btVector3 scale=getNodeScale(node);
     
     if(node.mesh<0)
-      throw std::runtime_error("Node does not have mesh");
-    const tinygltf::Mesh& mesh=model.meshes[node.mesh];
+      return;
+      //throw std::runtime_error("Node does not have mesh");
+    const tinygltf::Mesh& mesh=model_.meshes[node.mesh];
     
     for(const auto& primitive:mesh.primitives)
     {
@@ -67,16 +60,18 @@ namespace boink
         throw std::runtime_error("POSITION attribiute not found");
       int pos_index=it_pos_index->second;
 
-      uint32_t base_vertex = static_cast<uint32_t>(element.vertices.size());
-      loadVertices(model.accessors.at(pos_index),model,element,scale);
-      loadIndices(model.accessors.at(primitive.indices),model,element,base_vertex);
+      uint32_t base_vertex = static_cast<uint32_t>(new_node.vertices.size());
+      loadVertices(model_.accessors.at(pos_index),new_node,scale);
+      loadIndices(model_.accessors.at(primitive.indices),new_node,base_vertex);
     }
 
+    nodes_.push_back(std::move(new_node));
+
     for(auto index:node.children)
-      bindNode(model,model.nodes[index],transform);
+      bindNode(model_.nodes[index],transform);
   }
 
-  tinygltf::Model VehicleMesh::loadModel(std::string_view filename)
+  tinygltf::Model GltfExtractor::loadModel(std::string_view filename)
   {
     tinygltf::TinyGLTF loader;
     tinygltf::Model model;
@@ -101,15 +96,7 @@ namespace boink
     return model;
   }
 
-  bool VehicleMesh::isNamePresent(std::string_view name)
-  {
-    if(s_wheel_names_.find(name)!=s_wheel_names_.end())
-      return true;
-    
-    return name==CHASSIS_NAME;
-  }
-
-  btTransform VehicleMesh::getNodeTransform(
+  btTransform GltfExtractor::getNodeTransform(
       const tinygltf::Node& node)
   {
     assert(node.matrix.size()==0);
@@ -138,7 +125,7 @@ namespace boink
     return transform;
   }
 
-  btVector3 VehicleMesh::getNodeScale(const tinygltf::Node& node)
+  btVector3 GltfExtractor::getNodeScale(const tinygltf::Node& node)
   {
     if(node.scale.size()==3)
       return btVector3(node.scale[0],node.scale[1],node.scale[2]);
@@ -146,10 +133,9 @@ namespace boink
       return btVector3(1.f,1.f,1.f);
   }
 
-  void VehicleMesh::loadVertices(
+  void GltfExtractor::loadVertices(
       const tinygltf::Accessor& accessor,
-      const tinygltf::Model& model,
-      Element& element,
+      Node& node,
       const btVector3& scale)
   {
     if(accessor.componentType!=TINYGLTF_COMPONENT_TYPE_FLOAT)
@@ -158,9 +144,9 @@ namespace boink
       throw std::runtime_error("Unsupported type for position");
 
     const auto& buffer_view=
-      model.bufferViews[accessor.bufferView];
+      model_.bufferViews[accessor.bufferView];
     const auto& buffer=
-      model.buffers[buffer_view.buffer];
+      model_.buffers[buffer_view.buffer];
 
     const unsigned char* p_data=
       buffer.data.data()+
@@ -176,14 +162,13 @@ namespace boink
       const float* f=reinterpret_cast<const float*>(pos_data);
       
       // Bake scale into vertices
-      element.vertices.push_back(btVector3(f[0],f[1],f[2])*scale);
+      node.vertices.push_back(btVector3(f[0],f[1],f[2])*scale);
     }
   }
 
-  void VehicleMesh::loadIndices(
+  void GltfExtractor::loadIndices(
       const tinygltf::Accessor& accessor,
-      const tinygltf::Model& model,
-      Element& element,
+      Node& node,
       uint32_t base_vertex)
   {
     if(accessor.componentType!=TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT&&
@@ -193,9 +178,9 @@ namespace boink
       throw std::runtime_error("Unsupported type for index");
 
     const auto& buffer_view=
-      model.bufferViews[accessor.bufferView];
+      model_.bufferViews[accessor.bufferView];
     const auto& buffer=
-      model.buffers[buffer_view.buffer];
+      model_.buffers[buffer_view.buffer];
 
     const unsigned char* p_data=
       buffer.data.data()+
@@ -225,7 +210,7 @@ namespace boink
         throw std::runtime_error("Unsupported index type");
       }
 
-      element.indices.push_back(index + base_vertex);
+      node.indices.push_back(index + base_vertex);
     }
   }
 }

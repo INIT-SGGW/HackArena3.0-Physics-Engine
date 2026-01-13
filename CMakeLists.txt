@@ -91,10 +91,12 @@ target_sources(boink
     src/debug_render.cc
     src/simulation.cc
     src/utility.cc
-    src/car_model.cc
+    #src/car_model.cc
     src/track.cc
+    src/tinygltf_impl.cc
     src/vehicle.cc
     src/vehicle_mesh.cc
+    src/gltf_extractor.cc
 )
 
 target_include_directories(boink

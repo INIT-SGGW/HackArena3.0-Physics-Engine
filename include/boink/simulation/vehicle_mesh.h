@@ -41,12 +41,12 @@ namespace boink
     static btVector3 getNodeScale(const tinygltf::Node& node);
 
     static void loadVertices(
-        const tinygltf::Accessor accessor,
+        const tinygltf::Accessor& accessor,
         const tinygltf::Model& model,
         Element& element,
         const btVector3& scale);
     static void loadIndices(
-        const tinygltf::Accessor accessor,
+        const tinygltf::Accessor& accessor,
         const tinygltf::Model& model,
         Element& element,
         uint32_t base_vertex);
