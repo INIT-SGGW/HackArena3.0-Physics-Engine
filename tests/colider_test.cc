@@ -1,5 +1,4 @@
-#include "boink/debug_render.h"
-
+#include "boink/debug_drawer.h"
 #include "boink/simulation.h"
 
 #include "piksel/vehicle_model.hh"
@@ -21,7 +20,7 @@
 using namespace boink;
 using namespace piksel;
 
-void handleCar(Vehicle& vehicle,const DebugRender& dbg);
+void handleCar(Vehicle& vehicle,const DebugDrawer& dbg);
 void updateTransform(
     std::shared_ptr<VehicleModel> vehicle_model, 
     const Vehicle& vehicle);
@@ -32,7 +31,7 @@ int main()
 {
   std::string_view car_model_path="Bolid_F1.glb";
 
-  DebugRender dbg;
+  DebugDrawer dbg;
   Simulation sim("Bolid_Tor_test.glb");
 
   sim.registerDebugDrawer(&dbg);
@@ -60,7 +59,7 @@ int main()
       .mesh=vehicle_mesh1,
       .mass=800.,
       .wheel_radius=0.36f,
-      .suspension_rest_length=1.02f,
+      .suspension_rest_length=0.52f,
       .center_of_mass={0.f,1.f,0.f}});
   sim.getCar(car_id1).setPosition({0.f,23.f,0.f});
 
@@ -153,7 +152,7 @@ VehicleModel createVehicleModel(
   return vehicle;
 }
 
-void handleCar(Vehicle& vehicle,const DebugRender& dbg)
+void handleCar(Vehicle& vehicle,const DebugDrawer& dbg)
 {
   if(dbg.getKey(GLFW_KEY_UP)==Window::KeyState::Press)
     vehicle.setEngineForce(500.f);

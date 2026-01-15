@@ -15,7 +15,7 @@
 
 namespace boink
 {
-  class DebugRender : public btIDebugDraw
+  class DebugDrawer : public btIDebugDraw
   {
   public:
     struct Line
@@ -25,7 +25,7 @@ namespace boink
       glm::vec3 color;
     };
   public:
-    DebugRender();
+    DebugDrawer();
     void drawLine(
         const btVector3& from,
         const btVector3& to,

@@ -86,12 +86,9 @@ target_sources(boink
   PRIVATE
   #src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
-    src/math.cc
-    src/world.cc
-    src/debug_render.cc
+    src/debug_drawer.cc
     src/simulation.cc
     src/utility.cc
-    #src/car_model.cc
     src/track.cc
     src/tinygltf_impl.cc
     src/vehicle.cc
@@ -112,16 +109,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
 set(TEST_SOURCES
-  #world_test
-  #capi_test2
-  #mem_component_test
-  #type_diff_test
   #asan_test
   #memory_leak_test
-  #utils_math
-  #piksel_test
-  #present_test
-  #vehicle_test
   colider_test
 )
 

@@ -1,4 +1,4 @@
-#include "boink/debug_render.h"
+#include "boink/debug_drawer.h"
 
 #include "piksel/config.hh"
 #include <LinearMath/btIDebugDraw.h>
@@ -20,7 +20,7 @@ namespace boink
     return btVector3(vec.x,vec.y,vec.z);
   }
 
-  DebugRender::DebugRender()
+  DebugDrawer::DebugDrawer()
     :wnd_("Debug Window",1280,720),
     cam_({0.f,0.f,10.f},{0.f,0.f,0.f}),
     gfx_(wnd_,cam_,
@@ -32,7 +32,7 @@ namespace boink
     gfx_.setBackground(piksel::Color::Black);
   }
 
-  void DebugRender::drawLine(
+  void DebugDrawer::drawLine(
         const btVector3& from,
         const btVector3& to,
         const btVector3& color)
@@ -40,7 +40,7 @@ namespace boink
     gfx_.drawLine(piksel::Line{bt2glm(from),bt2glm(to),bt2glm(color)});
   }
 
-  void DebugRender::drawContactPoint(
+  void DebugDrawer::drawContactPoint(
       const btVector3& pointOnB,
       const btVector3& normalOnB,
       btScalar,
@@ -54,7 +54,7 @@ namespace boink
     );
   }
 
-  void DebugRender::drawPoint(
+  void DebugDrawer::drawPoint(
       const btVector3& point, 
       const btVector3& color)
   {
@@ -68,12 +68,12 @@ namespace boink
         color);
   }
 
-  DebugRender::operator bool() const
+  DebugDrawer::operator bool() const
   {
     return (bool)wnd_;
   }
 
-  void DebugRender::update(float dt)
+  void DebugDrawer::update(float dt)
   {
     static piksel::Window::MousePos prev_mouse_pos=wnd_.getMousePos();
 
@@ -104,17 +104,17 @@ namespace boink
     wnd_.update();
   }
 
-  void DebugRender::setCameraSpeed(float speed)
+  void DebugDrawer::setCameraSpeed(float speed)
   {
     cam_speed_=speed;
   }
 
-  void DebugRender::addObject(std::shared_ptr<piksel::IDrawable> obj)
+  void DebugDrawer::addObject(std::shared_ptr<piksel::IDrawable> obj)
   {
     gfx_.addDrawable(obj);
   }
 
-  float DebugRender::getDeltaTime() const
+  float DebugDrawer::getDeltaTime() const
   {
     float time=glfwGetTime();
     float dt=time-prev_time_;
@@ -123,7 +123,7 @@ namespace boink
     return dt;
   }
 
-  void DebugRender::drawFrameOrigin()
+  void DebugDrawer::drawFrameOrigin()
   {
     drawLine(
         {0.f,0.f,0.f},
@@ -139,7 +139,7 @@ namespace boink
         {0.f,0.f,1.f});
   }
 
-  piksel::Window::KeyState DebugRender::getKey(int glfw_key) const
+  piksel::Window::KeyState DebugDrawer::getKey(int glfw_key) const
   {
     return wnd_.getKey(glfw_key);
   }

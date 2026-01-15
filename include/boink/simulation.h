@@ -10,7 +10,6 @@
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletDynamics/Vehicle/btVehicleRaycaster.h>
 
-#include "boink/components/car_model.h"
 #include "boink/simulation/track.h"
 #include "boink/simulation/vehicle.h"
 
@@ -45,8 +44,6 @@ namespace boink
 
     void step(double dt);
     void registerDebugDrawer(btIDebugDraw* dbg);
-  private:
-    btRigidBody* createCarRigidbody(const CarModel& car_model);
   public:
     static constexpr double GRAVITATIONAL_ACCELERATION=10.;
   private:

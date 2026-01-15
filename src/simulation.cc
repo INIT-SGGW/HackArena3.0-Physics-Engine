@@ -97,10 +97,7 @@ namespace boink
 
     //add the body to the dynamics world
     dynamics_world_->addRigidBody(body);
-
-    //collision_shapes.push_back(col_shape);
   }
-
 }   
     
     
