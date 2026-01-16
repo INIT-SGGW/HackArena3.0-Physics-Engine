@@ -1,6 +1,7 @@
 #pragma once
 
 #include "boink/components/component_manager.h"
+#include "boink/simulation.h"
 
 #include <tuple>
 
@@ -14,6 +15,11 @@ namespace boink
   class SystemManager
   {
   public:
+    template<typename Chuj1, typename Chuj2>
+    SystemManager(ComponentManager<Chuj1,Chuj2>& component_manager)
+    {
+      
+    }
     /**
      * @brief Setup all systems. Is called only once.
      *
@@ -23,12 +29,13 @@ namespace boink
     template <typename TupleStaticComponents_, typename TupleComponents_>
     void Setup(
         ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+        Simulation& sim,
         double dt)
     {
       std::apply([&,dt](auto&... sys) {
         (([&,dt] {
-          if constexpr (requires { sys.Setup(component_manager, dt); }) {
-            sys.Setup(component_manager, dt);
+          if constexpr (requires { sys.Setup(component_manager,sim, dt); }) {
+            sys.Setup(component_manager,sim, dt);
           }
         }()), ...);
       }, systems_);
@@ -43,12 +50,13 @@ namespace boink
     template <typename TupleStaticComponents_, typename TupleComponents_>
     void Update(
         ComponentManager<TupleStaticComponents_,TupleComponents_>& component_manager,
+        Simulation& sim,
         double dt)
     {
       std::apply([&,dt](auto&... sys) {
         (([&,dt] {
-          if constexpr (requires { sys.Update(component_manager, dt); }) {
-            sys.Update(component_manager, dt);
+          if constexpr (requires { sys.Update(component_manager,sim, dt); }) {
+            sys.Update(component_manager,sim, dt);
           }
         }()), ...);
       }, systems_);

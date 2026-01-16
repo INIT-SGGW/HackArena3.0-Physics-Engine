@@ -1,12 +1,13 @@
 {
   "dependencies": [
-    "eigen3"
+    "bullet3",
+    "tinygltf",
+    "piksel"
   ],
   "features": {
     "debug-tools": {
       "description": "Dependencies only needed for debug and testing builds.",
       "dependencies": [
-        "piksel"
       ]
     }
   }

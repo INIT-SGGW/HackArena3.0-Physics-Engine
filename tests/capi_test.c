@@ -1,119 +1,128 @@
 #include "boink/boink_c_api.h"
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <inttypes.h>
 
-void printCarState(struct BoinkCarState* out, double time);
-int test();
+void printVehicleState(const BoinkVehicleState* state);
 int main()
 {
-  return test();
-}
+#ifdef WIN32
+  const char* vehicle_filename=
+    "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
+  const char* track_filename = 
+    "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_Tor_test.glb";
+#else
+  const char* vehicle_filename="Bolid_F1.glb";
+  const char* track_filename = "Bolid_Tor_test.glb";
+#endif
 
-int test()
-{
   unsigned int major,minor,patch;
-  boink_get_c_api_version(&major,&minor,&patch);
-  printf("C API version: %d.%d.%d\n",major,minor,patch);
-
   boink_get_engine_version(&major,&minor,&patch);
-  printf("Engine version: %d.%d.%d\n",major,minor,patch);
+  printf("Engine verision: %d.%d.%d\n",major,minor,patch);
+  boink_get_c_api_version(&major,&minor,&patch);
+  printf("C API verision: %d.%d.%d\n",major,minor,patch);
 
-  BoinkCarModel car_model;
-  BoinkVec3 vec;
-  vec.x=-1.0;
-  vec.y=0.0;
-  vec.z=2.0;
-  car_model.front_left_wheel=vec;
-  vec.x=1.0;
-  vec.y=0.0;
-  vec.z=2.0;
-  car_model.front_right_wheel=vec;
-  vec.x=-1.0;
-  vec.y=0.0;
-  vec.z=-2.0;
-  car_model.rear_left_wheel=vec;
-  vec.x=1.0;
-  vec.y=0.0;
-  vec.z=-2.0;
-  car_model.rear_right_wheel=vec;
-  car_model.max_steer_angle=30;
+  bool debug_enable=true;
+  int code;
 
-  BoinkHandle handle=boink_create_world(&car_model);
+  if((code=boink_init(debug_enable))!=BOINK_OK)
+  {
+    printf("boink_init() failed: code %d.\n",code);
+    return -1;
+  }
+
+  BoinkVehicleMeshHandle mesh_handle;
+  if((code=boink_create_vehicle_mesh(vehicle_filename,&mesh_handle))!=BOINK_OK)
+  {
+    printf("boink_create_vehicle_mesh() failed: code %d.\n",code);
+    boink_terminate();
+    return -1;
+  }
+  
+  BoinkHandle handle=boink_create_race(track_filename);
   if(handle==NULL){
-    fprintf(stderr,"Failed to create an engine\n");
+    printf("boink_create_create_race() failed.\n");
+
+    boink_destroy_vehicle_mesh(mesh_handle);
+    boink_terminate();
     return -1;
   }
 
-  uint64_t car_id;
-  if(boink_spawn_car(handle,&car_id)!=BOINK_OK)
+  BoinkVehicleModel model;
+  model.center_of_mass.x=0.;
+  model.center_of_mass.y=1.;
+  model.center_of_mass.z=0.;
+  model.mass=800.;
+  model.max_steer_angle=1.5;
+  model.mesh=mesh_handle;
+  model.suspension_rest_length=0.5;
+  model.wheel_radius=0.36;
+
+  uint64_t id0;
+  if((code=boink_spawn_vehicle(handle,&model,&id0))!=BOINK_OK)
   {
-    fprintf(stderr,"Failed to spawn a car\n");
-    return -1;
+    printf("boink_spawn_vehicle() failed: code %d.\n",code);
+    goto clear;
   }
 
-  double time=0.0;
-  double dt=0.5;
-  if(boink_begin_world(handle,time)!=BOINK_OK)
+  BoinkVec3 track_pos;
+  track_pos.x=5.;
+  track_pos.y=0.;
+  track_pos.z=0.;
+  if((code=boink_set_track_position(handle,&track_pos))!=BOINK_OK)
   {
-    fprintf(stderr,"Failed to begin world\n");
-    return -1;
+    printf("boink_set_track_position() failed: code %d.\n",code);
+    goto clear;
   }
-
-  struct BoinkControls controls;
-  controls.brake=0.0;
-  controls.steer=0.0;
-  controls.throttle=1.0;
-
-  if(boink_set_controls(handle,car_id,&controls)!=BOINK_OK)
+  
+  BoinkVec3 vehicle_pos;
+  vehicle_pos.x=0.;
+  vehicle_pos.y=13.;
+  vehicle_pos.z=7.;
+  if((code=boink_set_vehicle_position(handle,id0,&vehicle_pos))!=BOINK_OK)
   {
-    fprintf(stderr,"Failed to set controls\n");
-    return -1;
+    printf("boink_set_vehicle_position() failed: code %d.\n",code);
+    goto clear;
   }
-
-  for(int i=0;i<2;i++)
+  
+  Real prev=boink_get_time_debug();
+  while(!boink_should_close_debug())
   {
-    time+=dt;
-    if(boink_step(handle,dt)!=BOINK_OK)
+    Real now=boink_get_time_debug();
+    Real dt=now-prev;
+    prev=now;
+
+    if((code=boink_step_race(handle,dt))!=BOINK_OK)
     {
-      fprintf(stderr,"Failed to begin world\n");
-      return -1;
+      printf("boink_step_race() failed: code %d.\n",code);
+      goto clear;
     }
-
-    struct BoinkCarState out;
-    if(boink_read_car_state(handle,car_id,&out)!=BOINK_OK)
-    {
-      fprintf(stderr,"Failed read car state\n");
-      return -1;
-    }
-    printCarState(&out,time);
+    boink_update_debug();
   }
 
-  boink_destroy_world(handle);
-
-  return 0;
+  code=0;
+  
+clear:
+  boink_destroy_vehicle_mesh(mesh_handle);
+  boink_destroy_race(handle);
+  boink_terminate();
+  return code;
 }
 
-void printCarState(struct BoinkCarState* out, double time)
+#define printStateReal(x)\
+  printf(#x ": %f\n",x);
+
+#define printStateInt(x)\
+  printf(#x ": %d\n",x);
+
+#define printStateVec3(v)\
+  printf(#v ": {%f,%f,%f}\n",v.x,v.y,v.z);
+
+#define printStateQuat(q)\
+  printf(#q ": {%f,%f,%f,%f}\n",q.x,q.y,q.z,q.w);
+
+void printVehicleState(const BoinkVehicleState* state)
 {
-#define VAR_PRINT_D(x) printf("  [%s]: %f\n",#x,x)
-#define VAR_PRINT_U(x) printf("  [%s]: %" PRIu64 "\n",#x,x)
-#define VAR_PRINT_I(x) printf("  [%s]: %d\n",#x,x)
-    printf("Car state after t=%f\n",time);
-    VAR_PRINT_D(out->brake_applied);
-    VAR_PRINT_U(out->car_id);
-    VAR_PRINT_D(out->engine_rpm);
-    VAR_PRINT_I(out->gear);
-    VAR_PRINT_D(out->position.x);
-    VAR_PRINT_D(out->position.y);
-    VAR_PRINT_D(out->position.z);
-    VAR_PRINT_D(out->speed);
-    VAR_PRINT_D(out->throttle_applied);
-    VAR_PRINT_D(out->wheel_angles[0]);
-    VAR_PRINT_D(out->wheel_angles[1]);
-    VAR_PRINT_D(out->wheel_speeds[0]);
-    VAR_PRINT_D(out->wheel_speeds[1]);
-    VAR_PRINT_D(out->wheel_speeds[2]);
-    VAR_PRINT_D(out->wheel_speeds[3]);
+  printStateReal(state->speed);
+  printStateVec3(state->chassis_position);
+  printStateQuat(state->vehicle_orientation);
 }

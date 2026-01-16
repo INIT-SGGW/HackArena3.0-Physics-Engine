@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 0.2.0)
+project(BoinkEngine VERSION 0.3.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -33,9 +33,11 @@ set_target_properties(boink PROPERTIES
 
 find_package(Threads REQUIRED)
 
-find_package(Eigen3 CONFIG REQUIRED)
-target_link_libraries(boink PUBLIC Eigen3::Eigen)
+find_package(Bullet CONFIG REQUIRED)
+target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
 
+find_package(piksel CONFIG REQUIRED)                                                                                                                                          
+target_link_libraries(boink PUBLIC piksel::piksel)   
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -81,8 +83,15 @@ target_sources(boink
   PRIVATE
     src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
-    src/math.cc
-    src/world.cc
+    src/debug_drawer.cc
+    src/simulation.cc
+    src/utility.cc
+    src/track.cc
+    src/tinygltf_impl.cc
+    src/vehicle.cc
+    src/vehicle_mesh.cc
+    src/gltf_extractor.cc
+    src/exception.cc
 )
 
 target_include_directories(boink
@@ -93,36 +102,8 @@ target_include_directories(boink
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
-
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
-
-find_package(piksel CONFIG REQUIRED)
-set(TEST_SOURCES
-  #world_test
-  #capi_test2
-  #mem_component_test
-  #type_diff_test
-  #asan_test
-  #memory_leak_test
-  #utils_math
-  #piksel_test
-  present_test
-)
-
-foreach(name IN LISTS TEST_SOURCES)
-  add_executable(${name} tests/${name}.cc)
-  target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  target_link_libraries(${name}
-    PRIVATE 
-      boink
-      piksel::piksel
-      Threads::Threads # Required to resolve pthreads warning/errors on MSVC
-  )
-  add_test(NAME ${name} COMMAND ${name})
-  set_tests_properties(${name} PROPERTIES
-    ENVIRONMENT "${LSAN_ENV_VAR}")
-endforeach()
 
 set(TEST_SOURCES_C
   capi_test
@@ -134,16 +115,13 @@ foreach(name IN LISTS TEST_SOURCES_C)
   target_link_libraries(${name}
     PRIVATE 
       boink
-      piksel::piksel
       Threads::Threads # Required to resolve pthreads warning/errors on MSVC
   )
   add_test(NAME ${name} COMMAND ${name})
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
-
 endif()
-
 
 # Include the module that defines standard installation directory variables
 include(GNUInstallDirs)
