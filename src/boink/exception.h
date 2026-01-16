@@ -12,7 +12,8 @@ namespace boink{
     {
       IOError,
       InvalidArgumentError,
-      UnsupportedFormatError
+      UnsupportedFormatError,
+      NotFoundError,
     };
   public:
     Exception(
@@ -28,12 +29,13 @@ namespace boink{
     Type getType() const noexcept;
     std::string_view getFile() const noexcept;
     unsigned int getLine() const noexcept;
+  private:
     std::string getFormattedMessage() const;
-  public:
     static std::string_view getTypeString(Type type);
   private:
     Type type_;
     std::string msg_;
     const std::source_location location_;
+    mutable std::string buffer_;
   };
 }

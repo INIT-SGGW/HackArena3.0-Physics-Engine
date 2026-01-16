@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 2
+#define BOINK_C_API_VERSION_MINOR 3
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -55,7 +55,15 @@
     * Indicates that a requested object or identifier was not found.
     */
 #define BOINK_ERR_NOT_FOUND 3
+
+  /**
+   * Indicates that the file format is not supported.
+   */
 #define BOINK_ERR_UNSUPPORTED_FORMAT 4
+
+  /**
+   * Indicates an input/output error (for example a file read/write failure).
+   */
 #define BOINK_ERR_IO 5
 
     /**
@@ -66,10 +74,16 @@
      /**
       * Represents an opaque engine handle.
       *
-      * The pointer refers to an internal world or engine instance allocated
+      * The pointer refers to an internal race or engine instance allocated
       * and owned by the native C or C++ side.
       */
 typedef void* BoinkHandle;
+
+/**
+ * Represents a real-valued numeric type.
+ *
+ * This type is used for floating-point values.
+ */
 typedef double Real;
 
 /**
@@ -90,19 +104,42 @@ typedef struct BoinkVec3 {
   Real z;
 } BoinkVec3;
 
-typedef unsigned char* BoinkVehicleMeshHandle;
+/**
+ * Represents an opaque handle to a vehicle mesh resource.
+ */
+typedef void* BoinkVehicleMeshHandle;
 
 /**
  * Describes the geometric and steering properties of a vehicle model.
  *
- * The vehicle model is shared by all vehicle entities in the world.
+ * The vehicle model is shared by all vehicle entities in the race.
  */
 typedef struct BoinkVehicleModel {
+  /**
+   * Handle to the mesh of the vehicle.
+   */
   BoinkVehicleMeshHandle mesh;
+
+  /**
+   * Position of the vehicle's center of mass in model space.
+   */
   BoinkVec3 center_of_mass;
+
+  /**
+   * Radius of the vehicle wheels.
+   */
   Real wheel_radius;
+
+  /**
+   * Rest length of the suspension.
+   */
   Real suspension_rest_length;
+
+  /**
+   * Total mass of the vehicle.
+   */
   Real mass;
+
   /**
    * Maximum steering angle of the front wheels in degrees.
    */
@@ -134,9 +171,24 @@ typedef struct BoinkControls {
  * Represents a quaternion rotation (x, y, z, w).
  */
 typedef struct BoinkQuaternion {
+  /**
+   * X component of the vector part.
+   */
   Real x;
+
+  /**
+   * Y component of the vector part.
+   */
   Real y;
+
+  /**
+   * Z component of the vector part.
+   */
   Real z;
+
+  /**
+   * W component (scalar part).
+   */
   Real w;
 } BoinkQuaternion;
 
@@ -153,9 +205,9 @@ typedef struct BoinkVehicleState {
    */
   struct BoinkVec3 chassis_position;
   /**
-   * Orientation of the vehicle's chassis as a quaternion (x, y, z, w).
+   * Orientation of the vehicle as a quaternion (x, y, z, w).
    */
-  struct BoinkQuaternion chassis_orientation;
+  struct BoinkQuaternion vehicle_orientation;
   /**
    * Linear speed magnitude of the vehicle in meters per second.
    */
@@ -180,8 +232,16 @@ typedef struct BoinkVehicleState {
    * Effective brake actually applied by the physics engine in the range [0.0, 1.0].
    */
   Real brake_applied;
-  BoinkVec3 wheel_position[4];
-  BoinkQuaternion wheel_orientation[4];
+  /**
+   * World-space positions of the vehicle wheels.
+   *
+   * Index mapping:
+   *   [0] = front-left
+   *   [1] = front-right
+   *   [2] = rear-left
+   *   [3] = rear-right
+   */
+  struct BoinkVec3 wheel_position[4];
   /**
    * Wheel angular speeds in revolutions per minute.
    *
@@ -235,26 +295,89 @@ extern "C" {
    *
    * This function must be called before any other Boink API is used.
    *
+   * Parameters:
+   * - debug_drawer_enable:
+   *   Enables or disables the debug drawer used for visualizing
+   *
    * Returns:
    * - `BOINK_OK` on success.
    * - An error code on failure.
    */
   BOINK_API int boink_init(bool debug_drawer_enable);
+
+  /**
+   * Terminates the Boink engine library.
+   *
+   * This function releases all resources allocated by the library.
+   * After calling this function, no other Boink API functions 
+   * may be used unless `boink_init` is called again.
+   */
   BOINK_API void boink_terminate(void);
 
+  /**
+   * Creates a new race instance using the specified track file.
+   *
+   * The returned handle represents an internal race object managed by the engine.
+   * The race must be destroyed with `boink_destroy_race` when no longer needed.
+   *
+   * Parameters:
+   * - track_glb_filename:
+   *   Path to the GLB file containing the track geometry and metadata.
+   *
+   * Returns:
+   * - A valid `BoinkHandle` on success.
+   * - `NULL` if the race could not be created (for example, if the file could not be loaded).
+   */
   BOINK_API BoinkHandle boink_create_race(const char* track_glb_filename);
 
+  /**
+   * Destroys a race instance created by `boink_create_race`.
+   *
+   * It is not required to despawn all vehicles before destroying the race.
+   *
+   * Parameters:
+   * - `h` – handle to the race to destroy. Passing null is allowed and has
+   *   no effect.
+   */
+  BOINK_API void boink_destroy_race(BoinkHandle h);
+
+  /**
+   * Loads a vehicle mesh from a GLB model file.
+   *
+   * The created mesh can be shared by multiple vehicle instances and must
+   * be destroyed with `boink_destroy_vehicle_mesh` when no longer needed.
+   *
+   * Parameters:
+   * - glb_model_filename:
+   *   Path to the GLB file containing the vehicle mesh.
+   * - out_mesh_handle:
+   *   Pointer to receive the handle of the created mesh. Must not be null.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
+   */
   BOINK_API int boink_create_vehicle_mesh(
       const char* glb_model_filename,
       BoinkVehicleMeshHandle* out_mesh_handle);
-  
+
+  /**
+   * Destroys a vehicle mesh created by `boink_create_vehicle_mesh`.
+   *
+   * Passing a null handle has no effect. All vehicles using this mesh
+   * must be destroyed before destroying the mesh.
+   *
+   * Parameters:
+   * - handle:
+   *   Handle of the vehicle mesh to destroy.
+   */
   BOINK_API void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle);
 
   /**
-   * Advances the simulation by a fixed time step.
+   * Advances the race by a fixed time step.
    *
    * Parameters:
-   * - `h` – handle to a valid world.
+   * - `h` – handle to a valid race.
    * - `dt_seconds` – time step in seconds.
    *
    * Returns:
@@ -262,30 +385,66 @@ extern "C" {
    * - An error code on failure.
    */
   BOINK_API int boink_step_race(BoinkHandle h, Real dt_seconds);
-  BOINK_API int boink_get_simulation_duration(BoinkHandle h, Real* out_dur);
-  BOINK_API void boink_update_debug();
-  BOINK_API Real boink_get_time_debug();
-  BOINK_API bool boink_should_close_debug();
 
   /**
-   * Destroys a world instance created by `boink_create_world`.
-   *
-   * It is not required to despawn all vehicles before destroying the world.
+   * Retrieves the duration of the race.
    *
    * Parameters:
-   * - `h` – handle to the world to destroy. Passing null is allowed and has
-   *   no effect.
+   * - h:
+   *   Handle to a valid race.
+   * - out_dur:
+   *   Pointer to a `Real` variable that will receive the elapsed time
+   *   in seconds. Must not be null.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - An error code on failure.
    */
-  BOINK_API void boink_destroy_race(BoinkHandle h);
+  BOINK_API int boink_get_race_duration(BoinkHandle h, Real* out_dur);
+
+  /**
+   * Updates the debug drawer for the current frame.
+   *
+   * This function should be called once per frame if debug visualization
+   * is enabled. It updates internal debug objects and draws them to the screen.
+   *
+   * Has no effect if the debug drawer is not enabled.
+   */
+  BOINK_API void boink_update_debug(void);
+
+  /**
+   * Retrieves the current debug time.
+   *
+   * Returns the elapsed time in seconds tracked by the debug drawer.
+   * If the debug drawer is not enabled, this function returns 0.
+   *
+   * Returns:
+   * - Elapsed time in seconds.
+   */
+  BOINK_API Real boink_get_time_debug(void);
+
+  /**
+   * Checks whether the debug visualization window should close.
+   *
+   * Returns true if either the debug drawer is not enabled or if the user
+   * has requested the debug window to close.  
+   *
+   * Returns:
+   * - `true` if the debug window should close or debug is disabled.
+   * - `false` if the debug window is open and should continue running.
+   */
+  BOINK_API bool boink_should_close_debug(void);
 
   /**
    * Spawns a new vehicle with a newly generated unique identifier.
    *
    * The engine owns the vehicle and manages its lifetime until it is despawned
-   * or the world is destroyed.
+   * or the race is destroyed.
    *
    * Parameters:
-   * - `h` – handle to a valid world.
+   * - `h` – handle to a valid race.
+   * - `vehicle_model` – pointer to a `BoinkVehicleModel` that defines the
+   *   properties of the vehicle.
    * - `out_vehicle_id` – non-null pointer that receives the new vehicle identifier.
    *
    * Returns:
@@ -301,7 +460,7 @@ extern "C" {
    * Removes a vehicle with the specified identifier.
    *
    * Parameters:
-   * - `h` – handle to a valid world.
+   * - `h` – handle to a valid race.
    * - `vehicle_id` – identifier of the vehicle to despawn.
    *
    * Returns:
@@ -315,7 +474,7 @@ extern "C" {
    * Sets the desired driver controls for the specified vehicle.
    *
    * Parameters:
-   * - `h` – handle to a valid world.
+   * - `h` – handle to a valid race.
    * - `vehicle_id` – identifier of the vehicle to control.
    * - `controls` – non-null pointer to the desired control inputs.
    *
@@ -328,10 +487,45 @@ extern "C" {
   BOINK_API int boink_set_controls(BoinkHandle h, uint64_t vehicle_id, const struct BoinkControls* controls);
 
   /**
+   * Sets the world-space position of a vehicle.
+   *
+   * This immediately updates the specified vehicle's position in the simulation.
+   *
+   * Parameters:
+   * - `h` – handle to a valid race.
+   * - `vehicle_id` – identifier of the vehicle to move.
+   * - `position` – non-null pointer to the new position vector.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - `BOINK_ERR_INVALID_ARG` if `position` is null.
+   * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+   * - Another error code for other failures.
+   */
+  BOINK_API int boink_set_vehicle_position(BoinkHandle h, uint64_t vehicle_id, 
+      const struct BoinkVec3* position);
+
+  /**
+   * Sets the world-space position on the track.
+   *
+   * This updates the track-relative position used for physics or race logic.
+   *
+   * Parameters:
+   * - `h` – handle to a valid race.
+   * - `position` – non-null pointer to the new track position vector.
+   *
+   * Returns:
+   * - `BOINK_OK` on success.
+   * - `BOINK_ERR_INVALID_ARG` if `position` is null.
+   * - Another error code for other failures.
+   */
+  BOINK_API int boink_set_track_position(BoinkHandle h, const struct BoinkVec3* position);
+
+  /**
    * Reads the current state of the specified vehicle.
    *
    * Parameters:
-   * - `h` – handle to a valid world.
+   * - `h` – handle to a valid race.
    * - `vehicle_id` – identifier of the vehicle whose state is requested.
    * - `out_state` – non-null pointer that receives the vehicle state.
    *

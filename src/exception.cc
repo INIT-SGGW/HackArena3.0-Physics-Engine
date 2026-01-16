@@ -15,7 +15,8 @@ namespace boink
 
   const char* Exception::what() const noexcept 
   {
-    return msg_.c_str();
+    buffer_=getFormattedMessage();
+    return buffer_.data();
   }
 
   Exception::Type Exception::getType() const noexcept
@@ -36,10 +37,11 @@ namespace boink
   std::string Exception::getFormattedMessage() const
   {
     std::stringstream ss;
+    ss<<"Boink exception"<<std::endl;
     ss<<"Type: "<<getTypeString(getType())<<std::endl;
     ss<<"File: "<<getFile()<<std::endl;
     ss<<"Line: "<<getLine()<<std::endl;
-    ss<<"Message: "<<what()<<std::endl;
+    ss<<"Message: "<<msg_;
 
     return ss.str();
   }
@@ -54,6 +56,8 @@ namespace boink
         return "UnsupportedFormatError";
       case Type::IOError:
         return "IOError";
+      case Type::NotFoundError:
+        return "NotFoundError";
     }
 
     return "";

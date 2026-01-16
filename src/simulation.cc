@@ -61,7 +61,7 @@ namespace boink
   {
     if(id >=vehicles_.size())
       throw Exception(
-          Exception::Type::InvalidArgumentError,
+          Exception::Type::NotFoundError,
           "Vehicle with a given ID does not exist");
     vehicles_.erase(vehicles_.cbegin()+id);
   }
@@ -70,7 +70,7 @@ namespace boink
   {
     if(id >=vehicles_.size())
       throw Exception(
-          Exception::Type::InvalidArgumentError,
+          Exception::Type::NotFoundError,
           "Vehicle with a given ID does not exist");
     return vehicles_[id];
   }
