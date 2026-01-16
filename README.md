@@ -2,5 +2,5 @@
 
 Clone repo:
 ```bash 
-git clone --recurse-submodules https://github.com/INIT-SGGW/HackArena3.0-Physics-Engine.git
+git clone https://github.com/INIT-SGGW/HackArena3.0-Physics-Engine.git
 ```
