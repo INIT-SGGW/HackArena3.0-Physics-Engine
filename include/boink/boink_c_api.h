@@ -83,8 +83,9 @@ typedef void* BoinkHandle;
  * Represents a real-valued numeric type.
  *
  * This type is used for floating-point values.
+ * Should match the btScalar type.
  */
-typedef double Real;
+typedef float Real;
 
 /**
  * Represents a 3D vector in world coordinates (meters).

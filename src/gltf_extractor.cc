@@ -126,16 +126,16 @@ namespace boink
 
     if(node.translation.size()==3)
       origin=btVector3(
-          node.translation[0],
-          node.translation[1],
-          node.translation[2]);
+          (btScalar)node.translation[0],
+          (btScalar)node.translation[1],
+          (btScalar)node.translation[2]);
     
     if(node.rotation.size()==4)
       rotation=btQuaternion(
-          node.rotation[0],
-          node.rotation[1],
-          node.rotation[2],
-          node.rotation[3]);
+          (btScalar)node.rotation[0],
+          (btScalar)node.rotation[1],
+          (btScalar)node.rotation[2],
+          (btScalar)node.rotation[3]);
 
     btTransform transform;
     transform.setIdentity();
@@ -154,9 +154,12 @@ namespace boink
           "Only scale field should be used.");
 
     if(node.scale.size()==3)
-      return btVector3(node.scale[0],node.scale[1],node.scale[2]);
+      return btVector3(
+        (btScalar)node.scale[0],
+        (btScalar)node.scale[1],
+        (btScalar)node.scale[2]);
     else
-      return btVector3(1.f,1.f,1.f);
+      return btVector3(btScalar(1.),btScalar(1.),btScalar(1.));
   }
 
   void GltfExtractor::loadVertices(

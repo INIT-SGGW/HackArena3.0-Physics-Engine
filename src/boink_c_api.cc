@@ -173,7 +173,7 @@ void boink_update_debug()
 Real boink_get_time_debug()
 {
   if(g_drawer!=NULL)
-    return g_drawer->getTime();
+    return (Real)g_drawer->getTime();
 
   return 0;
 }

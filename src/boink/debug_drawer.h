@@ -61,13 +61,13 @@ namespace boink
     void setCameraSpeed(float speed);
     void addObject(std::shared_ptr<piksel::IDrawable> obj);
     //void removeObject(std::shared_ptr<piksel::IDrawable> obj);
-    float getTime() const;
+    double getTime() const;
 
     void drawFrameOrigin();
 
     piksel::Window::KeyState getKey(int glfw_key) const;
   private:
-    float getDeltaTime();
+    double getDeltaTime();
   private:
     piksel::Window wnd_;
     piksel::Camera cam_;
@@ -78,6 +78,6 @@ namespace boink
     float cam_speed_=5.f;
     float mouse_speed_=0.3f;
 
-    float prev_time_;
+    double prev_time_;
   };
 }

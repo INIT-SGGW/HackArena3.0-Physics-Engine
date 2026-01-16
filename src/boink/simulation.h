@@ -42,9 +42,9 @@ namespace boink
     btScalar getSimulationDuration() const { return simulation_duration_;}
     void registerDebugDrawer(btIDebugDraw* dbg);
   public:
-    static constexpr btScalar kGravitationalAcceleration=10.;
-    static constexpr btScalar kMaxDeltaTime=0.1;
-    static constexpr btScalar kFixedDeltaTime=1.f/60.f;
+    static constexpr btScalar kGravitationalAcceleration=btScalar(10.);
+    static constexpr btScalar kMaxDeltaTime=btScalar(0.1);
+    static constexpr btScalar kFixedDeltaTime=btScalar(1./60.);
     static constexpr int kMaxSubSteps=10;
   private:
     std::unique_ptr<btDefaultCollisionConfiguration> collision_configuration_;

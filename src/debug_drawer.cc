@@ -72,8 +72,8 @@ namespace boink
 
   void DebugDrawer::update()
   {
-    static double dt=getDeltaTime();
-    dt=getDeltaTime();
+    static float dt=(float)getDeltaTime();
+    dt=(float)getDeltaTime();
 
     static piksel::Window::MousePos prev_mouse_pos=wnd_.getMousePos();
 
@@ -95,9 +95,9 @@ namespace boink
     }
 
     piksel::Window::MousePos mouse_pos=wnd_.getMousePos();
-    cam_.rotateYaw((prev_mouse_pos.x-mouse_pos.x)*dt*mouse_speed_);
+    cam_.rotateYaw((float)(prev_mouse_pos.x-mouse_pos.x)*dt*mouse_speed_);
     prev_mouse_pos.x=mouse_pos.x;
-    cam_.rotatePitch((prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
+    cam_.rotatePitch((float)(prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
     prev_mouse_pos.y=mouse_pos.y;
 
     gfx_.render();
@@ -114,15 +114,15 @@ namespace boink
     gfx_.addDrawable(obj);
   }
 
-  float DebugDrawer::getTime() const
+  double DebugDrawer::getTime() const
   {
     return glfwGetTime();
   }
 
-  float DebugDrawer::getDeltaTime()
+  double DebugDrawer::getDeltaTime()
   {
-    float time=glfwGetTime();
-    float dt=time-prev_time_;
+    double time=glfwGetTime();
+    double dt=time-prev_time_;
     prev_time_=time;
 
     return dt;
