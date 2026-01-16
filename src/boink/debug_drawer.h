@@ -69,6 +69,9 @@ namespace boink
   private:
     double getDeltaTime();
   private:
+    static std::string_view src_code_vertex_sh;
+    static std::string_view src_code_frag_sh;
+  private:
     piksel::Window wnd_;
     piksel::Camera cam_;
     piksel::Graphics gfx_;

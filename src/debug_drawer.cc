@@ -1,11 +1,11 @@
 #include "boink/debug_drawer.h"
 
-#include "piksel/config.hh"
 #include <LinearMath/btIDebugDraw.h>
 #include <memory>
 #include <piksel/IDrawable.hh>
 #include <piksel/color.hh>
 #include <piksel/object.hh>
+#include <piksel/shader.hh>
 #include <piksel/window.hh>
 
 #include "boink/utils/utility.h"
@@ -16,8 +16,12 @@ namespace boink
     :wnd_("Debug Window",1280,720),
     cam_({0.f,0.f,10.f},{0.f,0.f,0.f}),
     gfx_(wnd_,cam_,
-        PIKSEL_SHADERS_PATH"/single_color.vert",
-        PIKSEL_SHADERS_PATH"/single_color.frag"),
+        piksel::Shader(
+            piksel::Shader::CompileShader(
+              src_code_vertex_sh,piksel::Shader::ShaderType::VertexType),
+            piksel::Shader::CompileShader(
+              src_code_frag_sh,piksel::Shader::ShaderType::FragmentType)
+            )),
     debug_mode_(btIDebugDraw::DebugDrawModes::DBG_DrawWireframe),
     prev_time_(glfwGetTime())
   {
@@ -148,4 +152,7 @@ namespace boink
   {
     return wnd_.getKey(glfw_key);
   }
+
+  std::string_view DebugDrawer::src_code_vertex_sh="#version 330 core\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
+  std::string_view DebugDrawer::src_code_frag_sh="#version 330 core\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
 }
