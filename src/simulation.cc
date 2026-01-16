@@ -1,15 +1,14 @@
 #include "boink/simulation.h"
 
 #include <LinearMath/btIDebugDraw.h>
-#include "LinearMath/btDefaultMotionState.h"
-#include "BulletDynamics/Dynamics/btRigidBody.h"
-#include "BulletCollision/CollisionShapes/btSphereShape.h"
-#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include <piksel/model.hh>
 
+#include "boink/exception.h"
 #include "boink/simulation/track.h"
 
 #include <memory>
-#include <piksel/model.hh>
+#include <algorithm>
+#include <cassert>
 
 namespace boink
 {
@@ -24,8 +23,7 @@ namespace boink
           solver_.get(),collision_configuration_.get())),
     track_(track_filepath,dynamics_world_)
   {
-    dynamics_world_->setGravity(btVector3(0, -GRAVITATIONAL_ACCELERATION, 0));
-
+    dynamics_world_->setGravity(btVector3(0, -kGravitationalAcceleration, 0));
   } 
 
   void Simulation::registerDebugDrawer(btIDebugDraw* dbg)
@@ -39,64 +37,47 @@ namespace boink
     );
   }
 
-  void Simulation::step(double dt )
+  void Simulation::step(btScalar dt) noexcept
   {
-    dynamics_world_->stepSimulation(dt, 5);
+    // With large dt simulation behaves strangely.
+    // Must use hard clamp or assert
+    assert(dt<kMaxDeltaTime);
+
+    dt=std::min(dt,kMaxDeltaTime);
+
+    int steps=dynamics_world_->stepSimulation(dt, kMaxSubSteps,kFixedDeltaTime);
+    simulation_duration_+=steps*kFixedDeltaTime;
+
     dynamics_world_->debugDrawWorld();
   }
 
-  Simulation::ObjectID Simulation::addCar(const Vehicle::CreationInfo& info)
+  Simulation::ObjectID Simulation::addVehicle(const Vehicle::CreationInfo& info)
   {
     vehicles_.emplace_back(info,dynamics_world_);
     return vehicles_.size()-1;
   }
 
-  void Simulation::removeCar(ObjectID id)
+  void Simulation::removeVehicle(ObjectID id)
   {
-    assert(id<vehicles_.size());
+    if(id >=vehicles_.size())
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          "Vehicle with a given ID does not exist");
     vehicles_.erase(vehicles_.cbegin()+id);
   }
 
-  Vehicle& Simulation::getCar(Simulation::ObjectID id)
+  Vehicle& Simulation::getVehicle(Simulation::ObjectID id)
   {
-    assert(id<vehicles_.size());
+    if(id >=vehicles_.size())
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          "Vehicle with a given ID does not exist");
     return vehicles_[id];
   }
 
   Track& Simulation::getTrack()
   {
     return track_;
-  }
-
-  void Simulation::addSphere(btScalar radius, const btVector3& origin)
-  {
-    std::shared_ptr<btCollisionShape> col_shape(new btSphereShape(radius));
-
-    btTransform transform;
-    transform.setIdentity();
-    transform.setOrigin(origin);
-
-    btScalar mass(1.f);
-
-    //rigidbody is dynamic if and only if mass is non zero, otherwise static
-    bool is_dynamic = (mass != 0.f);
-
-    //using motionstate is recommended, 
-    //it provides interpolation capabilities, 
-    //and only synchronizes 'active' objects
-    btVector3 local_inertia(0, 0, 0);
-    if (is_dynamic)
-      col_shape->calculateLocalInertia(mass, local_inertia);
-
-    //using motionstate is optional, 
-    //it provides interpolation capabilities, and only synchronizes 'active' objects
-    btDefaultMotionState* motion_state = new btDefaultMotionState(transform);
-    btRigidBody::btRigidBodyConstructionInfo rb_info
-      (mass, motion_state, col_shape.get(), local_inertia);
-    btRigidBody* body = new btRigidBody(rb_info);
-
-    //add the body to the dynamics world
-    dynamics_world_->addRigidBody(body);
   }
 }   
     

@@ -6,9 +6,6 @@
 #include "BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h"
 #include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h"
 #include "LinearMath/btIDebugDraw.h"
-#include <BulletDynamics/Dynamics/btRigidBody.h>
-#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
-#include <BulletDynamics/Vehicle/btVehicleRaycaster.h>
 
 #include "boink/simulation/track.h"
 #include "boink/simulation/vehicle.h"
@@ -22,7 +19,7 @@ namespace boink
   class Simulation
   {
   public:
-    typedef unsigned int ObjectID;
+    typedef uint64_t ObjectID;
   public:
     Simulation(std::string_view track_filepath);
     Simulation(const Simulation&)=delete;
@@ -33,19 +30,21 @@ namespace boink
 
     ~Simulation() noexcept=default;
 
-    ObjectID addCar(const Vehicle::CreationInfo& info);
-    void removeCar(ObjectID id);
-    Vehicle& getCar(ObjectID id);
-    size_t getCarNumber() const { return vehicles_.size();}
+    ObjectID addVehicle(const Vehicle::CreationInfo& info);
+    void removeVehicle(ObjectID id);
+    Vehicle& getVehicle(ObjectID id);
+    size_t getVehicleNumber() const { return vehicles_.size();}
 
     Track& getTrack();
 
-    void addSphere(btScalar radius, const btVector3& pos);
-
-    void step(double dt);
+    void step(btScalar dt) noexcept;
+    btScalar getSimulationDuration() const { return simulation_duration_;}
     void registerDebugDrawer(btIDebugDraw* dbg);
   public:
-    static constexpr double GRAVITATIONAL_ACCELERATION=10.;
+    static constexpr btScalar kGravitationalAcceleration=10.;
+    static constexpr btScalar kMaxDeltaTime=0.1;
+    static constexpr btScalar kFixedDeltaTime=1.f/60.f;
+    static constexpr int kMaxSubSteps=10;
   private:
     std::unique_ptr<btDefaultCollisionConfiguration> collision_configuration_;
     std::unique_ptr<btCollisionDispatcher> dispatcher_;
@@ -56,5 +55,6 @@ namespace boink
 
     Track track_;
     std::vector<Vehicle> vehicles_;
+    btScalar simulation_duration_=0;
   };
 }

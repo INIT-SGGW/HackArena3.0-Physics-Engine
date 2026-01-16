@@ -55,6 +55,8 @@
     * Indicates that a requested object or identifier was not found.
     */
 #define BOINK_ERR_NOT_FOUND 3
+#define BOINK_ERR_UNSUPPORTED_FORMAT 4
+#define BOINK_ERR_IO 5
 
     /**
      * Indicates an internal engine error.
@@ -68,6 +70,7 @@
       * and owned by the native C or C++ side.
       */
 typedef void* BoinkHandle;
+typedef double Real;
 
 /**
  * Represents a 3D vector in world coordinates (meters).
@@ -76,44 +79,35 @@ typedef struct BoinkVec3 {
   /**
    * X component in meters.
    */
-  double x;
+  Real x;
   /**
    * Y component in meters.
    */
-  double y;
+  Real y;
   /**
    * Z component in meters.
    */
-  double z;
+  Real z;
 } BoinkVec3;
 
+typedef unsigned char* BoinkVehicleMeshHandle;
+
 /**
- * Describes the geometric and steering properties of a car model.
+ * Describes the geometric and steering properties of a vehicle model.
  *
- * The car model is shared by all car entities in the world.
+ * The vehicle model is shared by all vehicle entities in the world.
  */
-typedef struct BoinkCarModel {
-  /**
-   * Position of the front-left wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 front_left_wheel;
-  /**
-   * Position of the front-right wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 front_right_wheel;
-  /**
-   * Position of the rear-left wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 rear_left_wheel;
-  /**
-   * Position of the rear-right wheel relative to the car origin (meters).
-   */
-  struct BoinkVec3 rear_right_wheel;
+typedef struct BoinkVehicleModel {
+  BoinkVehicleMeshHandle mesh;
+  BoinkVec3 center_of_mass;
+  Real wheel_radius;
+  Real suspension_rest_length;
+  Real mass;
   /**
    * Maximum steering angle of the front wheels in degrees.
    */
-  double max_steer_angle;
-} BoinkCarModel;
+  Real max_steer_angle;
+} BoinkVehicleModel;
 
 /**
  * Represents normalized control inputs of a driver.
@@ -122,54 +116,54 @@ typedef struct BoinkControls {
   /**
    * Throttle demand in the range [0.0, 1.0].
    */
-  double throttle;
+  Real throttle;
   /**
    * Brake demand in the range [0.0, 1.0].
    */
-  double brake;
+  Real brake;
   /**
    * Normalized steering input in the range [-1.0, 1.0].
    *
    * Negative values correspond to steering left.
    * Positive values correspond to steering right.
    */
-  double steer;
+  Real steer;
 } BoinkControls;
 
 /**
  * Represents a quaternion rotation (x, y, z, w).
  */
 typedef struct BoinkQuaternion {
-  double x;
-  double y;
-  double z;
-  double w;
+  Real x;
+  Real y;
+  Real z;
+  Real w;
 } BoinkQuaternion;
 
 /**
- * Represents the full state of a car at a specific simulation instant.
+ * Represents the full state of a vehicle at a specific simulation instant.
  */
-typedef struct BoinkCarState {
+typedef struct BoinkVehicleState {
   /**
-   * Unique car identifier.
+   * Unique vehicle identifier.
    */
-  uint64_t car_id;
+  uint64_t vehicle_id;
   /**
-   * World position of the car in meters.
+   * World position of the vehicle's chassis in meters.
    */
-  struct BoinkVec3 position;
+  struct BoinkVec3 chassis_position;
   /**
-   * Orientation of the car as a quaternion (x, y, z, w).
+   * Orientation of the vehicle's chassis as a quaternion (x, y, z, w).
    */
-  struct BoinkQuaternion orientation;
+  struct BoinkQuaternion chassis_orientation;
   /**
-   * Linear speed magnitude of the car in meters per second.
+   * Linear speed magnitude of the vehicle in meters per second.
    */
-  double speed;
+  Real speed;
   /**
    * Engine speed in revolutions per minute.
    */
-  double engine_rpm;
+  Real engine_rpm;
   /**
    * Current gear value.
    *
@@ -181,19 +175,13 @@ typedef struct BoinkCarState {
   /**
    * Effective throttle actually applied by the physics engine in the range [0.0, 1.0].
    */
-  double throttle_applied;
+  Real throttle_applied;
   /**
    * Effective brake actually applied by the physics engine in the range [0.0, 1.0].
    */
-  double brake_applied;
-  /**
-   * Steering angles of the front wheels in radians.
-   *
-   * Index mapping:
-   *   [0] = front-left
-   *   [1] = front-right
-   */
-  double wheel_angles[2];
+  Real brake_applied;
+  BoinkVec3 wheel_position[4];
+  BoinkQuaternion wheel_orientation[4];
   /**
    * Wheel angular speeds in revolutions per minute.
    *
@@ -203,8 +191,8 @@ typedef struct BoinkCarState {
    *   [2] = rear-left
    *   [3] = rear-right
    */
-  double wheel_speeds[4];
-} BoinkCarState;
+  Real wheel_speeds[4];
+} BoinkVehicleState;
 
 #ifdef __cplusplus
 extern "C" {
@@ -251,45 +239,16 @@ extern "C" {
    * - `BOINK_OK` on success.
    * - An error code on failure.
    */
-  BOINK_API int boink_init(void);
+  BOINK_API int boink_init(bool debug_drawer_enable);
+  BOINK_API void boink_terminate(void);
 
-  /**
-   * Creates a new world instance.
-   *
-   * The car model is shared by all car entities in the world.
-   *
-   * Parameters:
-   * - `car_model` – pointer to a car model description. The pointer must
-   *   refer to a valid `BoinkCarModel` for the lifetime of the call.
-   *
-   * Returns:
-   * - A valid `BoinkHandle` on success.
-   * - Null on failure.
-   */
-  BOINK_API BoinkHandle boink_create_world(const struct BoinkCarModel* car_model);
+  BOINK_API BoinkHandle boink_create_race(const char* track_glb_filename);
 
-  /**
-   * Starts a simulation in the given world at the specified timepoint.
-   *
-   * The timepoint is expressed in seconds. The car model used in the world
-   * is the one provided during `boink_create_world`.
-   *
-   * Returns:
-   * - `BOINK_OK` on success.
-   * - An error code on failure.
-   */
-  BOINK_API int boink_begin_world(BoinkHandle h, double timepoint);
-
-  /**
-   * Destroys a world instance created by `boink_create_world`.
-   *
-   * It is not required to despawn all cars before destroying the world.
-   *
-   * Parameters:
-   * - `h` – handle to the world to destroy. Passing null is allowed and has
-   *   no effect.
-   */
-  BOINK_API void boink_destroy_world(BoinkHandle h);
+  BOINK_API int boink_create_vehicle_mesh(
+      const char* glb_model_filename,
+      BoinkVehicleMeshHandle* out_mesh_handle);
+  
+  BOINK_API void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle);
 
   /**
    * Advances the simulation by a fixed time step.
@@ -302,70 +261,87 @@ extern "C" {
    * - `BOINK_OK` on success.
    * - An error code on failure.
    */
-  BOINK_API int boink_step(BoinkHandle h, double dt_seconds);
+  BOINK_API int boink_step_race(BoinkHandle h, Real dt_seconds);
+  BOINK_API int boink_get_simulation_duration(BoinkHandle h, Real* out_dur);
+  BOINK_API void boink_update_debug();
+  BOINK_API Real boink_get_time_debug();
+  BOINK_API bool boink_should_close_debug();
 
   /**
-   * Spawns a new car with a newly generated unique identifier.
+   * Destroys a world instance created by `boink_create_world`.
    *
-   * The engine owns the car and manages its lifetime until it is despawned
+   * It is not required to despawn all vehicles before destroying the world.
+   *
+   * Parameters:
+   * - `h` – handle to the world to destroy. Passing null is allowed and has
+   *   no effect.
+   */
+  BOINK_API void boink_destroy_race(BoinkHandle h);
+
+  /**
+   * Spawns a new vehicle with a newly generated unique identifier.
+   *
+   * The engine owns the vehicle and manages its lifetime until it is despawned
    * or the world is destroyed.
    *
    * Parameters:
    * - `h` – handle to a valid world.
-   * - `out_car_id` – non-null pointer that receives the new car identifier.
+   * - `out_vehicle_id` – non-null pointer that receives the new vehicle identifier.
    *
    * Returns:
-   * - `BOINK_OK` on success and writes the identifier to `*out_car_id`.
+   * - `BOINK_OK` on success and writes the identifier to `*out_vehicle_id`.
    * - An error code if the engine cannot allocate or generate the identifier
    *   or if the arguments are invalid.
    */
-  BOINK_API int boink_spawn_car(BoinkHandle h, uint64_t* out_car_id);
+  BOINK_API int boink_spawn_vehicle(BoinkHandle h, 
+      const struct BoinkVehicleModel* vehicle_model,
+      uint64_t* out_vehicle_id);
 
   /**
-   * Removes a car with the specified identifier.
+   * Removes a vehicle with the specified identifier.
    *
    * Parameters:
    * - `h` – handle to a valid world.
-   * - `car_id` – identifier of the car to despawn.
+   * - `vehicle_id` – identifier of the vehicle to despawn.
    *
    * Returns:
    * - `BOINK_OK` on success.
-   * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
+   * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
    * - Another error code for other failures.
    */
-  BOINK_API int boink_despawn_car(BoinkHandle h, uint64_t car_id);
+  BOINK_API int boink_despawn_vehicle(BoinkHandle h, uint64_t vehicle_id);
 
   /**
-   * Sets the desired driver controls for the specified car.
+   * Sets the desired driver controls for the specified vehicle.
    *
    * Parameters:
    * - `h` – handle to a valid world.
-   * - `car_id` – identifier of the car to control.
+   * - `vehicle_id` – identifier of the vehicle to control.
    * - `controls` – non-null pointer to the desired control inputs.
    *
    * Returns:
    * - `BOINK_OK` on success.
    * - `BOINK_ERR_INVALID_ARG` if `controls` is null.
-   * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
+   * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
    * - Another error code for other failures.
    */
-  BOINK_API int boink_set_controls(BoinkHandle h, uint64_t car_id, const struct BoinkControls* controls);
+  BOINK_API int boink_set_controls(BoinkHandle h, uint64_t vehicle_id, const struct BoinkControls* controls);
 
   /**
-   * Reads the current state of the specified car.
+   * Reads the current state of the specified vehicle.
    *
    * Parameters:
    * - `h` – handle to a valid world.
-   * - `car_id` – identifier of the car whose state is requested.
-   * - `out_state` – non-null pointer that receives the car state.
+   * - `vehicle_id` – identifier of the vehicle whose state is requested.
+   * - `out_state` – non-null pointer that receives the vehicle state.
    *
    * Returns:
    * - `BOINK_OK` on success and writes the state to `*out_state`.
    * - `BOINK_ERR_INVALID_ARG` if `out_state` is null.
-   * - `BOINK_ERR_NOT_FOUND` if the car does not exist.
+   * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
    * - Another error code for other failures.
    */
-  BOINK_API int boink_read_car_state(BoinkHandle h, uint64_t car_id, struct BoinkCarState* out_state);
+  BOINK_API int boink_read_vehicle_state(BoinkHandle h, uint64_t vehicle_id, struct BoinkVehicleState* out_state);
 
 #ifdef __cplusplus
 }  // extern "C"

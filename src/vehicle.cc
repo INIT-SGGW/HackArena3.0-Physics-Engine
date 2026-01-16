@@ -21,7 +21,8 @@ namespace boink
       world_(world),
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
       raycaster_(new btDefaultVehicleRaycaster(world_.get())),
-      center_of_mass_(create_info.center_of_mass)
+      center_of_mass_(create_info.center_of_mass),
+      max_steer_angle_(create_info.max_steer_angle)
   {
     collision_shape_=createCollisonShape(
         mesh_->getChassis().vertices,
@@ -157,10 +158,18 @@ namespace boink
     return rigidbody_->getCenterOfMassTransform();
   }
 
-  void Vehicle::setSteering(btScalar radians, TurnDirection dir)
+  btScalar Vehicle::getSpeed() const
   {
+    return rigidbody_->getLinearVelocity().length();
+  }
+
+  void Vehicle::setSteering(btScalar value, TurnDirection dir)
+  {
+    btScalar radians=value*max_steer_angle_;
     if(dir==TurnDirection::Right)
       radians*=-1;
+
+    // User should always set value to [0.1]
 
     vehicle_->setSteeringValue(radians,(int)WheelPosition::FrontLeft);
     vehicle_->setSteeringValue(radians,(int)WheelPosition::FrontRight);

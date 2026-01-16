@@ -1,15 +1,25 @@
 #include "boink/gltf_extractor.h"
 
+#include "boink/exception.h"
+
 #include <sstream>
 #include <algorithm>
-#include <stdexcept>
 
 namespace boink
 {
   GltfExtractor::GltfExtractor(std::string_view filename)
     :model_(loadModel(filename))
   {
-    assert(model_.scenes.size()==1);
+    if(model_.scenes.size()!=1)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "The glb model must have only one scene.");
+
+    if(model_.defaultScene==-1)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "The glb model must have set default scene value.");
+
     const tinygltf::Scene& scene=model_.scenes[model_.defaultScene];
     
     for(auto node_index:scene.nodes)
@@ -28,7 +38,9 @@ namespace boink
           return node.name==name;
         });
     if(it==nodes_.end())
-      throw std::runtime_error("Node with a given name was not found");
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          "Node with a given name was not found.");
 
     return *it;
   }
@@ -47,17 +59,21 @@ namespace boink
     
     if(node.mesh<0)
       return;
-      //throw std::runtime_error("Node does not have mesh");
+
     const tinygltf::Mesh& mesh=model_.meshes[node.mesh];
     
     for(const auto& primitive:mesh.primitives)
     {
       if(primitive.mode!=TINYGLTF_MODE_TRIANGLES)
-        throw std::runtime_error("Only triangles mode");
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Triangles mode is only supported.");
       
       auto it_pos_index=primitive.attributes.find("POSITION");
       if(it_pos_index==primitive.attributes.end())
-        throw std::runtime_error("POSITION attribiute not found");
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "POSITION attribiute not found.");
       int pos_index=it_pos_index->second;
 
       uint32_t base_vertex = static_cast<uint32_t>(new_node.vertices.size());
@@ -90,7 +106,7 @@ namespace boink
       if(!err.empty())
         ss<<"Error: "<<err<<std::endl;
 
-      throw std::runtime_error(ss.str());
+      throw Exception(Exception::Type::IOError,ss.str());
     }
 
     return model;
@@ -99,7 +115,11 @@ namespace boink
   btTransform GltfExtractor::getNodeTransform(
       const tinygltf::Node& node)
   {
-    assert(node.matrix.size()==0);
+    if(node.matrix.size()!=0)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Nodes matrix field must be zero. "
+          "Only translation and rotation fields should be used.");
 
     btVector3 origin(0.f,0.f,0.f);
     btQuaternion rotation(0.f,0.f,0.f,1.f);
@@ -127,6 +147,12 @@ namespace boink
 
   btVector3 GltfExtractor::getNodeScale(const tinygltf::Node& node)
   {
+    if(node.matrix.size()!=0)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Nodes matrix field must be zero. "
+          "Only scale field should be used.");
+
     if(node.scale.size()==3)
       return btVector3(node.scale[0],node.scale[1],node.scale[2]);
     else
@@ -139,9 +165,13 @@ namespace boink
       const btVector3& scale)
   {
     if(accessor.componentType!=TINYGLTF_COMPONENT_TYPE_FLOAT)
-      throw std::runtime_error("Unsupported component type for position");
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Unsupported component type for POSITION attribute.");
     if(accessor.type!=TINYGLTF_TYPE_VEC3)
-      throw std::runtime_error("Unsupported type for position");
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Unsupported type for POSITION attribue.");
 
     const auto& buffer_view=
       model_.bufferViews[accessor.bufferView];
@@ -173,9 +203,13 @@ namespace boink
   {
     if(accessor.componentType!=TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT&&
         accessor.componentType!=TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-      throw std::runtime_error("Unsupported component type for index");
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Unsupported component type for index.");
     if(accessor.type!=TINYGLTF_TYPE_SCALAR)
-      throw std::runtime_error("Unsupported type for index");
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Unsupported type for index.");
 
     const auto& buffer_view=
       model_.bufferViews[accessor.bufferView];
@@ -207,7 +241,9 @@ namespace boink
         index = *reinterpret_cast<const uint32_t*>(idx_data);
         break;
       default:
-        throw std::runtime_error("Unsupported index type");
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Unsupported data type for index.");
       }
 
       node.indices.push_back(index + base_vertex);

@@ -43,6 +43,8 @@ namespace boink
         std::cout << "Bullet: " << warningString << std::endl;
     }
 
+    void clearLines() override;
+
     void draw3dText(const btVector3&, const char*) override {}
     void setDebugMode(int mode) override { debug_mode_ = mode; }
     int getDebugMode() const override { return debug_mode_; }
@@ -55,15 +57,17 @@ namespace boink
 
     explicit operator bool() const;
 
-    void update(float dt);
+    void update();
     void setCameraSpeed(float speed);
     void addObject(std::shared_ptr<piksel::IDrawable> obj);
     //void removeObject(std::shared_ptr<piksel::IDrawable> obj);
-    float getDeltaTime() const;
+    float getTime() const;
 
     void drawFrameOrigin();
 
     piksel::Window::KeyState getKey(int glfw_key) const;
+  private:
+    float getDeltaTime();
   private:
     piksel::Window wnd_;
     piksel::Camera cam_;
@@ -74,6 +78,6 @@ namespace boink
     float cam_speed_=5.f;
     float mouse_speed_=0.3f;
 
-    mutable float prev_time_;
+    float prev_time_;
   };
 }

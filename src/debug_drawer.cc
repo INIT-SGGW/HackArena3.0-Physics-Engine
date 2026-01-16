@@ -54,6 +54,11 @@ namespace boink
     );
   }
 
+  void DebugDrawer::clearLines()
+  {
+    gfx_.clearLines();
+  }
+
   void DebugDrawer::drawPoint(
       const btVector3& point, 
       const btVector3& color)
@@ -73,8 +78,11 @@ namespace boink
     return (bool)wnd_;
   }
 
-  void DebugDrawer::update(float dt)
+  void DebugDrawer::update()
   {
+    static double dt=getDeltaTime();
+    dt=getDeltaTime();
+
     static piksel::Window::MousePos prev_mouse_pos=wnd_.getMousePos();
 
     if(wnd_.getKey(GLFW_KEY_ESCAPE)==piksel::Window::KeyState::Press)
@@ -114,7 +122,12 @@ namespace boink
     gfx_.addDrawable(obj);
   }
 
-  float DebugDrawer::getDeltaTime() const
+  float DebugDrawer::getTime() const
+  {
+    return glfwGetTime();
+  }
+
+  float DebugDrawer::getDeltaTime()
   {
     float time=glfwGetTime();
     float dt=time-prev_time_;

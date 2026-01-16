@@ -33,8 +33,8 @@ set_target_properties(boink PROPERTIES
 
 find_package(Threads REQUIRED)
 
-find_package(Eigen3 CONFIG REQUIRED)
-target_link_libraries(boink PUBLIC Eigen3::Eigen)
+#find_package(Eigen3 CONFIG REQUIRED)
+#target_link_libraries(boink PUBLIC Eigen3::Eigen)
 
 find_package(Bullet CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
@@ -84,7 +84,7 @@ endif()
 
 target_sources(boink
   PRIVATE
-  #src/boink_c_api.cc
+    src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
     src/debug_drawer.cc
     src/simulation.cc
@@ -94,6 +94,7 @@ target_sources(boink
     src/vehicle.cc
     src/vehicle_mesh.cc
     src/gltf_extractor.cc
+    src/exception.cc
 )
 
 target_include_directories(boink
@@ -112,6 +113,7 @@ set(TEST_SOURCES
   #asan_test
   #memory_leak_test
   colider_test
+  debug_test
 )
 
 foreach(name IN LISTS TEST_SOURCES)
@@ -128,7 +130,7 @@ foreach(name IN LISTS TEST_SOURCES)
 endforeach()
 
 set(TEST_SOURCES_C
-  #capi_test
+  capi_test
   #rotate_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)

@@ -26,6 +26,7 @@ namespace boink
       btScalar mass;
       btScalar wheel_radius;
       btScalar suspension_rest_length;
+      btScalar max_steer_angle;
       btVector3 center_of_mass;
     };
     
@@ -54,7 +55,10 @@ namespace boink
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
-    void setSteering(btScalar radians, TurnDirection dir);
+    btScalar getSpeed() const;
+
+    // Value from [0,1]
+    void setSteering(btScalar value, TurnDirection dir);
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
   private:
@@ -76,5 +80,6 @@ namespace boink
     btRaycastVehicle::btVehicleTuning tuning_;
 
     btVector3 center_of_mass_;
+    btScalar max_steer_angle_;
   };
 }
