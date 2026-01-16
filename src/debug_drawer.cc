@@ -8,18 +8,10 @@
 #include <piksel/object.hh>
 #include <piksel/window.hh>
 
+#include "boink/utils/utility.h"
+
 namespace boink
 {
-  inline glm::vec3 bt2glm(const btVector3& vec)
-  {
-    return glm::vec3(vec.x(),vec.y(),vec.z());
-  }
-
-  inline btVector3 glm2bt(const glm::vec3& vec)
-  {
-    return btVector3(vec.x,vec.y,vec.z);
-  }
-
   DebugDrawer::DebugDrawer()
     :wnd_("Debug Window",1280,720),
     cam_({0.f,0.f,10.f},{0.f,0.f,0.f}),

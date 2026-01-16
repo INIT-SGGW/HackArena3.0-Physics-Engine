@@ -14,8 +14,8 @@
 void printVehicleState(const BoinkVehicleState* state);
 int main()
 {
-  const char* vehicle_filename="Bolid_F1.glb";
-  const char* track_filename="Bolid_Tor_test.glb";
+  const char* vehicle_filename="C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
+  const char* track_filename = "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_Tor_test.glb";
 
   BOINK_ERR_PRINT(boink_init(true));
 

@@ -10,6 +10,7 @@
 #include <LinearMath/btDefaultMotionState.h>
 
 #include <memory>
+#include <cassert>
 
 namespace boink
 {

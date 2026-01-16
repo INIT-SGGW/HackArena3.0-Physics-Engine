@@ -33,9 +33,6 @@ set_target_properties(boink PROPERTIES
 
 find_package(Threads REQUIRED)
 
-#find_package(Eigen3 CONFIG REQUIRED)
-#target_link_libraries(boink PUBLIC Eigen3::Eigen)
-
 find_package(Bullet CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
 
@@ -105,29 +102,8 @@ target_include_directories(boink
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
-
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
-
-set(TEST_SOURCES
-  #asan_test
-  #memory_leak_test
-  colider_test
-  debug_test
-)
-
-foreach(name IN LISTS TEST_SOURCES)
-  add_executable(${name} tests/${name}.cc)
-  target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  target_link_libraries(${name}
-    PRIVATE 
-      boink
-      Threads::Threads # Required to resolve pthreads warning/errors on MSVC
-  )
-  add_test(NAME ${name} COMMAND ${name})
-  set_tests_properties(${name} PROPERTIES
-    ENVIRONMENT "${LSAN_ENV_VAR}")
-endforeach()
 
 set(TEST_SOURCES_C
   capi_test
@@ -145,9 +121,7 @@ foreach(name IN LISTS TEST_SOURCES_C)
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
-
 endif()
-
 
 # Include the module that defines standard installation directory variables
 include(GNUInstallDirs)

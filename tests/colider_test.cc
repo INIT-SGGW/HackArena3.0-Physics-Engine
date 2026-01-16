@@ -173,5 +173,4 @@ void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg)
     vehicle.setSteering(0.3,Vehicle::TurnDirection::Right);
   else
     vehicle.setSteering(0.0,Vehicle::TurnDirection::Right);
-
 }
