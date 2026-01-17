@@ -41,7 +41,9 @@ namespace boink
   {
     // With large dt simulation behaves strangely.
     // Must use hard clamp or assert
+#ifndef RASPBERRY_PI
     assert(dt<kMaxDeltaTime);
+#endif
 
     dt=std::min(dt,kMaxDeltaTime);
 

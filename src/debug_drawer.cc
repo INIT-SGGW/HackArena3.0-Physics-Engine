@@ -153,6 +153,11 @@ namespace boink
     return wnd_.getKey(glfw_key);
   }
 
+#ifdef RASPBERRY_PI
+  std::string_view DebugDrawer::src_code_vertex_sh="#version 310 es\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
+  std::string_view DebugDrawer::src_code_frag_sh="#version 310 es\n\nprecision mediump float;\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
+#else
   std::string_view DebugDrawer::src_code_vertex_sh="#version 330 core\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
   std::string_view DebugDrawer::src_code_frag_sh="#version 330 core\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
+#endif
 }
