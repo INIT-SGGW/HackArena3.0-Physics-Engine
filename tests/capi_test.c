@@ -49,7 +49,7 @@ int main()
 
   BoinkVehicleModel model;
   model.center_of_mass.x=0.;
-  model.center_of_mass.y=1.;
+  model.center_of_mass.y=-1.;
   model.center_of_mass.z=0.;
   model.mass=800.;
   model.max_steer_angle=1.5;
@@ -83,7 +83,12 @@ int main()
     printf("boink_set_vehicle_position() failed: code %d.\n",code);
     goto clear;
   }
+  BoinkControls controls;
+  controls.brake=0.0;
+  controls.steer=0.0;
+  controls.throttle=500.;
   
+  boink_set_controls(handle,id0,&controls);
   Real prev=boink_get_time_debug();
   while(!boink_should_close_debug())
   {

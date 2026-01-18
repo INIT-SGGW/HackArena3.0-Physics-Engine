@@ -202,6 +202,8 @@ int boink_spawn_vehicle(
     return BOINK_ERR_INVALID_ARG;
   if(p_vehicle_model==nullptr)
     return BOINK_ERR_INVALID_ARG;
+  if(out_vehicle_id==nullptr)
+    return BOINK_ERR_INVALID_ARG;
 
   boink::Vehicle::CreationInfo create_info;
   create_info.center_of_mass.setX(p_vehicle_model->center_of_mass.x);

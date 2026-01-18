@@ -15,6 +15,7 @@ CMakeUserPresets.json
 docs
 .vscode
 *.swp
+*.bak
 
 
 build

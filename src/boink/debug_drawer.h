@@ -3,12 +3,16 @@
 #include "piksel/window.hh"
 #include "piksel/graphics.hh"
 #include "piksel/camera.hh"
+#include "piksel/gui_manager.hh"
 
 #include <LinearMath/btIDebugDraw.h>
 #include <glm/glm.hpp>
 
 #include <piksel/IDrawable.hh>
+#include <piksel/color.hh>
 #include <piksel/object.hh>
+
+#include "boink/debug_info_gui.h"
 
 #include <memory>
 #include <iostream>
@@ -58,29 +62,36 @@ namespace boink
     explicit operator bool() const;
 
     void update();
-    void setCameraSpeed(float speed);
     void addObject(std::shared_ptr<piksel::IDrawable> obj);
-    //void removeObject(std::shared_ptr<piksel::IDrawable> obj);
     double getTime() const;
+    bool isSimulationToFreeze() const;
 
     void drawFrameOrigin();
 
     piksel::Window::KeyState getKey(int glfw_key) const;
+    SimulationInfo& getSimulationInfo();
   private:
     double getDeltaTime();
   private:
-    static std::string_view src_code_vertex_sh;
-    static std::string_view src_code_frag_sh;
+    static const std::string_view s_kSrcVertexShader_;
+    static const std::string_view s_kSrcFragShader_;
+
+    static const piksel::Color s_kBackgroundColor_;
+    static const char* s_kWindowName_;
   private:
     piksel::Window wnd_;
     piksel::Camera cam_;
     piksel::Graphics gfx_;
+    piksel::GuiManager gui_manager_;
 
-    int debug_mode_;
+    int debug_mode_=btIDebugDraw::DebugDrawModes::DBG_DrawWireframe;
 
     float cam_speed_=5.f;
     float mouse_speed_=0.3f;
 
-    double prev_time_;
+    double prev_time_=glfwGetTime();
+
+    std::shared_ptr<DebugInfoGui> info_=std::make_shared<DebugInfoGui>();
   };
+
 }

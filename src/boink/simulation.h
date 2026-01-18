@@ -5,15 +5,14 @@
 #include "BulletCollision/BroadphaseCollision/btDbvtBroadphase.h"
 #include "BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h"
 #include "BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h"
-#include "LinearMath/btIDebugDraw.h"
 
 #include "boink/simulation/track.h"
 #include "boink/simulation/vehicle.h"
+#include "boink/debug_drawer.h"
 
 #include <memory>
 #include <string_view>
 #include <vector>
-
 
 namespace boink
 {
@@ -40,7 +39,9 @@ namespace boink
 
     void step(btScalar dt) noexcept;
     btScalar getSimulationDuration() const { return simulation_duration_;}
-    void registerDebugDrawer(btIDebugDraw* dbg);
+    void registerDebugDrawer(DebugDrawer* dbg);
+  private:
+    void fillDebugInfo();
   public:
     static constexpr btScalar kGravitationalAcceleration=btScalar(10.);
     static constexpr btScalar kMaxDeltaTime=btScalar(0.1);
@@ -57,5 +58,7 @@ namespace boink
     Track track_;
     std::vector<Vehicle> vehicles_;
     btScalar simulation_duration_=0;
+
+    DebugDrawer* p_debug_drawer=nullptr;
   };
 }

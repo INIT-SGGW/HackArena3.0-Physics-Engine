@@ -5,10 +5,13 @@
 
 #include "boink/exception.h"
 #include "boink/simulation/track.h"
+#include "boink/simulation/simulation_info.h"
 
 #include <memory>
 #include <algorithm>
 #include <cassert>
+#include <sstream>
+#include <vector>
 
 namespace boink
 {
@@ -26,19 +29,18 @@ namespace boink
     dynamics_world_->setGravity(btVector3(0, -kGravitationalAcceleration, 0));
   } 
 
-  void Simulation::registerDebugDrawer(btIDebugDraw* dbg)
+  void Simulation::registerDebugDrawer(DebugDrawer* dbg)
   {
-    dynamics_world_->setDebugDrawer(dbg);
-    dbg->setDebugMode(
-        btIDebugDraw::DBG_DrawWireframe |
-        btIDebugDraw::DBG_DrawConstraints |
-        btIDebugDraw::DBG_DrawContactPoints |
-        btIDebugDraw::DBG_DrawAabb
-    );
+    p_debug_drawer=dbg;
+    dynamics_world_->setDebugDrawer(p_debug_drawer);
   }
 
   void Simulation::step(btScalar dt) noexcept
   {
+    if(p_debug_drawer && p_debug_drawer->isSimulationToFreeze())
+      return;
+    fillDebugInfo();
+
     // With large dt simulation behaves strangely.
     // Must use hard clamp or assert
 #ifndef RASPBERRY_PI
@@ -49,7 +51,6 @@ namespace boink
 
     int steps=dynamics_world_->stepSimulation(dt, kMaxSubSteps,kFixedDeltaTime);
     simulation_duration_+=steps*kFixedDeltaTime;
-
     dynamics_world_->debugDrawWorld();
   }
 
@@ -62,24 +63,75 @@ namespace boink
   void Simulation::removeVehicle(ObjectID id)
   {
     if(id >=vehicles_.size())
+    {
+      std::stringstream ss;
+      ss<<"Vehicle with ID="<<id<<" does not exist";
       throw Exception(
           Exception::Type::NotFoundError,
-          "Vehicle with a given ID does not exist");
+          ss.str());
+    }
     vehicles_.erase(vehicles_.cbegin()+id);
   }
 
   Vehicle& Simulation::getVehicle(Simulation::ObjectID id)
   {
     if(id >=vehicles_.size())
+    {
+      std::stringstream ss;
+      ss<<"Vehicle with ID="<<id<<" does not exist";
       throw Exception(
           Exception::Type::NotFoundError,
-          "Vehicle with a given ID does not exist");
+          ss.str());
+    }
     return vehicles_[id];
   }
 
   Track& Simulation::getTrack()
   {
     return track_;
+  }
+
+  void Simulation::fillDebugInfo()
+  {
+    if(!p_debug_drawer)
+      return;
+
+    SimulationInfo& info=p_debug_drawer->getSimulationInfo();
+    info.gravitational_acceleration=kGravitationalAcceleration;
+    info.simulation_duration=this->getSimulationDuration();
+    info.vehicle_number=this->getVehicleNumber();
+
+    TrackInfo track_info;
+    track_info.position=this->getTrack().getPosition();
+    info.track_info=std::move(track_info);
+
+    std::vector<VehicleInfo> vehicles_info;
+    vehicles_info.reserve(this->getVehicleNumber());
+
+    for(const auto& vehicle:vehicles_)
+    {
+      VehicleInfo vehicle_info;
+      vehicle_info.brake=0;
+      vehicle_info.center_of_mass_cs=vehicle.getCenterOfMassCS();
+      vehicle_info.chassis_position=vehicle.getChassisWorldTransform().getOrigin();
+      vehicle_info.engine_force=0;
+      vehicle_info.mass=vehicle.getMass();
+      vehicle_info.max_steer_angle=0;
+      vehicle_info.speed=vehicle.getSpeed();
+      vehicle_info.steering=0;
+
+      vehicle_info.front_left.position=
+        vehicle.getWheelWorldTransform(WheelPosition::FrontLeft).getOrigin();
+      vehicle_info.front_right.position=
+        vehicle.getWheelWorldTransform(WheelPosition::FrontRight).getOrigin();
+      vehicle_info.rear_left.position=
+        vehicle.getWheelWorldTransform(WheelPosition::RearLeft).getOrigin();
+      vehicle_info.rear_right.position=
+        vehicle.getWheelWorldTransform(WheelPosition::RearRight).getOrigin();
+
+      vehicles_info.push_back(std::move(vehicle_info));
+    }
+    info.vehicles_info=std::move(vehicles_info);
   }
 }   
     

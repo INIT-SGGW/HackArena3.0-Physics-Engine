@@ -1,5 +1,7 @@
 #include "boink/debug_drawer.h"
 
+#include "boink/version.h"
+
 #include <LinearMath/btIDebugDraw.h>
 #include <memory>
 #include <piksel/IDrawable.hh>
@@ -13,19 +15,20 @@
 namespace boink
 {
   DebugDrawer::DebugDrawer()
-    :wnd_("Debug Window",1280,720),
-    cam_({0.f,0.f,10.f},{0.f,0.f,0.f}),
-    gfx_(wnd_,cam_,
-        piksel::Shader(
-            piksel::Shader::CompileShader(
-              src_code_vertex_sh,piksel::Shader::ShaderType::VertexType),
-            piksel::Shader::CompileShader(
-              src_code_frag_sh,piksel::Shader::ShaderType::FragmentType)
-            )),
-    debug_mode_(btIDebugDraw::DebugDrawModes::DBG_DrawWireframe),
-    prev_time_(glfwGetTime())
+    :
+      wnd_(s_kWindowName_,1280,720),
+      cam_({0.f,0.f,10.f},{0.f,0.f,0.f}),
+      gfx_(wnd_,cam_,
+          piksel::Shader(
+              piksel::Shader::CompileShader(
+                s_kSrcVertexShader_,piksel::Shader::ShaderType::VertexType),
+              piksel::Shader::CompileShader(
+                s_kSrcFragShader_,piksel::Shader::ShaderType::FragmentType)
+              )),
+      gui_manager_(wnd_.getGLFWPointer())
   {
-    gfx_.setBackground(piksel::Color::Black);
+    gfx_.setBackground(s_kBackgroundColor_);
+    gui_manager_.addObject(info_);
   }
 
   void DebugDrawer::drawLine(
@@ -99,18 +102,30 @@ namespace boink
     }
 
     piksel::Window::MousePos mouse_pos=wnd_.getMousePos();
-    cam_.rotateYaw((float)(prev_mouse_pos.x-mouse_pos.x)*dt*mouse_speed_);
+    if(wnd_.getKey(GLFW_KEY_LEFT_SHIFT)==piksel::Window::KeyState::Press){
+      wnd_.setCursor();
+      gui_manager_.ignoreInput(false);
+    }
+    else
+    {
+      if(info_->isCameraEnable())
+      {
+        gui_manager_.ignoreInput();
+        wnd_.setCursor(false);
+        cam_.rotateYaw((float)(prev_mouse_pos.x-mouse_pos.x)*dt*mouse_speed_);
+        cam_.rotatePitch((float)(prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
+      }
+    }
     prev_mouse_pos.x=mouse_pos.x;
-    cam_.rotatePitch((float)(prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
     prev_mouse_pos.y=mouse_pos.y;
 
-    gfx_.render();
-    wnd_.update();
-  }
+    mouse_speed_=info_->getMouseSpeed();
+    cam_speed_=info_->getCameraSpeed();
 
-  void DebugDrawer::setCameraSpeed(float speed)
-  {
-    cam_speed_=speed;
+    gfx_.clear();
+    gfx_.render();
+    gui_manager_.render();
+    wnd_.update();
   }
 
   void DebugDrawer::addObject(std::shared_ptr<piksel::IDrawable> obj)
@@ -121,6 +136,11 @@ namespace boink
   double DebugDrawer::getTime() const
   {
     return glfwGetTime();
+  }
+
+  bool DebugDrawer::isSimulationToFreeze() const
+  {
+    return info_->isSimulationFreeze();
   }
 
   double DebugDrawer::getDeltaTime()
@@ -153,11 +173,22 @@ namespace boink
     return wnd_.getKey(glfw_key);
   }
 
-#ifdef RASPBERRY_PI
-  std::string_view DebugDrawer::src_code_vertex_sh="#version 310 es\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
-  std::string_view DebugDrawer::src_code_frag_sh="#version 310 es\n\nprecision mediump float;\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
+  SimulationInfo& DebugDrawer::getSimulationInfo()
+  {
+    return info_->simulation_info;
+  }
+
+#ifdef NDEBUG
+  const char* DebugDrawer::s_kWindowName_="Release Boink (" BOINK_VERSION ")";
 #else
-  std::string_view DebugDrawer::src_code_vertex_sh="#version 330 core\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
-  std::string_view DebugDrawer::src_code_frag_sh="#version 330 core\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
+  const char* DebugDrawer::s_kWindowName_="Debug Boink (" BOINK_VERSION ")";
+#endif
+  const piksel::Color DebugDrawer::s_kBackgroundColor_= piksel::Color::Black;
+#ifdef RASPBERRY_PI
+  const std::string_view DebugDrawer::s_kSrcVertexShader_="#version 300 es\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
+  const std::string_view DebugDrawer::s_kSrcFragShader_="#version 300 es\n\nprecision mediump float;\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
+#else
+  const std::string_view DebugDrawer::s_kSrcVertexShader_="#version 330 core\n\nlayout (location = 0) in vec3 aPos;\nlayout (location = 1) in vec2 aTexCord;\n\nout vec2 ourTexCord;\n\nuniform mat4 proj;\nuniform mat4 view;\nuniform mat4 trans;\n\nvoid main()\n{\n  ourTexCord=aTexCord;\n  gl_Position = proj*view*trans*vec4(aPos.xyz, 1.0f);\n};\n";
+  const std::string_view DebugDrawer::s_kSrcFragShader_="#version 330 core\n\nin vec2 ourTexCord;\n\nout vec4 FragColor;\n\nuniform vec3 color;\n\nvoid main()\n{\n  FragColor=vec4(color.xyz,1.0);\n};\n";
 #endif
 }

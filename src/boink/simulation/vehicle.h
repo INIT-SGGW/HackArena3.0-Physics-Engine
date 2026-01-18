@@ -56,6 +56,8 @@ namespace boink
     const btTransform& getCenterOfMassTransform() const;
 
     btScalar getSpeed() const;
+    btScalar getMass() const;
+    btVector3 getCenterOfMassCS() const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);

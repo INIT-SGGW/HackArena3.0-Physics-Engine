@@ -58,7 +58,7 @@ namespace boink
     // Rear-left
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin()
-        +center_of_mass_,
+        -center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -70,7 +70,7 @@ namespace boink
     // Rear-right
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin()
-        +center_of_mass_,
+        -center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -84,7 +84,7 @@ namespace boink
     // Front-left
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin()
-        +center_of_mass_,
+        -center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -96,7 +96,7 @@ namespace boink
     // Front-right
     vehicle_->addWheel(
         mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin()
-        +center_of_mass_,
+        -center_of_mass_,
         wheel_direction_cs0,
         wheel_axle_cs,
         suspension_rest_length,
@@ -143,7 +143,7 @@ namespace boink
     // compund shape we have to move also the chassis.
     btTransform translate;
     translate.setIdentity();
-    translate.setOrigin(center_of_mass_);
+    translate.setOrigin(-center_of_mass_);
 
     // we must translate before rotation
     return vehicle_->getChassisWorldTransform()*translate;
@@ -162,6 +162,16 @@ namespace boink
   btScalar Vehicle::getSpeed() const
   {
     return rigidbody_->getLinearVelocity().length();
+  }
+
+  btScalar Vehicle::getMass() const
+  {
+    return rigidbody_->getMass();
+  }
+
+  btVector3 Vehicle::getCenterOfMassCS() const
+  {
+    return center_of_mass_;
   }
 
   void Vehicle::setSteering(btScalar value, TurnDirection dir)
@@ -208,7 +218,7 @@ namespace boink
 
     btTransform localTransform;
 		localTransform.setIdentity();
-		localTransform.setOrigin(center_of_mass);
+		localTransform.setOrigin(-center_of_mass);
 
 		//The center of gravity of the compound shape is the origin. 
     //When we add a rigidbody to the compound shape

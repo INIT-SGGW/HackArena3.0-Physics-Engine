@@ -1,6 +1,6 @@
 {
   "name": "piksel",
-  "version": "0.2.22",
+  "version": "0.3.5",
   "homepage": "https://github.com/v4m3rrr/piksel",
   "license": "MIT",
   "dependencies": [
@@ -8,7 +8,14 @@
     "glm",
     "opengl",
     "glad",
-    "tinygltf",
+    "stb",
+    {
+      "name": "imgui",
+      "features": [
+        "opengl3-binding",
+        "glfw-binding"
+      ]
+    },
     {
       "name": "vcpkg-cmake",
       "host": true

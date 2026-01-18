@@ -92,6 +92,7 @@ target_sources(boink
     src/vehicle_mesh.cc
     src/gltf_extractor.cc
     src/exception.cc
+    src/debug_info_gui.cc
 )
 
 target_include_directories(boink
