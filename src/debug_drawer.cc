@@ -16,7 +16,7 @@ namespace boink
 {
   DebugDrawer::DebugDrawer()
     :
-      wnd_(s_kWindowName_,1280,720),
+      wnd_(s_kWindowName_),
       cam_({0.f,0.f,10.f},{0.f,0.f,0.f}),
       gfx_(wnd_,cam_,
           piksel::Shader(

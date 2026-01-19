@@ -14,6 +14,7 @@
 #include <exception>
 #include <memory>
 #include <iostream>
+#include <numbers>
 
 #define HANDLE_EXCEPTIONS(block)       \
 try {                                  \
@@ -213,7 +214,9 @@ int boink_spawn_vehicle(
   create_info.mass=p_vehicle_model->mass;
   create_info.wheel_radius=p_vehicle_model->wheel_radius;
   create_info.suspension_rest_length=p_vehicle_model->suspension_rest_length;
-  create_info.max_steer_angle=p_vehicle_model->max_steer_angle;
+  create_info.max_steer_angle =
+      p_vehicle_model->max_steer_angle * std::numbers::pi / 180.0;
+
   create_info.mesh=std::shared_ptr<const boink::VehicleMesh>(
       (const boink::VehicleMesh*)p_vehicle_model->mesh,
       [](const boink::VehicleMesh*){});
@@ -253,12 +256,30 @@ int boink_set_controls(
   HANDLE_EXCEPTIONS(
     p_vehicle=&p_sim->getVehicle(vehicle_id))
 
+  if(controls->throttle>1. || controls->throttle<0.)
+  {
+    std::cout<<"BoinkControls::throttle should be in the range [0.0, 1.0]."<<std::endl;
+    return BOINK_ERR_INVALID_ARG;
+  }
+    
+  if(controls->brake>1. || controls->brake<0.)
+  {
+    std::cout<<"BoinkControls::brake should be in the range [0.0, 1.0]."<<std::endl;
+    return BOINK_ERR_INVALID_ARG;
+  }
+
+  if(controls->steer>1. || controls->steer<-1.)
+  {
+    std::cout<<"BoinkControls::brake should be in the range [-1.0, 1.0]."<<std::endl;
+    return BOINK_ERR_INVALID_ARG;
+  }
+
   p_vehicle->setEngineForce(controls->throttle);
   p_vehicle->setBrake(controls->brake);
 
   Real steer=std::abs(controls->steer);
   boink::Vehicle::TurnDirection dir=
-    controls->steer>0.0?
+    controls->steer<0.0?
     boink::Vehicle::TurnDirection::Left:
     boink::Vehicle::TurnDirection::Right;
   p_vehicle->setSteering(steer,dir);

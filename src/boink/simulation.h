@@ -12,7 +12,7 @@
 
 #include <memory>
 #include <string_view>
-#include <vector>
+#include <unordered_map>
 
 namespace boink
 {
@@ -47,6 +47,8 @@ namespace boink
     static constexpr btScalar kMaxDeltaTime=btScalar(0.1);
     static constexpr btScalar kFixedDeltaTime=btScalar(1./60.);
     static constexpr int kMaxSubSteps=10;
+
+    static ObjectID s_available_id;
   private:
     std::unique_ptr<btDefaultCollisionConfiguration> collision_configuration_;
     std::unique_ptr<btCollisionDispatcher> dispatcher_;
@@ -56,7 +58,7 @@ namespace boink
     std::shared_ptr<btDiscreteDynamicsWorld> dynamics_world_;
 
     Track track_;
-    std::vector<Vehicle> vehicles_;
+    std::unordered_map<ObjectID,Vehicle> vehicles_;
     btScalar simulation_duration_=0;
 
     DebugDrawer* p_debug_drawer=nullptr;

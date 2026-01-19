@@ -188,12 +188,16 @@ namespace boink
 
   void Vehicle::setEngineForce(btScalar force)
   {
+    // TODO
+    // Make it much smarter
+    force*=500.;
     vehicle_->applyEngineForce(force,(int)WheelPosition::RearLeft);
     vehicle_->applyEngineForce(force,(int)WheelPosition::RearRight);
   }
 
   void Vehicle::setBrake(btScalar brake)
   {
+    brake*=40.;
     vehicle_->setBrake(brake,(int)WheelPosition::RearLeft);
     vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
     //vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);

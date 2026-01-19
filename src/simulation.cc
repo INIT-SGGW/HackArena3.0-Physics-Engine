@@ -15,6 +15,7 @@
 
 namespace boink
 {
+  Simulation::ObjectID Simulation::s_available_id=0;
   Simulation::Simulation(
       std::string_view track_filepath)
     :collision_configuration_(new btDefaultCollisionConfiguration()),
@@ -56,13 +57,15 @@ namespace boink
 
   Simulation::ObjectID Simulation::addVehicle(const Vehicle::CreationInfo& info)
   {
-    vehicles_.emplace_back(info,dynamics_world_);
-    return vehicles_.size()-1;
+    ObjectID id=s_available_id++;
+    vehicles_.insert({id,Vehicle(info,dynamics_world_)});
+    return id;
   }
 
   void Simulation::removeVehicle(ObjectID id)
   {
-    if(id >=vehicles_.size())
+    auto it=vehicles_.find(id);
+    if(it==vehicles_.end())
     {
       std::stringstream ss;
       ss<<"Vehicle with ID="<<id<<" does not exist";
@@ -70,12 +73,13 @@ namespace boink
           Exception::Type::NotFoundError,
           ss.str());
     }
-    vehicles_.erase(vehicles_.cbegin()+id);
+    vehicles_.erase(it);
   }
 
   Vehicle& Simulation::getVehicle(Simulation::ObjectID id)
   {
-    if(id >=vehicles_.size())
+    auto it=vehicles_.find(id);
+    if(it==vehicles_.end())
     {
       std::stringstream ss;
       ss<<"Vehicle with ID="<<id<<" does not exist";
@@ -83,7 +87,7 @@ namespace boink
           Exception::Type::NotFoundError,
           ss.str());
     }
-    return vehicles_[id];
+    return it->second;
   }
 
   Track& Simulation::getTrack()
@@ -108,7 +112,7 @@ namespace boink
     std::vector<VehicleInfo> vehicles_info;
     vehicles_info.reserve(this->getVehicleNumber());
 
-    for(const auto& vehicle:vehicles_)
+    for(const auto& [key,vehicle]:vehicles_)
     {
       VehicleInfo vehicle_info;
       vehicle_info.brake=0;

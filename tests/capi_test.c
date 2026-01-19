@@ -86,9 +86,13 @@ int main()
   BoinkControls controls;
   controls.brake=0.0;
   controls.steer=0.0;
-  controls.throttle=500.;
+  controls.throttle=1.;
   
-  boink_set_controls(handle,id0,&controls);
+  if((code=boink_set_controls(handle,id0,&controls))!=BOINK_OK)
+  {
+    printf("boink_set_controls() failed: code %d.\n",code);
+    goto clear;
+  }
   Real prev=boink_get_time_debug();
   while(!boink_should_close_debug())
   {
