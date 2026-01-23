@@ -33,6 +33,11 @@ namespace boink
     // I dont know why but everybody does this.
     rigidbody_->setActivationState(DISABLE_DEACTIVATION);
 
+    // Because cars might move fast we wanna avoid
+    // cliping them or just going over a wall
+    rigidbody_->setCcdMotionThreshold(1.0);
+    rigidbody_->setCcdSweptSphereRadius(0.5);
+
     vehicle_=std::unique_ptr<btRaycastVehicle>(
         new btRaycastVehicle(tuning_, rigidbody_.get(), raycaster_.get())
     );

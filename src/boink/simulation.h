@@ -45,7 +45,7 @@ namespace boink
   public:
     static constexpr btScalar kGravitationalAcceleration=btScalar(10.);
     static constexpr btScalar kMaxDeltaTime=btScalar(0.1);
-    static constexpr btScalar kFixedDeltaTime=btScalar(1./60.);
+    static constexpr btScalar kFixedDeltaTime=btScalar(1./120.);
     static constexpr int kMaxSubSteps=10;
 
     static ObjectID s_available_id;
