@@ -5,6 +5,7 @@
 #include "piksel/camera.hh"
 #include "piksel/gui_manager.hh"
 
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <LinearMath/btIDebugDraw.h>
 #include <glm/glm.hpp>
 
@@ -62,14 +63,20 @@ namespace boink
     explicit operator bool() const;
 
     void update();
+
+    void setCamera(const btVector3& pos, const btVector3& target);
     void addObject(std::shared_ptr<piksel::IDrawable> obj);
     double getTime() const;
     bool isSimulationToFreeze() const;
+    btRaycastVehicle::btVehicleTuning getVehicleTuning(uint64_t id) const;
+    void setVehicleTuning(
+        const btRaycastVehicle::btVehicleTuning& tuning, uint64_t id);
 
     void drawFrameOrigin();
 
     piksel::Window::KeyState getKey(int glfw_key) const;
     SimulationInfo& getSimulationInfo();
+
   private:
     double getDeltaTime();
   private:

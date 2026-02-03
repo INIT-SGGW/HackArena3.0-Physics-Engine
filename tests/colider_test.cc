@@ -48,7 +48,8 @@ int main()
       .wheel_radius=0.36,
       .suspension_rest_length=1.02,
       .max_steer_angle=1.5,
-      .center_of_mass={0.,1.,0.}});
+      .center_of_mass={0.,-0.1,0.},
+      .tuning=btRaycastVehicle::btVehicleTuning()});
   sim.getVehicle(car_id0).setPosition({0.,13.,7.});
 
   std::shared_ptr<VehicleModel> vehicle_model0(
@@ -61,7 +62,8 @@ int main()
       .wheel_radius=0.36,
       .suspension_rest_length=0.52,
       .max_steer_angle=1.5,
-      .center_of_mass={0.,1.,0.}});
+      .center_of_mass={0.,-0.1,0.},
+      .tuning=btRaycastVehicle::btVehicleTuning()});
   sim.getVehicle(car_id1).setPosition({0.,23.,0.});
 
   std::shared_ptr<VehicleModel> vehicle_model1(
@@ -87,6 +89,16 @@ int main()
 
     dbg.drawFrameOrigin();
     sim.step(dt);
+    // Trzeba bedzie nadpisac jakos metode albo po prostu napisac nowa
+    // klase dla pojazdu bo to pierdolenie sie z tym mnie wkurwia
+    sim.getVehicle(car_id0).update();
+    sim.getVehicle(car_id1).update();
+
+    const auto& trans=sim.getVehicle(car_id1).getWorldTransform();
+    btVector3 back=trans.getBasis()*btVector3(0,0.25,-1);
+    btVector3 cam_pos=trans.getOrigin() + back*15;
+
+    dbg.setCamera(cam_pos,trans.getOrigin());
     dbg.update();
   }
   return 0;
@@ -96,8 +108,8 @@ void updateTransform(
     std::shared_ptr<VehicleModel> vehicle_model, 
     const Vehicle& vehicle)
 {
-    vehicle_model->setChassisWorldTransform(
-        bt2glm(vehicle.getChassisWorldTransform()));
+    //vehicle_model->setChassisWorldTransform(
+        //bt2glm(vehicle.getChassisWorldTransform()));
     vehicle_model->setWheelWorldTransform(
         VehicleModel::WheelPosition::RearLeft,
         bt2glm(vehicle.getWheelWorldTransform(WheelPosition::RearLeft)));
@@ -158,12 +170,14 @@ VehicleModel createVehicleModel(
 void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg)
 {
   if(dbg.getKey(GLFW_KEY_UP)==Window::KeyState::Press)
-    vehicle.setEngineForce(500.);
+    vehicle.setEngineForce(10.);
+  else if(dbg.getKey(GLFW_KEY_DOWN)==Window::KeyState::Press)
+    vehicle.setEngineForce(-5);
   else
     vehicle.setEngineForce(0.);
 
-  if(dbg.getKey(GLFW_KEY_DOWN)==Window::KeyState::Press)
-    vehicle.setBrake(30);
+  if(dbg.getKey(GLFW_KEY_SPACE)==Window::KeyState::Press)
+    vehicle.setBrake(1);
   else
     vehicle.setBrake(0.);
 
@@ -173,4 +187,5 @@ void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg)
     vehicle.setSteering(0.3,Vehicle::TurnDirection::Right);
   else
     vehicle.setSteering(0.0,Vehicle::TurnDirection::Right);
+  
 }

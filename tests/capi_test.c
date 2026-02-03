@@ -49,12 +49,12 @@ int main()
 
   BoinkVehicleModel model;
   model.center_of_mass.x=0.;
-  model.center_of_mass.y=-1.;
+  model.center_of_mass.y=-0.6;
   model.center_of_mass.z=0.;
   model.mass=800.;
   model.max_steer_angle=1.5;
   model.mesh=mesh_handle;
-  model.suspension_rest_length=0.5;
+  model.suspension_rest_length=0.4;
   model.wheel_radius=0.36;
 
   uint64_t id0;

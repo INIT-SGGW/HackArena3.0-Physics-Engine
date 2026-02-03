@@ -2,7 +2,8 @@
 
 #include "LinearMath/btScalar.h"
 #include "LinearMath/btVector3.h"
-#include <vector>
+#include <unordered_map>
+#include <cstdint>
 
 namespace boink
 {
@@ -13,6 +14,13 @@ namespace boink
 
   struct VehicleInfo
   {
+    btScalar friction_slip;
+    btScalar max_suspension_force;
+    btScalar max_suspension_travel_cm;
+    btScalar suspension_compression;
+    btScalar suspension_damping;
+    btScalar suspension_stiffness;
+
     btScalar max_steer_angle;
     btVector3 center_of_mass_cs;
     btVector3 chassis_position;
@@ -41,6 +49,6 @@ namespace boink
     btScalar simulation_duration;
 
     TrackInfo track_info;
-    std::vector<VehicleInfo> vehicles_info;
+    std::unordered_map<uint64_t,VehicleInfo> vehicles_info;
   };
 }

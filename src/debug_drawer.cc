@@ -1,5 +1,6 @@
 #include "boink/debug_drawer.h"
 
+#include "boink/simulation/vehicle.h"
 #include "boink/version.h"
 
 #include <LinearMath/btIDebugDraw.h>
@@ -128,6 +129,11 @@ namespace boink
     wnd_.update();
   }
 
+  void DebugDrawer::setCamera(const btVector3& pos, const btVector3& target)
+  {
+    cam_.set(bt2glm(target),bt2glm(pos));
+  }
+
   void DebugDrawer::addObject(std::shared_ptr<piksel::IDrawable> obj)
   {
     gfx_.addDrawable(obj);
@@ -141,6 +147,32 @@ namespace boink
   bool DebugDrawer::isSimulationToFreeze() const
   {
     return info_->isSimulationFreeze();
+  }
+
+  btRaycastVehicle::btVehicleTuning DebugDrawer::getVehicleTuning(uint64_t id) const
+  {
+    const auto& info=info_->simulation_info.vehicles_info.at(id);
+    btRaycastVehicle::btVehicleTuning tuning;
+    tuning.m_frictionSlip=info.friction_slip;
+    tuning.m_maxSuspensionForce=info.max_suspension_force;
+    tuning.m_maxSuspensionTravelCm=info.max_suspension_travel_cm;
+    tuning.m_suspensionCompression=info.suspension_compression;
+    tuning.m_suspensionDamping=info.suspension_damping;
+    tuning.m_suspensionStiffness=info.suspension_stiffness;
+
+    return tuning;
+  }
+
+  void DebugDrawer::setVehicleTuning(
+      const btRaycastVehicle::btVehicleTuning& tuning, uint64_t id)
+  {
+    auto& vehicle_info=info_->simulation_info.vehicles_info[id];
+    vehicle_info.friction_slip=tuning.m_frictionSlip;
+    vehicle_info.max_suspension_force=tuning.m_maxSuspensionForce;
+    vehicle_info.max_suspension_travel_cm=tuning.m_maxSuspensionTravelCm;
+    vehicle_info.suspension_compression=tuning.m_suspensionCompression;
+    vehicle_info.suspension_damping=tuning.m_suspensionDamping;
+    vehicle_info.suspension_stiffness=tuning.m_suspensionStiffness;
   }
 
   double DebugDrawer::getDeltaTime()

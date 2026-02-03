@@ -1,5 +1,6 @@
 #include "boink/debug_info_gui.h"
 
+#include <imgui.h>
 #include <sstream>
 #include <iomanip>
 
@@ -43,9 +44,24 @@ namespace boink
     
     GuiObject::text("");
 
-    for(const auto& vehicle_info:simulation_info.vehicles_info)
+    for (auto& [key,vehicle_info] : simulation_info.vehicles_info)
     {
+      //auto& vehicle_info=simulation_info.vehicles_info[i];
+      ImGui::PushID(key);
       if (GuiObject::collapsingHeader("Vehicle")){
+
+        GuiObject::slider(
+            "Friction slip",0.f,10.f,&vehicle_info.friction_slip);
+        GuiObject::slider(
+            "Max suspension force",0.f,50000.f,&vehicle_info.max_suspension_force);
+        GuiObject::slider(
+            "Max suspension travel",0.f,20.f,&vehicle_info.max_suspension_travel_cm);
+        GuiObject::slider(
+            "Suspension compression",0.f,100.f,&vehicle_info.suspension_compression);
+        GuiObject::slider(
+            "Suspension damping",0.f,100.f,&vehicle_info.suspension_damping);
+        GuiObject::slider(
+            "Suspension stifness",0.f,100.f,&vehicle_info.suspension_stiffness);
 
         ss<<"Vehicle chassis position: "<<vehicle_info.chassis_position;
         ss<<" [m]";
@@ -95,6 +111,7 @@ namespace boink
         GuiObject::text(ss.str());
         ss.str("");
       }
+      ImGui::PopID();
 
     }
   }

@@ -41,7 +41,8 @@ namespace boink
     btScalar getSimulationDuration() const { return simulation_duration_;}
     void registerDebugDrawer(DebugDrawer* dbg);
   private:
-    void fillDebugInfo();
+    void updateDebugInfo();
+    void updateDebugTuningInfo();
   public:
     static constexpr btScalar kGravitationalAcceleration=btScalar(10.);
     static constexpr btScalar kMaxDeltaTime=btScalar(0.1);

@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <sstream>
-#include <vector>
+#include <unordered_map>
 
 namespace boink
 {
@@ -40,7 +40,7 @@ namespace boink
   {
     if(p_debug_drawer && p_debug_drawer->isSimulationToFreeze())
       return;
-    fillDebugInfo();
+    updateDebugInfo();
 
     // With large dt simulation behaves strangely.
     // Must use hard clamp or assert
@@ -95,7 +95,7 @@ namespace boink
     return track_;
   }
 
-  void Simulation::fillDebugInfo()
+  void Simulation::updateDebugInfo()
   {
     if(!p_debug_drawer)
       return;
@@ -109,7 +109,7 @@ namespace boink
     track_info.position=this->getTrack().getPosition();
     info.track_info=std::move(track_info);
 
-    std::vector<VehicleInfo> vehicles_info;
+    std::unordered_map<uint64_t,VehicleInfo> vehicles_info;
     vehicles_info.reserve(this->getVehicleNumber());
 
     for(const auto& [key,vehicle]:vehicles_)
@@ -133,9 +133,20 @@ namespace boink
       vehicle_info.rear_right.position=
         vehicle.getWheelWorldTransform(WheelPosition::RearRight).getOrigin();
 
-      vehicles_info.push_back(std::move(vehicle_info));
+      vehicles_info[key]=std::move(vehicle_info);
     }
     info.vehicles_info=std::move(vehicles_info);
+  }
+
+  void Simulation::updateDebugTuningInfo()
+  {
+    if(!p_debug_drawer)
+      return;
+
+    for(auto& [key,vehicle]:vehicles_)
+    {
+      
+    }
   }
 }   
     

@@ -5,8 +5,6 @@
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 
-#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
-
 #include <LinearMath/btDefaultMotionState.h>
 
 #include <memory>
@@ -25,6 +23,17 @@ namespace boink
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle)
   {
+    // TODO
+    // For now we will stick with this
+    // and dont care.
+    auto tuning=create_info.tuning;
+    tuning.m_frictionSlip=3.5f;
+    tuning.m_maxSuspensionForce=20000.;
+    tuning.m_maxSuspensionTravelCm=8.;
+    tuning.m_suspensionCompression=10.;
+    tuning.m_suspensionDamping=10.;
+    tuning.m_suspensionStiffness=50.;
+
     collision_shape_=createCollisonShape(
         mesh_->getChassis().vertices,
         center_of_mass_);
@@ -39,7 +48,7 @@ namespace boink
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
     vehicle_=std::unique_ptr<btRaycastVehicle>(
-        new btRaycastVehicle(tuning_, rigidbody_.get(), raycaster_.get())
+        new btRaycastVehicle(tuning, rigidbody_.get(), raycaster_.get())
     );
 
     vehicle_->setCoordinateSystem(
@@ -68,7 +77,7 @@ namespace boink
         wheel_axle_cs,
         suspension_rest_length,
         wheel_radius,
-        tuning_,
+        tuning,
         is_front_wheel
     );
 
@@ -80,7 +89,7 @@ namespace boink
         wheel_axle_cs,
         suspension_rest_length,
         wheel_radius,
-        tuning_,
+        tuning,
         is_front_wheel
     );
 
@@ -94,7 +103,7 @@ namespace boink
         wheel_axle_cs,
         suspension_rest_length,
         wheel_radius,
-        tuning_,
+        tuning,
         is_front_wheel
     );
 
@@ -106,7 +115,7 @@ namespace boink
         wheel_axle_cs,
         suspension_rest_length,
         wheel_radius,
-        tuning_,
+        tuning,
         is_front_wheel
     );
   }
@@ -128,6 +137,11 @@ namespace boink
         delete collision_shape_->getChildShape(i);
       }
     }
+  }
+
+  void Vehicle::update()
+  {
+    applyAerodynamics();
   }
 
   void Vehicle::setPosition(const btVector3& position)
@@ -179,6 +193,23 @@ namespace boink
     return center_of_mass_;
   }
 
+  void Vehicle::setTuning(const btRaycastVehicle::btVehicleTuning& tuning)
+  {
+    for(int i=0;i<vehicle_->getNumWheels();i++)
+    {
+      btWheelInfo& wheel = vehicle_->getWheelInfo(i);
+      wheel.m_suspensionStiffness = tuning.m_suspensionStiffness;
+      wheel.m_wheelsDampingRelaxation = tuning.m_suspensionDamping;
+      wheel.m_wheelsDampingCompression = tuning.m_suspensionCompression;
+      wheel.m_maxSuspensionTravelCm = tuning.m_maxSuspensionTravelCm;
+      wheel.m_maxSuspensionForce=tuning.m_maxSuspensionForce;
+      wheel.m_frictionSlip=tuning.m_frictionSlip;
+
+      // Some magic number
+      wheel.m_rollInfluence=0.1;
+    }
+  }
+
   void Vehicle::setSteering(btScalar value, TurnDirection dir)
   {
     btScalar radians=value*max_steer_angle_;
@@ -205,8 +236,8 @@ namespace boink
     brake*=40.;
     vehicle_->setBrake(brake,(int)WheelPosition::RearLeft);
     vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
-    //vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
-    //vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
+    vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
+    vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
   }
 
   std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(
@@ -255,6 +286,37 @@ namespace boink
     world_->addRigidBody(body.get());
 
     return body;
+  }
+
+  void Vehicle::applyAerodynamics()
+  {
+    const btVector3& velocity=rigidbody_->getLinearVelocity();
+    const btScalar speed=velocity.length();
+
+    if(speed < 0.1)
+      return;
+
+    btVector3 vel_dir=velocity/speed;
+
+    constexpr btScalar kAirDensity=1.225;
+    constexpr btScalar kAirDragCoef=1.; 
+    constexpr btScalar kFrontalArea=1.4; 
+
+    btVector3 air_drag_force= 
+      -0.5*kAirDragCoef*kFrontalArea*kAirDensity*
+      speed*speed*vel_dir;
+
+    constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5;
+
+    btVector3 down_dir=-rigidbody_->getWorldTransform().getBasis().getColumn(1);
+
+    assert(down_dir.length()<1.01&&down_dir.length()>0.99);
+
+    btVector3 air_down_force=
+      0.5*kAirLiftCoef*kFrontalArea*kAirDensity*
+      speed*speed*down_dir;
+
+    rigidbody_->applyCentralForce(air_drag_force+air_down_force);
   }
 
 }
