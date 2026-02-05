@@ -8,27 +8,10 @@ struct Gearbox
 {
  public:
   static constexpr float kDifferentialRatio = 4.05;
+  static constexpr float kGearRatios[9] = {-2.8, 0.0, 2.65, 2.05, 1.72, 1.50, 1.34, 1.21, 1.1};
 
-  Gear current_gear = Gear::Neutral;
+  Gear current_gear = Gear::First;
 
-  float GetCurrentRatio() const
-  {
-    if (current_gear == Gear::Reverse)
-    {
-      return kReverseGearRatio;
-    }
-    else if (current_gear == Gear::Neutral)
-    {
-      return 0.0f;
-    }
-    else
-    {
-      return kGearRatios[static_cast<int>(current_gear) - 1];
-    }
-  }
-
- private:
-  static constexpr float kGearRatios[7] = {2.65, 2.05, 1.72, 1.50, 1.34, 1.21, 1.1};
-  static constexpr float kReverseGearRatio = 2.8;
+  float GetCurrentRatio() const { return kGearRatios[static_cast<uint8_t>(current_gear)]; }
 };
 }  // namespace boink

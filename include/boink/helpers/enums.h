@@ -1,18 +1,19 @@
 #pragma once
+#include <ostream>
 
 namespace boink
 {
-enum class Gear : int8_t
+enum class Gear : uint8_t
 {
-  Reverse = -1,
-  Neutral = 0,
-  First = 1,
-  Second = 2,
-  Third = 3,
-  Fourth = 4,
-  Fifth = 5,
-  Sixth = 6,
-  Seventh = 7
+  Reverse = 0,
+  Neutral = 1,
+  First = 2,
+  Second = 3,
+  Third = 4,
+  Fourth = 5,
+  Fifth = 6,
+  Sixth = 7,
+  Seventh = 8
 };
 
 enum class WheelIndex : uint8_t
@@ -22,4 +23,30 @@ enum class WheelIndex : uint8_t
   RL = 2,
   RR = 3,
 };
+
+inline std::ostream& operator<<(std::ostream& os, Gear gear)
+{
+  switch (gear)
+  {
+    case Gear::Reverse:
+      return os << "Reverse";
+    case Gear::Neutral:
+      return os << "Neutral";
+    case Gear::First:
+      return os << "First";
+    case Gear::Second:
+      return os << "Second";
+    case Gear::Third:
+      return os << "Third";
+    case Gear::Fourth:
+      return os << "Fourth";
+    case Gear::Fifth:
+      return os << "Fifth";
+    case Gear::Sixth:
+      return os << "Sixth";
+    case Gear::Seventh:
+      return os << "Seventh";
+  }
+  return os << "Unknown";
+}
 }  // namespace boink

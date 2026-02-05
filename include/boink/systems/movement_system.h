@@ -57,21 +57,14 @@ class MovementSystem
           // Assumes breaking is just accelerting in oppostie dir
 
           // Steer_angle >0 -> left; <0 -> right
-
-          auto acceleration = kin.traction_force / kMass;
-          kin.velocity = (kin.velocity.norm() + acceleration * dt) * wheel_direction;
+          double drag_force = -kAeroDrag * std::pow(kin.velocity.norm(), 2);
+          double rolling_resistance_force = -kRollingResistance * kin.velocity.norm();
+          double longtitudinal_force = kin.traction_force + drag_force + rolling_resistance_force;
+          auto acceleration = longtitudinal_force / kMass;
 
           auto weight_shift = (Kinematics::kCoGHeight / Kinematics::kWheelBase) * acceleration * kMass;
           kin.dynamic_front_weight = Kinematics::kStationaryFrontWeight - weight_shift;
           kin.dynamic_rear_weight = Kinematics::kStationaryRearWeight + weight_shift;
-
-          /*double traction_force = input.throttle * parts.engine.power;
-          double drag_force = -kAeroDrag * std::pow(kin.velocity.norm(), 2);
-          double rolling_resistance_force = -kRollingResistance * kin.velocity.norm();
-          double braking_force = -input.brake * kBrakingFactor;
-          double longtitudinal_force = traction_force + braking_force + drag_force + rolling_resistance_force;
-
-          kin.acceleration = longtitudinal_force / kMass;*/
 
           double turn_angle = math::deg2rad(input.steer_angle * model.max_steer_angle_deg);
 
@@ -80,10 +73,14 @@ class MovementSystem
           Matrix3d turn_rotation = math::getRodriguesRotationMatrix(sin_turn, cos_turn, model.normal);
           Vector3d wheel_direction = turn_rotation * model.direction;
 
-          // kin.velocity = (kin.velocity.norm() + kin.acceleration * dt) * wheel_direction;
+          auto new_velocity = kin.velocity.norm() + acceleration * dt;
+          if (new_velocity < 0.0001)
+            kin.velocity = Vector3d::Zero();
+          else
+            kin.velocity = new_velocity * wheel_direction;
 
-          std::cout << "acceleration: " << acceleration << "\n";
-          std::cout << "speed: " << kin.velocity.norm() << "\n";
+          /*std::cout << "acceleration: " << acceleration << "\n";
+          std::cout << "speed: " << kin.velocity.norm() << "\n";*/
 
           Vector3d front_displacement = kin.velocity * dt + (0.5 * acceleration * dt * dt) * wheel_direction;
 
@@ -107,7 +104,7 @@ class MovementSystem
   // TODO: mass should be move to new chassis component, now it is doubled in kinematics.h
   static constexpr float kMass = 650.0f;
   static constexpr double kAeroDrag = 0.4257;
+  // TODO: this should be move to car_drive_parts.h
   static constexpr double kRollingResistance = 12.8;
-  static constexpr double kBrakingFactor = 10000;
 };
 }  // namespace boink

@@ -22,18 +22,20 @@
 #include "boink/components/transform.h"
 #include "boink/systems/car_spawn_system.h"
 #include "boink/systems/debug_system.h"
+#include "boink/systems/drive_parts_system.h"
 #include "boink/systems/movement_system.h"
 
-namespace boink {
+namespace boink
+{
 /**
  * @brief Represents the world simulation containing all entities and systems.
  *
  */
-class BOINK_API World {
+class BOINK_API World
+{
  public:
-  using CarComponents =
-      std::tuple<CarInput, Transform, Kinematics, CarDriveParts>;
-  using CarSystems = std::tuple<CarSpawnSystem, MovementSystem>;
+  using CarComponents = std::tuple<CarInput, Transform, Kinematics, CarDriveParts>;
+  using CarSystems = std::tuple<CarSpawnSystem, DrivePartsSystem, MovementSystem>;
 
  public:
   World(const CarModel& car_model);
