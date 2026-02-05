@@ -68,9 +68,6 @@ namespace boink
     void addObject(std::shared_ptr<piksel::IDrawable> obj);
     double getTime() const;
     bool isSimulationToFreeze() const;
-    btRaycastVehicle::btVehicleTuning getVehicleTuning(uint64_t id) const;
-    void setVehicleTuning(
-        const btRaycastVehicle::btVehicleTuning& tuning, uint64_t id);
 
     void drawFrameOrigin();
 

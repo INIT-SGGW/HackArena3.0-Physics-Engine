@@ -26,7 +26,7 @@ namespace boink
     Simulation(Simulation&&)=default;
     
     Simulation& operator=(const Simulation&)=delete;
-    Simulation& operator=(Simulation&&)=default;
+    Simulation& operator=(Simulation&&)=delete;
 
     ~Simulation() noexcept=default;
 
@@ -42,15 +42,17 @@ namespace boink
     void registerDebugDrawer(DebugDrawer* dbg);
   private:
     void updateDebugInfo();
-    void updateDebugTuningInfo();
+    void readDebugInfo();
+    void writeDebugInfo();
   public:
-    static constexpr btScalar kGravitationalAcceleration=btScalar(10.);
-    static constexpr btScalar kMaxDeltaTime=btScalar(0.1);
-    static constexpr btScalar kFixedDeltaTime=btScalar(1./120.);
-    static constexpr int kMaxSubSteps=10;
+    const btScalar kGravitationalAcceleration=btScalar(10.);
+    const btScalar kMaxDeltaTime=btScalar(0.1);
+    const btScalar kFixedDeltaTime=btScalar(1./120.);
+    const int kMaxSubSteps=10;
 
-    static ObjectID s_available_id;
   private:
+    ObjectID available_ids=0;
+
     std::unique_ptr<btDefaultCollisionConfiguration> collision_configuration_;
     std::unique_ptr<btCollisionDispatcher> dispatcher_;
     std::unique_ptr<btDbvtBroadphase> overlapping_pair_cache_;

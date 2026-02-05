@@ -93,6 +93,7 @@ target_sources(boink
     src/gltf_extractor.cc
     src/exception.cc
     src/debug_info_gui.cc
+    src/custom_raycast_vehicle.cc
 )
 
 target_include_directories(boink

@@ -31,7 +31,7 @@ int main()
   std::string_view car_model_path="Bolid_F1.glb";
 
   DebugDrawer dbg;
-  Simulation sim("Bolid_Tor_test.glb");
+  Simulation sim("lowpoly_track_1_test_5.glb");
 
   sim.registerDebugDrawer(&dbg);
   
@@ -42,14 +42,22 @@ int main()
   std::shared_ptr<VehicleMesh> vehicle_mesh1=
     std::make_shared<VehicleMesh>(car_model_path);
 
+  btRaycastVehicle::btVehicleTuning tuning;
+  tuning.m_frictionSlip=3.5f;
+  tuning.m_maxSuspensionForce=20000.;
+  tuning.m_maxSuspensionTravelCm=8.;
+  tuning.m_suspensionCompression=10.;
+  tuning.m_suspensionDamping=10.;
+  tuning.m_suspensionStiffness=50.;
+
   Simulation::ObjectID car_id0=sim.addVehicle({
       .mesh=vehicle_mesh0,
       .mass=800.,
       .wheel_radius=0.36,
       .suspension_rest_length=1.02,
       .max_steer_angle=1.5,
-      .center_of_mass={0.,-0.1,0.},
-      .tuning=btRaycastVehicle::btVehicleTuning()});
+      .center_of_mass={0.,-0.4,0.},
+      .tuning=tuning});
   sim.getVehicle(car_id0).setPosition({0.,13.,7.});
 
   std::shared_ptr<VehicleModel> vehicle_model0(
@@ -62,8 +70,8 @@ int main()
       .wheel_radius=0.36,
       .suspension_rest_length=0.52,
       .max_steer_angle=1.5,
-      .center_of_mass={0.,-0.1,0.},
-      .tuning=btRaycastVehicle::btVehicleTuning()});
+      .center_of_mass={0.,-0.4,0.},
+      .tuning=tuning});
   sim.getVehicle(car_id1).setPosition({0.,23.,0.});
 
   std::shared_ptr<VehicleModel> vehicle_model1(
@@ -89,16 +97,12 @@ int main()
 
     dbg.drawFrameOrigin();
     sim.step(dt);
-    // Trzeba bedzie nadpisac jakos metode albo po prostu napisac nowa
-    // klase dla pojazdu bo to pierdolenie sie z tym mnie wkurwia
-    sim.getVehicle(car_id0).update();
-    sim.getVehicle(car_id1).update();
 
     const auto& trans=sim.getVehicle(car_id1).getWorldTransform();
     btVector3 back=trans.getBasis()*btVector3(0,0.25,-1);
     btVector3 cam_pos=trans.getOrigin() + back*15;
 
-    dbg.setCamera(cam_pos,trans.getOrigin());
+    //dbg.setCamera(cam_pos,trans.getOrigin());
     dbg.update();
   }
   return 0;

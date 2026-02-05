@@ -7,11 +7,11 @@
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <BulletDynamics/Vehicle/btVehicleRaycaster.h>
-#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <LinearMath/btDefaultMotionState.h>
 #include <LinearMath/btMotionState.h>
 
 #include "boink/simulation/vehicle_mesh.h"
+#include "boink/simulation/custom_raycast_vehicle.h"
 #include "boink/simulation/wheel_position.h"
 
 #include <memory>
@@ -49,8 +49,6 @@ namespace boink
 
     ~Vehicle() noexcept;
 
-    void update();
-
     void setPosition(const btVector3& position);
 
     btTransform getWorldTransform() const;
@@ -64,6 +62,7 @@ namespace boink
     btVector3 getCenterOfMassCS() const;
 
     void setTuning(const btRaycastVehicle::btVehicleTuning& tuning);
+    const btRaycastVehicle::btVehicleTuning& getTuning() const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);
@@ -75,7 +74,6 @@ namespace boink
         const btVector3& center_of_mass);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
-    void applyAerodynamics();
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
@@ -84,9 +82,10 @@ namespace boink
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<btVehicleRaycaster> raycaster_;
-    std::unique_ptr<btRaycastVehicle> vehicle_;
+    std::unique_ptr<CustomRaycastVehicle> vehicle_;
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;
+    btRaycastVehicle::btVehicleTuning tuning_;
   };
 }

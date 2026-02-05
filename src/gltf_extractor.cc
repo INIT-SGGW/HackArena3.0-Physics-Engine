@@ -64,6 +64,23 @@ namespace boink
     
     for(const auto& primitive:mesh.primitives)
     {
+      if(primitive.mode==TINYGLTF_MODE_LINE)
+      {
+        if(primitive.indices==-1)
+          throw Exception(
+              Exception::Type::UnsupportedFormatError,
+              "CHuj dupa cycki");
+
+        std::stringstream ss;
+        ss<<"Number of indices: ";
+        ss<<model_.accessors[primitive.indices].count;
+
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            ss.str());
+        
+      }
+
       if(primitive.mode!=TINYGLTF_MODE_TRIANGLES)
         throw Exception(
             Exception::Type::UnsupportedFormatError,

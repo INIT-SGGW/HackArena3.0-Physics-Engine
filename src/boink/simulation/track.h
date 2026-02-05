@@ -29,7 +29,7 @@ namespace boink
     const btVector3& getPosition() const;
     void setPosition(const btVector3& position);
   private:
-    static constexpr std::string_view TRACK_NAME="Plane";
+    static constexpr std::string_view TRACK_NAME="Centerline";
   private:
     std::unique_ptr<btTriangleMesh> mesh_;
     std::unique_ptr<btBvhTriangleMeshShape> collision_shape_;
