@@ -110,6 +110,7 @@ include(CTest)
 
 set(TEST_SOURCES
   colider_test
+  gltf_test
 )
 foreach(name IN LISTS TEST_SOURCES)
   add_executable(${name} tests/${name}.cc)

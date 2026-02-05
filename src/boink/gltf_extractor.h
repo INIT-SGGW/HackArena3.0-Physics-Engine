@@ -19,6 +19,8 @@ namespace boink
       std::vector<btVector3> vertices;
       std::vector<unsigned int> indices;
 
+      int type;
+
       btTransform transform;
     };
   public:

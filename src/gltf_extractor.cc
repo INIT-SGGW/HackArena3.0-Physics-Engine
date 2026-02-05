@@ -64,27 +64,13 @@ namespace boink
     
     for(const auto& primitive:mesh.primitives)
     {
-      if(primitive.mode==TINYGLTF_MODE_LINE)
-      {
-        if(primitive.indices==-1)
-          throw Exception(
-              Exception::Type::UnsupportedFormatError,
-              "CHuj dupa cycki");
-
-        std::stringstream ss;
-        ss<<"Number of indices: ";
-        ss<<model_.accessors[primitive.indices].count;
-
+      if(primitive.mode!=TINYGLTF_MODE_TRIANGLES &&
+          primitive.mode !=TINYGLTF_MODE_LINE)
         throw Exception(
             Exception::Type::UnsupportedFormatError,
-            ss.str());
-        
-      }
+            "Triangles and line modes are only supported.");
 
-      if(primitive.mode!=TINYGLTF_MODE_TRIANGLES)
-        throw Exception(
-            Exception::Type::UnsupportedFormatError,
-            "Triangles mode is only supported.");
+      new_node.type=primitive.mode;
       
       auto it_pos_index=primitive.attributes.find("POSITION");
       if(it_pos_index==primitive.attributes.end())
