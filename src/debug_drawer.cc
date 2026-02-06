@@ -9,6 +9,7 @@
 #include <piksel/object.hh>
 #include <piksel/shader.hh>
 #include <piksel/window.hh>
+#include <vector>
 
 #include "boink/utils/utility.h"
 
@@ -171,6 +172,21 @@ namespace boink
         {0.f,0.f,0.f},
         {0.f,0.f,10.f},
         {0.f,0.f,1.f});
+  }
+
+  void DebugDrawer::drawLines(
+      const std::vector<btVector3> points,
+      const btVector3& color,
+      float elapsed_time)
+  {
+    assert(points.size()>=2);
+    //for(size_t i=1;i<points.size();i++)
+    if(elapsed_time>points.size())
+      elapsed_time=points.size();
+    for(size_t i=1;i<elapsed_time;i++)
+    {
+      drawLine(points[i-1],points[i],color);
+    }
   }
 
   piksel::Window::KeyState DebugDrawer::getKey(int glfw_key) const

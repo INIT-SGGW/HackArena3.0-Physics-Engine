@@ -1,6 +1,7 @@
 #include "boink/simulation.h"
 
 #include <LinearMath/btIDebugDraw.h>
+#include <LinearMath/btScalar.h>
 #include <piksel/model.hh>
 
 #include "boink/exception.h"
@@ -43,15 +44,13 @@ namespace boink
 
     // With large dt simulation behaves strangely.
     // Must use hard clamp or assert
-#ifndef RASPBERRY_PI
-    assert(dt<kMaxDeltaTime);
-#endif
-
     dt=std::min(dt,kMaxDeltaTime);
 
     int steps=dynamics_world_->stepSimulation(dt, kMaxSubSteps,kFixedDeltaTime);
     simulation_duration_+=steps*kFixedDeltaTime;
     dynamics_world_->debugDrawWorld();
+
+    this->updateVehicleTrackPositions();
   }
 
   Simulation::ObjectID Simulation::addVehicle(const Vehicle::CreationInfo& info)
@@ -92,6 +91,30 @@ namespace boink
   Track& Simulation::getTrack()
   {
     return track_;
+  }
+
+  void Simulation::updateVehicleTrackPositions()
+  {
+    btScalar track_length=track_.getCenterline().getLength();
+    for(auto& [id,vehicle] : vehicles_)
+    {
+      int curr_laps_completed=vehicle.getLapsCompleted();
+      const btVector3 vehicle_pos=vehicle.getWorldTransform().getOrigin();
+      btScalar prev_coverage=vehicle.getCurrentLapDistanceCovered();
+      btScalar curr_coverage=track_.getCenterline().getCoverage(vehicle_pos);
+
+      btScalar v=curr_coverage-prev_coverage;
+      if(btFabs(v)>track_length/2.)
+      {
+        // Means that finish line was crossed
+        if(v>0)
+          curr_laps_completed--;
+        else
+          curr_laps_completed++;
+      }
+
+      vehicle.setTrackPosition(curr_laps_completed,curr_coverage);
+    }
   }
 
   void Simulation::updateDebugInfo()
@@ -162,6 +185,9 @@ namespace boink
       vehicle_info.max_steer_angle=0;
       vehicle_info.speed=vehicle.getSpeed();
       vehicle_info.steering=0;
+
+      vehicle_info.laps_completed=vehicle.getLapsCompleted();
+      vehicle_info.curr_lap_coverage=vehicle.getCurrentLapDistanceCovered();
 
       const auto& tuning=vehicle.getTuning();
       vehicle_info.friction_slip=tuning.m_frictionSlip;

@@ -41,6 +41,8 @@ namespace boink
     btScalar getSimulationDuration() const { return simulation_duration_;}
     void registerDebugDrawer(DebugDrawer* dbg);
   private:
+    void updateVehicleTrackPositions();
+
     void updateDebugInfo();
     void readDebugInfo();
     void writeDebugInfo();
@@ -49,7 +51,6 @@ namespace boink
     const btScalar kMaxDeltaTime=btScalar(0.1);
     const btScalar kFixedDeltaTime=btScalar(1./120.);
     const int kMaxSubSteps=10;
-
   private:
     ObjectID available_ids=0;
 

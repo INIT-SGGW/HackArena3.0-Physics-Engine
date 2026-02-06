@@ -51,6 +51,10 @@ namespace boink
 
     void setPosition(const btVector3& position);
 
+    void setTrackPosition(int laps_completed,btScalar curr_lap_dist_coverage);
+    int getLapsCompleted() const;
+    btScalar getCurrentLapDistanceCovered() const;
+
     btTransform getWorldTransform() const;
     btTransform getChassisWorldTransform() const;
 
@@ -87,5 +91,8 @@ namespace boink
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;
     btRaycastVehicle::btVehicleTuning tuning_;
+
+    int laps_completed_=0;
+    btScalar curr_lap_dist_point_=0;
   };
 }

@@ -17,7 +17,7 @@ namespace boink
     GuiObject::checkBox("Freeze simulation",&freeze_sim_);
     GuiObject::checkBox("Enable camera",&enable_camera_);
     GuiObject::slider("Mouse speed",0.f,1.f,&mouse_speed_);
-    GuiObject::slider("Camera speed",0.f,10.f,&camera_speed_);
+    GuiObject::slider("Camera speed",0.f,100.f,&camera_speed_);
     GuiObject::text("");
 
     std::stringstream ss;
@@ -62,6 +62,16 @@ namespace boink
             "Suspension damping",0.f,100.f,&vehicle_info.suspension_damping);
         GuiObject::slider(
             "Suspension stifness",0.f,100.f,&vehicle_info.suspension_stiffness);
+
+
+        ss<<"Laps completed: "<<vehicle_info.laps_completed;
+        GuiObject::text(ss.str());
+        ss.str("");
+
+        ss<<"Current lap coverage: "<<vehicle_info.curr_lap_coverage;
+        ss<<" [m]";
+        GuiObject::text(ss.str());
+        ss.str("");
 
         ss<<"Vehicle chassis position: "<<vehicle_info.chassis_position;
         ss<<" [m]";

@@ -5,6 +5,7 @@
 
 #include <GLFW/glfw3.h>
 #include <LinearMath/btTransform.h>
+#include <algorithm>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/matrix.hpp>
@@ -20,7 +21,7 @@
 using namespace boink;
 using namespace piksel;
 
-void drawCenterline(DebugDrawer& dbg, const GltfExtractor::Node& node);
+void drawCenterline(DebugDrawer& dbg, const GltfExtractor::Node& node,float elapsed_time);
 void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg);
 void updateTransform(
     std::shared_ptr<VehicleModel> vehicle_model, 
@@ -85,25 +86,34 @@ int main()
 
   Track& track=sim.getTrack();
   //track.setPosition({5.,0.,0.});
-  //
+  auto centerline_points_dist2=track.getCenterline().getPointsAndDist();
+  std::vector<btVector3> centerline_points(centerline_points_dist2.size());
+  std::generate(centerline_points.begin(),centerline_points.end(),
+      [&,i=0]()mutable{
+        return centerline_points_dist2[i++].first;
+      });
 
   GltfExtractor extractor(track_filename);
   const auto& node=extractor.getNode("Centerline");
 
   float prev=dbg.getTime();
+  float elapsed_time=0.0;
   while(dbg)
   {
     float now=dbg.getTime();
     float dt=now-prev;
     prev=now;
+    elapsed_time+=dt;
 
     handleVehicle(sim.getVehicle(car_id1),dbg);
 
     updateTransform(vehicle_model0,sim.getVehicle(car_id0));
     updateTransform(vehicle_model1,sim.getVehicle(car_id1));
 
+    dbg.clearLines();
     dbg.drawFrameOrigin();
-    drawCenterline(dbg,node);
+    //drawCenterline(dbg,node,elapsed_time);
+    dbg.drawLines(centerline_points,{0.2,0.5,0.5},elapsed_time*1000);
     sim.step(dt);
 
     const auto& trans=sim.getVehicle(car_id1).getWorldTransform();
@@ -201,13 +211,14 @@ void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg)
     vehicle.setSteering(0.0,Vehicle::TurnDirection::Right);
   
 }
-void drawCenterline(DebugDrawer& dbg, const GltfExtractor::Node& node)
+void drawCenterline(DebugDrawer& dbg, const GltfExtractor::Node& node,float elapsed_time)
 {
   const auto& vertices=node.vertices;
   const auto& indices=node.indices;
 
   for(int i=0;i<indices.size();i+=2)
+  //for(int i=0;i<elapsed_time/5;i+=2)
   {
-    dbg.drawLine(vertices[indices[i]],vertices[indices[i+1]],{0,1,0});
+    dbg.drawLine(vertices[indices[i]],vertices[indices[i+1]],{0.5,0.2,0.5});
   }
 }

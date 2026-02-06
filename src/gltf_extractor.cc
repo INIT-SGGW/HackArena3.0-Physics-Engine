@@ -30,7 +30,7 @@ namespace boink
     }
   }
 
-  const GltfExtractor::Node& GltfExtractor::getNode(std::string_view name) const
+  GltfExtractor::Node& GltfExtractor::getNode(std::string_view name)
   {
     auto it=std::find_if(nodes_.begin(),nodes_.end(),
         [=](const Node& node)

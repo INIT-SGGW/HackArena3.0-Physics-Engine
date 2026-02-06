@@ -138,6 +138,22 @@ namespace boink
     rigidbody_->getWorldTransform().setOrigin(position);
   }
 
+  void Vehicle::setTrackPosition(int laps_completed, btScalar curr_lap_dist_cov)
+  {
+    laps_completed_=laps_completed;
+    curr_lap_dist_point_=curr_lap_dist_cov;
+  }
+
+  int Vehicle::getLapsCompleted() const
+  {
+    return laps_completed_;
+  }
+
+  btScalar Vehicle::getCurrentLapDistanceCovered() const
+  {
+    return curr_lap_dist_point_;
+  }
+
   btTransform Vehicle::getWorldTransform() const
   {
     btTransform transform;

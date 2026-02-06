@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <iostream>
+#include <vector>
 
 namespace boink
 {
@@ -70,6 +71,10 @@ namespace boink
     bool isSimulationToFreeze() const;
 
     void drawFrameOrigin();
+    void drawLines(
+      const std::vector<btVector3> points,
+      const btVector3& color,
+      float elapsed_time);
 
     piksel::Window::KeyState getKey(int glfw_key) const;
     SimulationInfo& getSimulationInfo();

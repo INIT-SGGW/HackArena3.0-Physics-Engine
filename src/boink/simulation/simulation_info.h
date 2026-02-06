@@ -31,6 +31,9 @@ namespace boink
     btScalar brake;
     btScalar steering;
 
+    int laps_completed;
+    btScalar curr_lap_coverage;
+
     WheelInfo front_left;
     WheelInfo front_right;
     WheelInfo rear_left;
