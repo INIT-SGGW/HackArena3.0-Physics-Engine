@@ -19,12 +19,14 @@ namespace boink
       std::vector<btVector3> vertices;
       std::vector<unsigned int> indices;
 
+      int type;
+
       btTransform transform;
     };
   public:
     GltfExtractor(std::string_view filename);
 
-    const Node& getNode(std::string_view name) const;
+    Node& getNode(std::string_view name);
   private:
     void bindNode(const tinygltf::Node& node, btTransform transform);
     void loadVertices(

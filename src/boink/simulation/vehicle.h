@@ -11,6 +11,7 @@
 #include <LinearMath/btMotionState.h>
 
 #include "boink/simulation/vehicle_mesh.h"
+#include "boink/simulation/custom_raycast_vehicle.h"
 #include "boink/simulation/wheel_position.h"
 
 #include <memory>
@@ -28,6 +29,7 @@ namespace boink
       btScalar suspension_rest_length;
       btScalar max_steer_angle;
       btVector3 center_of_mass;
+      btRaycastVehicle::btVehicleTuning tuning;
     };
     
     enum class TurnDirection
@@ -49,6 +51,10 @@ namespace boink
 
     void setPosition(const btVector3& position);
 
+    void setTrackPosition(int laps_completed,btScalar curr_lap_dist_coverage);
+    int getLapsCompleted() const;
+    btScalar getCurrentLapDistanceCovered() const;
+
     btTransform getWorldTransform() const;
     btTransform getChassisWorldTransform() const;
 
@@ -58,6 +64,9 @@ namespace boink
     btScalar getSpeed() const;
     btScalar getMass() const;
     btVector3 getCenterOfMassCS() const;
+
+    void setTuning(const btRaycastVehicle::btVehicleTuning& tuning);
+    const btRaycastVehicle::btVehicleTuning& getTuning() const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);
@@ -77,11 +86,13 @@ namespace boink
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<btVehicleRaycaster> raycaster_;
-    std::unique_ptr<btRaycastVehicle> vehicle_;
-
-    btRaycastVehicle::btVehicleTuning tuning_;
+    std::unique_ptr<CustomRaycastVehicle> vehicle_;
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;
+    btRaycastVehicle::btVehicleTuning tuning_;
+
+    int laps_completed_=0;
+    btScalar curr_lap_dist_point_=0;
   };
 }

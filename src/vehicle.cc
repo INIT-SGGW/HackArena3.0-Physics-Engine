@@ -1,11 +1,10 @@
 #include "boink/simulation/vehicle.h"
+#include "boink/simulation/custom_raycast_vehicle.h"
 #include "boink/simulation/wheel_position.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
-
-#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 
 #include <LinearMath/btDefaultMotionState.h>
 
@@ -23,7 +22,8 @@ namespace boink
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
       raycaster_(new btDefaultVehicleRaycaster(world_.get())),
       center_of_mass_(create_info.center_of_mass),
-      max_steer_angle_(create_info.max_steer_angle)
+      max_steer_angle_(create_info.max_steer_angle),
+      tuning_(create_info.tuning)
   {
     collision_shape_=createCollisonShape(
         mesh_->getChassis().vertices,
@@ -38,8 +38,8 @@ namespace boink
     rigidbody_->setCcdMotionThreshold(1.0);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
-    vehicle_=std::unique_ptr<btRaycastVehicle>(
-        new btRaycastVehicle(tuning_, rigidbody_.get(), raycaster_.get())
+    vehicle_=std::unique_ptr<CustomRaycastVehicle>(
+        new CustomRaycastVehicle(tuning_, rigidbody_.get(), raycaster_.get())
     );
 
     vehicle_->setCoordinateSystem(
@@ -109,6 +109,9 @@ namespace boink
         tuning_,
         is_front_wheel
     );
+
+    // just to be sure it isnt probably needed
+    this->setTuning(tuning_);
   }
 
   Vehicle::~Vehicle() noexcept
@@ -133,6 +136,22 @@ namespace boink
   void Vehicle::setPosition(const btVector3& position)
   {
     rigidbody_->getWorldTransform().setOrigin(position);
+  }
+
+  void Vehicle::setTrackPosition(int laps_completed, btScalar curr_lap_dist_cov)
+  {
+    laps_completed_=laps_completed;
+    curr_lap_dist_point_=curr_lap_dist_cov;
+  }
+
+  int Vehicle::getLapsCompleted() const
+  {
+    return laps_completed_;
+  }
+
+  btScalar Vehicle::getCurrentLapDistanceCovered() const
+  {
+    return curr_lap_dist_point_;
   }
 
   btTransform Vehicle::getWorldTransform() const
@@ -179,13 +198,39 @@ namespace boink
     return center_of_mass_;
   }
 
+  void Vehicle::setTuning(const btRaycastVehicle::btVehicleTuning& tuning)
+  {
+    assert(vehicle_->getNumWheels()==4);
+    tuning_=tuning;
+
+    for(int i=0;i<vehicle_->getNumWheels();i++)
+    {
+      btWheelInfo& wheel = vehicle_->getWheelInfo(i);
+      wheel.m_suspensionStiffness = tuning_.m_suspensionStiffness;
+      wheel.m_wheelsDampingRelaxation = tuning_.m_suspensionDamping;
+      wheel.m_wheelsDampingCompression = tuning_.m_suspensionCompression;
+      wheel.m_maxSuspensionTravelCm = tuning_.m_maxSuspensionTravelCm;
+      wheel.m_maxSuspensionForce=tuning_.m_maxSuspensionForce;
+      wheel.m_frictionSlip=tuning_.m_frictionSlip;
+
+      // Some magic number
+      wheel.m_rollInfluence=0.1;
+    }
+  }
+
+  const btRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
+  {
+    assert(vehicle_->getNumWheels()==4);
+    return tuning_;
+  }
+
   void Vehicle::setSteering(btScalar value, TurnDirection dir)
   {
     btScalar radians=value*max_steer_angle_;
     if(dir==TurnDirection::Right)
       radians*=-1;
 
-    // User should always set value to [0.1]
+    // User should always set value to [0-1]
 
     vehicle_->setSteeringValue(radians,(int)WheelPosition::FrontLeft);
     vehicle_->setSteeringValue(radians,(int)WheelPosition::FrontRight);
@@ -205,8 +250,8 @@ namespace boink
     brake*=40.;
     vehicle_->setBrake(brake,(int)WheelPosition::RearLeft);
     vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
-    //vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
-    //vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
+    vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
+    vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
   }
 
   std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(

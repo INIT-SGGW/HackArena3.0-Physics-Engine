@@ -30,7 +30,7 @@ namespace boink
     }
   }
 
-  const GltfExtractor::Node& GltfExtractor::getNode(std::string_view name) const
+  GltfExtractor::Node& GltfExtractor::getNode(std::string_view name)
   {
     auto it=std::find_if(nodes_.begin(),nodes_.end(),
         [=](const Node& node)
@@ -64,10 +64,13 @@ namespace boink
     
     for(const auto& primitive:mesh.primitives)
     {
-      if(primitive.mode!=TINYGLTF_MODE_TRIANGLES)
+      if(primitive.mode!=TINYGLTF_MODE_TRIANGLES &&
+          primitive.mode !=TINYGLTF_MODE_LINE)
         throw Exception(
             Exception::Type::UnsupportedFormatError,
-            "Triangles mode is only supported.");
+            "Triangles and line modes are only supported.");
+
+      new_node.type=primitive.mode;
       
       auto it_pos_index=primitive.attributes.find("POSITION");
       if(it_pos_index==primitive.attributes.end())

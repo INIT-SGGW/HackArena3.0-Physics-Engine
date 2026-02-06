@@ -5,6 +5,7 @@
 #include "piksel/camera.hh"
 #include "piksel/gui_manager.hh"
 
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 #include <LinearMath/btIDebugDraw.h>
 #include <glm/glm.hpp>
 
@@ -16,6 +17,7 @@
 
 #include <memory>
 #include <iostream>
+#include <vector>
 
 namespace boink
 {
@@ -62,14 +64,21 @@ namespace boink
     explicit operator bool() const;
 
     void update();
+
+    void setCamera(const btVector3& pos, const btVector3& target);
     void addObject(std::shared_ptr<piksel::IDrawable> obj);
     double getTime() const;
     bool isSimulationToFreeze() const;
 
     void drawFrameOrigin();
+    void drawLines(
+      const std::vector<btVector3> points,
+      const btVector3& color,
+      float elapsed_time);
 
     piksel::Window::KeyState getKey(int glfw_key) const;
     SimulationInfo& getSimulationInfo();
+
   private:
     double getDeltaTime();
   private:
