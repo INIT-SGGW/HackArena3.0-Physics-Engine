@@ -169,7 +169,7 @@ namespace boink
     info.vehicle_number=this->getVehicleNumber();
 
     TrackInfo track_info;
-    track_info.position=this->getTrack().getPosition();
+    track_info.position=this->getTrack().getWorldTransform().getOrigin();
     info.track_info=std::move(track_info);
 
     std::unordered_map<uint64_t,VehicleInfo> vehicles_info;

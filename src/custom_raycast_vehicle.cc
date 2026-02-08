@@ -64,4 +64,36 @@ namespace boink
 
     rigidbody->applyCentralForce(air_drag_force+air_down_force);
   }
+
+  void CustomRaycastVehicle::debugDraw(btIDebugDraw* dbg)
+  {
+    //btRaycastVehicle::debugDraw(dbg);
+    for (int v = 0; v < this->getNumWheels(); v++)
+    {
+      btVector3 wheelColor;
+      if (getWheelInfo(v).m_raycastInfo.m_isInContact)
+        wheelColor.setValue(0, 0, 1);
+      else
+        wheelColor.setValue(1, 0, 1);
+
+      btVector3 wheelPosWS = getWheelInfo(v).m_worldTransform.getOrigin();
+
+      btVector3 axle = btVector3(
+              getWheelInfo(v).m_worldTransform.getBasis()[0][getRightAxis()],
+              getWheelInfo(v).m_worldTransform.getBasis()[1][getRightAxis()],
+              getWheelInfo(v).m_worldTransform.getBasis()[2][getRightAxis()]);
+
+      dbg->drawLine(wheelPosWS, wheelPosWS + axle, wheelColor);
+      dbg->drawLine(
+          wheelPosWS, 
+          getWheelInfo(v).m_raycastInfo.m_contactPointWS, 
+          wheelColor);
+
+      // Draw suspension
+      dbg->drawLine(
+          wheelPosWS,
+          getWheelInfo(v).m_raycastInfo.m_hardPointWS,
+          {1,0,0});
+    }      
+  }
 }

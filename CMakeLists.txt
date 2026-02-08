@@ -94,6 +94,7 @@ target_sources(boink
     src/exception.cc
     src/debug_info_gui.cc
     src/custom_raycast_vehicle.cc
+    src/ground.cc
 )
 
 target_include_directories(boink

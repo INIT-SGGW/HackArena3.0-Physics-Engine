@@ -317,7 +317,10 @@ int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position
     return BOINK_ERR_INVALID_ARG;
 
   btVector3 pos(position->x,position->y,position->z);
-  p_sim->getTrack().setPosition(pos);
+  btTransform trans;
+  trans.setIdentity();
+  trans.setOrigin(pos);
+  p_sim->getTrack().setWorldTransform(trans);
 
   return BOINK_OK;
 }

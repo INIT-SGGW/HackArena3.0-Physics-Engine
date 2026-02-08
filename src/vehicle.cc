@@ -168,13 +168,17 @@ namespace boink
     btTransform translate;
     translate.setIdentity();
     translate.setOrigin(-center_of_mass_);
-
+    btTransform transform;
     // we must translate before rotation
-    return vehicle_->getChassisWorldTransform()*translate;
+    //return vehicle_->getChassisWorldTransform()*translate;
+    motion_state_->getWorldTransform(transform);
+
+    return transform*translate;
   }
 
   const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) const
   {
+    // Wheels
     return vehicle_->getWheelTransformWS((int)wheel_pos);
   }
 
