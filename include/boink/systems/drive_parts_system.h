@@ -41,7 +41,7 @@ class DrivePartsSystem
           if (input.gear_down)
           {
             auto current_gear = static_cast<uint8_t>(parts.gearbox.current_gear);
-            if (current_gear == 0)
+            if (current_gear != 0)
             {
               auto new_rpms =
                   parts.engine.rpm * (parts.gearbox.kGearRatios[current_gear - 1] / parts.gearbox.GetCurrentRatio());
@@ -49,8 +49,6 @@ class DrivePartsSystem
               {
                 parts.engine.SetNewRPM(new_rpms);
                 parts.gearbox.current_gear = static_cast<Gear>(current_gear - 1);
-                // TUTAJ ZACZNIJ przetestuj czy teraz dzia³a zrzucanie biegu i trzeba zaimplementowaæ bieg neutralny i
-                // wsteczny
               }
             }
           }

@@ -35,7 +35,5 @@ struct Engine
       Curve({0,   40,  80,  100, 120, 135, 150, 165, 180, 210, 240, 255, 270, 283, 295, 305, 315, 323, 330, 338,
              345, 350, 355, 360, 365, 369, 372, 375, 378, 380, 382, 384, 385, 384, 380, 372, 360, 345, 320, 300},
             500.0f, 0.0f);
-
-  // RPM validation is in the Curve class, but here can be implemented rev limiter
 };
 }  // namespace boink

@@ -122,39 +122,6 @@ int main(int argc, char** argv)
       input.brake = 0;
     }
 
-    if (wnd.getKey(GLFW_KEY_Z) == Window::KeyState::Press)
-    {
-      if (!is_gear_btn_pressed)
-      {
-        input.gear_down = true;
-        is_gear_btn_pressed = true;
-      }
-      else
-      {
-        input.gear_down = false;
-      }
-    }
-    else
-      input.gear_down = false;
-
-    if (wnd.getKey(GLFW_KEY_X) == Window::KeyState::Press)
-    {
-      if (!is_gear_btn_pressed)
-      {
-        input.gear_up = true;
-        is_gear_btn_pressed = true;
-      }
-      else
-      {
-        input.gear_up = false;
-      }
-    }
-    else
-      input.gear_up = false;
-
-    if (wnd.getKey(GLFW_KEY_X) == Window::KeyState::Release && wnd.getKey(GLFW_KEY_Z) == Window::KeyState::Release)
-      is_gear_btn_pressed = false;
-
     Window::MousePos mouse_pos = wnd.getMousePos();
     cam.rotateYaw((prev_mouse_pos.x - mouse_pos.x) * dt / 3.f);
     prev_mouse_pos.x = mouse_pos.x;
@@ -166,8 +133,41 @@ int main(int argc, char** argv)
     {
       simul_last = simul_right_now;
 
+      if (wnd.getKey(GLFW_KEY_Z) == Window::KeyState::Press)
+      {
+        if (!is_gear_btn_pressed)
+        {
+          input.gear_down = true;
+          is_gear_btn_pressed = true;
+        }
+        else
+        {
+          input.gear_down = false;
+        }
+      }
+      else
+        input.gear_down = false;
+
+      if (wnd.getKey(GLFW_KEY_X) == Window::KeyState::Press)
+      {
+        if (!is_gear_btn_pressed)
+        {
+          input.gear_up = true;
+          is_gear_btn_pressed = true;
+        }
+        else
+        {
+          input.gear_up = false;
+        }
+      }
+      else
+        input.gear_up = false;
+
       world.car_manager.updateCar(id, input);
       world.update(simul_step);
+
+      if (wnd.getKey(GLFW_KEY_X) == Window::KeyState::Release && wnd.getKey(GLFW_KEY_Z) == Window::KeyState::Release)
+        is_gear_btn_pressed = false;
     }
 
     const auto& pos = trans.position;
