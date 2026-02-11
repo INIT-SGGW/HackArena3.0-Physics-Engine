@@ -52,6 +52,6 @@ namespace boink
     btScalar simulation_duration;
 
     TrackInfo track_info;
-    std::unordered_map<uint64_t,VehicleInfo> vehicles_info;
+    std::unordered_map<int,VehicleInfo> vehicles_info;
   };
 }

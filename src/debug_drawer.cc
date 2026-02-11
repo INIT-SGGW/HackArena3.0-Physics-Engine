@@ -182,7 +182,7 @@ namespace boink
     assert(points.size()>=2);
     //for(size_t i=1;i<points.size();i++)
     if(elapsed_time>points.size())
-      elapsed_time=points.size();
+      elapsed_time=(float)points.size();
     for(size_t i=1;i<elapsed_time;i++)
     {
       drawLine(points[i-1],points[i],color);

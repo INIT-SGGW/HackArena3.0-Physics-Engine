@@ -62,9 +62,9 @@ namespace boink
     return rigidbody_->getWorldTransform();
   }
 
-  Ground::SurfaceInfo Ground::s_kGrassSuraface_= {1.5,0.5,0.3,Type::Grass};
-  Ground::SurfaceInfo Ground::s_kSandSuraface_= {3.5,5,0.4,Type::Sand};
-  Ground::SurfaceInfo Ground::s_kTarmacSuraface_= {3.5,0.0,0.1,Type::Tarmac};
+  Ground::SurfaceInfo Ground::s_kGrassSuraface_= {1.5f,0.5f,0.3f,Type::Grass};
+  Ground::SurfaceInfo Ground::s_kSandSuraface_= {3.5f,5.f,0.4f,Type::Sand};
+  Ground::SurfaceInfo Ground::s_kTarmacSuraface_= {3.5f,0.0f,0.1f,Type::Tarmac};
 
   Ground::SurfaceInfo& Ground::getSurfaceInfo(Type type)
   {

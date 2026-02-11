@@ -1,5 +1,8 @@
 #include "boink/simulation/custom_raycast_vehicle.h"
+
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+
+#include <cassert>
 
 namespace boink
 {
@@ -44,22 +47,22 @@ namespace boink
 
     btVector3 vel_dir=velocity/speed;
 
-    constexpr btScalar kAirDensity=1.225;
-    constexpr btScalar kAirDragCoef=1.; 
-    constexpr btScalar kFrontalArea=1.4; 
+    constexpr btScalar kAirDensity=1.225f;
+    constexpr btScalar kAirDragCoef= 1.f;
+    constexpr btScalar kFrontalArea= 1.4f;
 
     btVector3 air_drag_force= 
-      -0.5*kAirDragCoef*kFrontalArea*kAirDensity*
+      -0.5f*kAirDragCoef*kFrontalArea*kAirDensity*
       speed*speed*vel_dir;
 
-    constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5;
+    constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5f;
 
     btVector3 down_dir=-rigidbody->getWorldTransform().getBasis().getColumn(1);
 
     assert(down_dir.length()<1.01&&down_dir.length()>0.99);
 
     btVector3 air_down_force=
-      0.5*kAirLiftCoef*kFrontalArea*kAirDensity*
+      0.5f*kAirLiftCoef*kFrontalArea*kAirDensity*
       speed*speed*down_dir;
 
     rigidbody->applyCentralForce(air_drag_force+air_down_force);

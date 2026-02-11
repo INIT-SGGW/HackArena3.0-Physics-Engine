@@ -218,7 +218,7 @@ namespace boink
       wheel.m_frictionSlip=tuning_.m_frictionSlip;
 
       // Some magic number
-      wheel.m_rollInfluence=0.1;
+      wheel.m_rollInfluence=btScalar(0.1);
     }
   }
 
