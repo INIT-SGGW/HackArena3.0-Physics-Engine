@@ -214,30 +214,30 @@ namespace boink
   void DebugDrawer::handleVehicle()
   {
     if(this->getKey(GLFW_KEY_UP)==piksel::Window::KeyState::Press)
-      info_->setThrottleApplied(10.);
+      info_->setThrottleApplied(10.f);
     else if(this->getKey(GLFW_KEY_DOWN)==piksel::Window::KeyState::Press)
-      info_->setThrottleApplied(-5);
+      info_->setThrottleApplied(-5.f);
     else
-      info_->setThrottleApplied(0.);
+      info_->setThrottleApplied(0.f);
 
     if(this->getKey(GLFW_KEY_SPACE)==piksel::Window::KeyState::Press)
-      info_->setBrakeApplied(1);
+      info_->setBrakeApplied(1.f);
     else
-      info_->setBrakeApplied(0.);
+      info_->setBrakeApplied(0.f);
 
     if(this->getKey(GLFW_KEY_LEFT)==piksel::Window::KeyState::Press)
-      info_->setSteeringApplied(-0.3);
+      info_->setSteeringApplied(-0.3f);
     else if(this->getKey(GLFW_KEY_RIGHT)==piksel::Window::KeyState::Press)
-      info_->setSteeringApplied(0.3);
+      info_->setSteeringApplied(0.3f);
     else
-      info_->setSteeringApplied(0.0);
+      info_->setSteeringApplied(0.0f);
 
     // update camera
     const auto& vehicle_info=
       info_->simulation_info.vehicles_info[info_->getSelectedVehicleId()];
     
     const auto& trans=vehicle_info.chassis_position;
-    btVector3 back=trans.getBasis()*btVector3(0,0.25,-1);
+    btVector3 back=trans.getBasis()*btVector3(0.f,0.25f,-1.f);
     btVector3 cam_pos=trans.getOrigin() + back*15;
 
     this->setCamera(cam_pos,trans.getOrigin());

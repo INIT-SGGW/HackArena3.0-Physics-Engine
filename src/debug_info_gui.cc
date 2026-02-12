@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace boink
 {
@@ -58,7 +59,7 @@ namespace boink
     for (auto& [key,vehicle_info] : simulation_info.vehicles_info)
     {
       //auto& vehicle_info=simulation_info.vehicles_info[i];
-      ImGui::PushID(key);
+      ImGui::PushID((int)key);
       ss<<"Vehicle ID: "<<key;
       if (GuiObject::collapsingHeader(ss.str())){
         ss.str("");

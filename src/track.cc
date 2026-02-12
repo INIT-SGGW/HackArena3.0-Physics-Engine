@@ -26,7 +26,7 @@ namespace boink
     std::transform(points.cbegin(),points.cend(),points_dist_.begin(),
         [](const btVector3& v)
         {
-          return std::pair<btVector3,btScalar>(v,0.0);
+          return std::pair<btVector3,btScalar>(v,0.0f);
         }
     );
 

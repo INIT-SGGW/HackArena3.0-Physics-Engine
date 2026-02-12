@@ -189,7 +189,7 @@ namespace boink
     track_info.position=this->getTrack().getWorldTransform().getOrigin();
     info.track_info=std::move(track_info);
 
-    std::unordered_map<int,VehicleInfo> vehicles_info;
+    std::unordered_map<Simulation::ObjectID,VehicleInfo> vehicles_info;
     vehicles_info.reserve(this->getVehicleNumber());
     for(const auto& [key,vehicle]:vehicles_)
     {
