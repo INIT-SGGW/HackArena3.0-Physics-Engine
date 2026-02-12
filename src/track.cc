@@ -171,7 +171,7 @@ namespace boink
   std::pair<size_t,btScalar> Track::Centerline::getIthClosestIndex(
       const btVector3& point, size_t ith) const
   {
-    assert(points_dist_.size()>=ith);
+    assert(points_dist_.size()>ith);
 
     std::vector<size_t> closest_is;
     btScalar ith_closest_dist2;
