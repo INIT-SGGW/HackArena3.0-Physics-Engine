@@ -72,7 +72,7 @@ int main()
       .mesh=vehicle_mesh1,
       .mass=800.,
       .wheel_radius=0.36,
-      .suspension_rest_length=0.52,
+      .suspension_rest_length=0.32,
       .max_steer_angle=1.5,
       .center_of_mass={0.,-0.4,0.},
       .tuning=tuning});
@@ -107,17 +107,17 @@ int main()
 
     handleVehicle(sim.getVehicle(car_id1),dbg);
 
-    updateTransform(vehicle_model0,sim.getVehicle(car_id0));
-    updateTransform(vehicle_model1,sim.getVehicle(car_id1));
 
-    dbg.clearLines();
+    sim.step(dt);
     dbg.drawFrameOrigin();
     //drawCenterline(dbg,node,elapsed_time);
     dbg.drawLines(centerline_points,{0.2,0.5,0.5},elapsed_time*1000);
-    sim.step(dt);
+
+    updateTransform(vehicle_model0,sim.getVehicle(car_id0));
+    updateTransform(vehicle_model1,sim.getVehicle(car_id1));
 
     const auto& trans=sim.getVehicle(car_id1).getWorldTransform();
-    btVector3 back=trans.getBasis()*btVector3(0,0.25,-1);
+    btVector3 back=trans.getBasis()*btVector3(0,0.25,1);
     btVector3 cam_pos=trans.getOrigin() + back*15;
 
     dbg.setCamera(cam_pos,trans.getOrigin());
@@ -130,8 +130,8 @@ void updateTransform(
     std::shared_ptr<VehicleModel> vehicle_model, 
     const Vehicle& vehicle)
 {
-    //vehicle_model->setChassisWorldTransform(
-        //bt2glm(vehicle.getChassisWorldTransform()));
+    vehicle_model->setChassisWorldTransform(
+        bt2glm(vehicle.getChassisWorldTransform()));
     vehicle_model->setWheelWorldTransform(
         VehicleModel::WheelPosition::RearLeft,
         bt2glm(vehicle.getWheelWorldTransform(WheelPosition::RearLeft)));
@@ -191,24 +191,6 @@ VehicleModel createVehicleModel(
 
 void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg)
 {
-  if(dbg.getKey(GLFW_KEY_UP)==Window::KeyState::Press)
-    vehicle.setEngineForce(10.);
-  else if(dbg.getKey(GLFW_KEY_DOWN)==Window::KeyState::Press)
-    vehicle.setEngineForce(-5);
-  else
-    vehicle.setEngineForce(0.);
-
-  if(dbg.getKey(GLFW_KEY_SPACE)==Window::KeyState::Press)
-    vehicle.setBrake(1);
-  else
-    vehicle.setBrake(0.);
-
-  if(dbg.getKey(GLFW_KEY_LEFT)==Window::KeyState::Press)
-    vehicle.setSteering(0.3,Vehicle::TurnDirection::Left);
-  else if(dbg.getKey(GLFW_KEY_RIGHT)==Window::KeyState::Press)
-    vehicle.setSteering(0.3,Vehicle::TurnDirection::Right);
-  else
-    vehicle.setSteering(0.0,Vehicle::TurnDirection::Right);
   
 }
 void drawCenterline(DebugDrawer& dbg, const GltfExtractor::Node& node,float elapsed_time)

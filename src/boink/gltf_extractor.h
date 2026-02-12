@@ -27,6 +27,7 @@ namespace boink
     GltfExtractor(std::string_view filename);
 
     Node& getNode(std::string_view name);
+    std::vector<Node>& getNodes() {return nodes_;}
   private:
     void bindNode(const tinygltf::Node& node, btTransform transform);
     void loadVertices(

@@ -8,6 +8,8 @@
 #include <LinearMath/btVector3.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 
+#include "boink/simulation/ground.h"
+
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -44,29 +46,19 @@ namespace boink
   public:
     Track(std::string_view filename,
       std::shared_ptr<btDiscreteDynamicsWorld> world);
-    Track(const Track&)=delete;
-    Track(Track&&)=default;
 
-    Track& operator=(const Track&)=delete;
-    Track& operator=(Track&&)=default;
-
-    ~Track() noexcept;
-
-    const btVector3& getPosition() const;
-    void setPosition(const btVector3& position);
+    const btTransform& getWorldTransform() const;
+    void setWorldTransform(const btTransform& position);
 
     const Centerline& getCenterline() const {return centerline_;}
   private:
     static constexpr std::string_view TRACK_NAME="Sideroad";
     static constexpr std::string_view CENTERLINE_NAME="Centerline";
   private:
-    std::unique_ptr<btTriangleMesh> mesh_;
-    std::unique_ptr<btBvhTriangleMeshShape> collision_shape_;
-    std::unique_ptr<btDefaultMotionState> motion_state_;
-    std::unique_ptr<btRigidBody> rigidbody_;
-
+    std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
 
     Centerline centerline_;
+    btTransform transform_=btTransform::getIdentity();
   };
 }

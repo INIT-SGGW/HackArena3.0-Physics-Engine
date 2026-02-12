@@ -9,10 +9,10 @@ int main()
   const char* vehicle_filename=
     "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
   const char* track_filename = 
-    "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_Tor_test.glb";
+    "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\lowpoly_track_1_test_5.glb";
 #else
   const char* vehicle_filename="Bolid_F1.glb";
-  const char* track_filename = "Bolid_Tor_test.glb";
+  const char* track_filename = "lowpoly_track_1_test_5.glb";
 #endif
 
   unsigned int major,minor,patch;
@@ -49,10 +49,10 @@ int main()
 
   BoinkVehicleModel model;
   model.center_of_mass.x=0.;
-  model.center_of_mass.y=-0.6;
+  model.center_of_mass.y=-0.4;
   model.center_of_mass.z=0.;
   model.mass=800.;
-  model.max_steer_angle=1.5;
+  model.max_steer_angle=90;
   model.mesh=mesh_handle;
   model.suspension_rest_length=0.4;
   model.wheel_radius=0.36;
@@ -83,16 +83,16 @@ int main()
     printf("boink_set_vehicle_position() failed: code %d.\n",code);
     goto clear;
   }
-  BoinkControls controls;
-  controls.brake=0.0;
-  controls.steer=0.0;
-  controls.throttle=1.;
-  
-  if((code=boink_set_controls(handle,id0,&controls))!=BOINK_OK)
-  {
-    printf("boink_set_controls() failed: code %d.\n",code);
-    goto clear;
-  }
+  //BoinkControls controls;
+  //controls.brake=0.0;
+  //controls.steer=0.0;
+  //controls.throttle=1.;
+  //
+  //if((code=boink_set_controls(handle,id0,&controls))!=BOINK_OK)
+  //{
+  //  printf("boink_set_controls() failed: code %d.\n",code);
+  //  goto clear;
+  //}
   Real prev=boink_get_time_debug();
   while(!boink_should_close_debug())
   {

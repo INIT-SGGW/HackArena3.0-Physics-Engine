@@ -3,6 +3,9 @@
 #include <imgui.h>
 #include <sstream>
 #include <iomanip>
+#include <string>
+#include <vector>
+#include <algorithm>
 
 namespace boink
 {
@@ -14,6 +17,8 @@ namespace boink
   
   void DebugInfoGui::draw()
   {
+
+    GuiObject::text("");
     GuiObject::checkBox("Freeze simulation",&freeze_sim_);
     GuiObject::checkBox("Enable camera",&enable_camera_);
     GuiObject::slider("Mouse speed",0.f,1.f,&mouse_speed_);
@@ -22,6 +27,11 @@ namespace boink
 
     std::stringstream ss;
     ss<<std::fixed<<std::setprecision(2);
+
+    ss<<"Debug framerate: "<<std::setw(6)<<fps_;
+    ss<<" [fps]";
+    GuiObject::text(ss.str());
+    ss.str("");
 
     ss<<"Simulation duration: "<<simulation_info.simulation_duration;
     ss<<" [s]";
@@ -41,14 +51,18 @@ namespace boink
     ss<<" [m]";
     GuiObject::text(ss.str());
     ss.str("");
-    
+
+    this->selectCar();
+
     GuiObject::text("");
 
     for (auto& [key,vehicle_info] : simulation_info.vehicles_info)
     {
       //auto& vehicle_info=simulation_info.vehicles_info[i];
-      ImGui::PushID(key);
-      if (GuiObject::collapsingHeader("Vehicle")){
+      ImGui::PushID((int)key);
+      ss<<"Vehicle ID: "<<key;
+      if (GuiObject::collapsingHeader(ss.str())){
+        ss.str("");
 
         GuiObject::slider(
             "Friction slip",0.f,10.f,&vehicle_info.friction_slip);
@@ -63,7 +77,6 @@ namespace boink
         GuiObject::slider(
             "Suspension stifness",0.f,100.f,&vehicle_info.suspension_stiffness);
 
-
         ss<<"Laps completed: "<<vehicle_info.laps_completed;
         GuiObject::text(ss.str());
         ss.str("");
@@ -73,7 +86,7 @@ namespace boink
         GuiObject::text(ss.str());
         ss.str("");
 
-        ss<<"Vehicle chassis position: "<<vehicle_info.chassis_position;
+        ss<<"Vehicle chassis position: "<<vehicle_info.chassis_position.getOrigin();
         ss<<" [m]";
         GuiObject::text(ss.str());
         ss.str("");
@@ -123,6 +136,48 @@ namespace boink
       }
       ImGui::PopID();
 
+    }
+  }
+
+  void DebugInfoGui::selectCar()
+  {
+    static size_t selected=0;
+    const char* camera_option="Free camera";
+
+    const auto& vehicles_info=simulation_info.vehicles_info;
+    std::vector<std::string> vehicles_ids;
+    vehicles_ids.reserve(vehicles_info.size()+1);
+
+    for(const auto& [key,_]:vehicles_info)
+    {
+      vehicles_ids.push_back(std::to_string(key));
+    }
+    std::sort(vehicles_ids.begin(),vehicles_ids.end());
+    vehicles_ids.insert(vehicles_ids.begin(),camera_option);
+
+    const char* preview=vehicles_ids[selected].c_str();
+
+    if(ImGui::BeginCombo("Follow vehicle",preview))
+    {
+      for(size_t i=0;i<vehicles_ids.size();i++)
+      {
+        bool is_selected=(selected==i);
+        if (ImGui::Selectable(vehicles_ids[i].c_str(), is_selected))
+          selected = i;
+
+        if (is_selected)
+          ImGui::SetItemDefaultFocus();
+      }
+      ImGui::EndCombo();
+    }
+    if(vehicles_ids[selected]==camera_option)
+    {
+      selected_vehicle_id_=-1;
+    }
+    else
+    {
+      enable_camera_=false;
+      selected_vehicle_id_=std::stoi(vehicles_ids[selected]);
     }
   }
 }

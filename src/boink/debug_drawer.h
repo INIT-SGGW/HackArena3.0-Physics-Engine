@@ -70,6 +70,8 @@ namespace boink
     double getTime() const;
     bool isSimulationToFreeze() const;
 
+    float getFramerate() const;
+
     void drawFrameOrigin();
     void drawLines(
       const std::vector<btVector3> points,
@@ -78,9 +80,9 @@ namespace boink
 
     piksel::Window::KeyState getKey(int glfw_key) const;
     SimulationInfo& getSimulationInfo();
-
+    std::shared_ptr<DebugInfoGui> getDebugInfoGui() {return info_;}
   private:
-    double getDeltaTime();
+    void handleVehicle();
   private:
     static const std::string_view s_kSrcVertexShader_;
     static const std::string_view s_kSrcFragShader_;
@@ -98,8 +100,7 @@ namespace boink
     float cam_speed_=5.f;
     float mouse_speed_=0.3f;
 
-    double prev_time_=glfwGetTime();
-
+    float delta_time_;
     std::shared_ptr<DebugInfoGui> info_=std::make_shared<DebugInfoGui>();
   };
 

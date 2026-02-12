@@ -1,6 +1,7 @@
 #pragma once
 
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+#include <LinearMath/btIDebugDraw.h>
 
 namespace boink
 {
@@ -18,6 +19,7 @@ namespace boink
         btScalar step) override;
     virtual void updateVehicle(btScalar step) override;
     virtual void updateFriction(btScalar time_step) override;
+    virtual void debugDraw(btIDebugDraw* dbg) override;
 
   private:
     void applyAerodynamics();

@@ -1,5 +1,8 @@
 #include "boink/simulation/custom_raycast_vehicle.h"
+
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+
+#include <cassert>
 
 namespace boink
 {
@@ -44,24 +47,56 @@ namespace boink
 
     btVector3 vel_dir=velocity/speed;
 
-    constexpr btScalar kAirDensity=1.225;
-    constexpr btScalar kAirDragCoef=1.; 
-    constexpr btScalar kFrontalArea=1.4; 
+    constexpr btScalar kAirDensity=1.225f;
+    constexpr btScalar kAirDragCoef= 1.f;
+    constexpr btScalar kFrontalArea= 1.4f;
 
     btVector3 air_drag_force= 
-      -0.5*kAirDragCoef*kFrontalArea*kAirDensity*
+      -0.5f*kAirDragCoef*kFrontalArea*kAirDensity*
       speed*speed*vel_dir;
 
-    constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5;
+    constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5f;
 
     btVector3 down_dir=-rigidbody->getWorldTransform().getBasis().getColumn(1);
 
     assert(down_dir.length()<1.01&&down_dir.length()>0.99);
 
     btVector3 air_down_force=
-      0.5*kAirLiftCoef*kFrontalArea*kAirDensity*
+      0.5f*kAirLiftCoef*kFrontalArea*kAirDensity*
       speed*speed*down_dir;
 
     rigidbody->applyCentralForce(air_drag_force+air_down_force);
+  }
+
+  void CustomRaycastVehicle::debugDraw(btIDebugDraw* dbg)
+  {
+    //btRaycastVehicle::debugDraw(dbg);
+    for (int v = 0; v < this->getNumWheels(); v++)
+    {
+      btVector3 wheelColor;
+      if (getWheelInfo(v).m_raycastInfo.m_isInContact)
+        wheelColor.setValue(0, 0, 1);
+      else
+        wheelColor.setValue(1, 0, 1);
+
+      btVector3 wheelPosWS = getWheelInfo(v).m_worldTransform.getOrigin();
+
+      btVector3 axle = btVector3(
+              getWheelInfo(v).m_worldTransform.getBasis()[0][getRightAxis()],
+              getWheelInfo(v).m_worldTransform.getBasis()[1][getRightAxis()],
+              getWheelInfo(v).m_worldTransform.getBasis()[2][getRightAxis()]);
+
+      dbg->drawLine(wheelPosWS, wheelPosWS + axle, wheelColor);
+      dbg->drawLine(
+          wheelPosWS, 
+          getWheelInfo(v).m_raycastInfo.m_contactPointWS, 
+          wheelColor);
+
+      // Draw suspension
+      dbg->drawLine(
+          wheelPosWS,
+          getWheelInfo(v).m_raycastInfo.m_hardPointWS,
+          {1,0,0});
+    }      
   }
 }

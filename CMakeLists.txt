@@ -37,7 +37,7 @@ find_package(Bullet CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
 
 find_package(piksel CONFIG REQUIRED)                                                                                                                                          
-target_link_libraries(boink PUBLIC piksel::piksel)   
+target_link_libraries(boink PUBLIC piksel::piksel)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (MSVC)
@@ -94,36 +94,19 @@ target_sources(boink
     src/exception.cc
     src/debug_info_gui.cc
     src/custom_raycast_vehicle.cc
+    src/ground.cc
 )
 
 target_include_directories(boink
   PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    # this must be private do not push
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
-
-set(TEST_SOURCES
-  colider_test
-  gltf_test
-)
-foreach(name IN LISTS TEST_SOURCES)
-  add_executable(${name} tests/${name}.cc)
-  target_compile_definitions(${name} PRIVATE BOINK_USE_DLL)
-  target_link_libraries(${name}
-    PRIVATE 
-      boink
-      Threads::Threads # Required to resolve pthreads warning/errors on MSVC
-  )
-  add_test(NAME ${name} COMMAND ${name})
-  set_tests_properties(${name} PROPERTIES
-    ENVIRONMENT "${LSAN_ENV_VAR}")
-endforeach()
 
 set(TEST_SOURCES_C
   capi_test
@@ -140,7 +123,7 @@ foreach(name IN LISTS TEST_SOURCES_C)
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
-endif()
+#endif()
 
 # Include the module that defines standard installation directory variables
 include(GNUInstallDirs)

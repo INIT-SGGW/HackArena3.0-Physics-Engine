@@ -215,7 +215,7 @@ int boink_spawn_vehicle(
   create_info.wheel_radius=p_vehicle_model->wheel_radius;
   create_info.suspension_rest_length=p_vehicle_model->suspension_rest_length;
   create_info.max_steer_angle =
-      p_vehicle_model->max_steer_angle * std::numbers::pi / 180.0;
+      p_vehicle_model->max_steer_angle * btScalar(std::numbers::pi / 180.0);
 
   create_info.mesh=std::shared_ptr<const boink::VehicleMesh>(
       (const boink::VehicleMesh*)p_vehicle_model->mesh,
@@ -317,7 +317,10 @@ int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position
     return BOINK_ERR_INVALID_ARG;
 
   btVector3 pos(position->x,position->y,position->z);
-  p_sim->getTrack().setPosition(pos);
+  btTransform trans;
+  trans.setIdentity();
+  trans.setOrigin(pos);
+  p_sim->getTrack().setWorldTransform(trans);
 
   return BOINK_OK;
 }
