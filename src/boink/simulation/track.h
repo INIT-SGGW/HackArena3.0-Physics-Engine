@@ -9,6 +9,7 @@
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 
 #include "boink/simulation/ground.h"
+#include "boink/simulation/weather.h"
 
 #include <memory>
 #include <string_view>
@@ -45,7 +46,8 @@ namespace boink
     };
   public:
     Track(std::string_view filename,
-      std::shared_ptr<btDiscreteDynamicsWorld> world);
+        std::shared_ptr<const Weather> weather,
+        std::shared_ptr<btDiscreteDynamicsWorld> world);
 
     const btTransform& getWorldTransform() const;
     void setWorldTransform(const btTransform& position);
@@ -60,5 +62,7 @@ namespace boink
 
     Centerline centerline_;
     btTransform transform_=btTransform::getIdentity();
+
+    std::shared_ptr<const Weather> weather_;
   };
 }

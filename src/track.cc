@@ -5,6 +5,7 @@
 
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
+#include "boink/simulation/weather.h"
 
 #include <LinearMath/btTransform.h>
 #include <algorithm>
@@ -218,9 +219,11 @@ namespace boink
   }
 
   Track::Track(std::string_view filename,
+      std::shared_ptr<const Weather> weather,
       std::shared_ptr<btDiscreteDynamicsWorld> world)
     :
-      world_(world)
+      world_(world),
+      weather_(weather)
   {
     GltfExtractor extractor(filename);
     auto& nodes=extractor.getNodes();
