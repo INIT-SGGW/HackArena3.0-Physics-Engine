@@ -26,7 +26,8 @@ namespace boink
               piksel::Shader::CompileShader(
                 s_kSrcFragShader_,piksel::Shader::ShaderType::FragmentType)
               )),
-      gui_manager_(wnd_.getGLFWPointer())
+      gui_manager_(wnd_.getGLFWPointer()),
+      delta_time_(0)
   {
     gfx_.setBackground(s_kBackgroundColor_);
     gui_manager_.addObject(info_);
@@ -80,8 +81,14 @@ namespace boink
 
   void DebugDrawer::update()
   {
-    static float dt=(float)getDeltaTime();
-    dt=(float)getDeltaTime();
+    static double prev=glfwGetTime();
+
+    double now=glfwGetTime();
+    float dt=(float)(now-prev);
+    prev=now;
+    delta_time_=dt;
+
+    info_->setFramerate(this->getFramerate());
 
     static piksel::Window::MousePos prev_mouse_pos=wnd_.getMousePos();
 
@@ -103,13 +110,14 @@ namespace boink
     }
 
     piksel::Window::MousePos mouse_pos=wnd_.getMousePos();
-    if(wnd_.getKey(GLFW_KEY_LEFT_SHIFT)==piksel::Window::KeyState::Press){
-      wnd_.setCursor();
-      gui_manager_.ignoreInput(false);
-    }
-    else
+    if(info_->isCameraEnable())
     {
-      if(info_->isCameraEnable())
+      if(wnd_.getKey(GLFW_KEY_LEFT_SHIFT)==piksel::Window::KeyState::Press)
+      {
+        wnd_.setCursor();
+        gui_manager_.ignoreInput(false);
+      }
+      else
       {
         gui_manager_.ignoreInput();
         wnd_.setCursor(false);
@@ -117,6 +125,14 @@ namespace boink
         cam_.rotatePitch((float)(prev_mouse_pos.y-mouse_pos.y)*dt*mouse_speed_);
       }
     }
+    else if(int id=info_->getSelectedVehicleId();id>=0)
+    {
+      wnd_.setCursor();
+      gui_manager_.ignoreInput(false);
+
+      this->handleVehicle();
+    }
+
     prev_mouse_pos.x=mouse_pos.x;
     prev_mouse_pos.y=mouse_pos.y;
 
@@ -149,13 +165,9 @@ namespace boink
     return info_->isSimulationFreeze();
   }
 
-  double DebugDrawer::getDeltaTime()
+  float DebugDrawer::getFramerate() const
   {
-    double time=glfwGetTime();
-    double dt=time-prev_time_;
-    prev_time_=time;
-
-    return dt;
+    return 1.f/delta_time_;
   }
 
   void DebugDrawer::drawFrameOrigin()
@@ -197,6 +209,38 @@ namespace boink
   SimulationInfo& DebugDrawer::getSimulationInfo()
   {
     return info_->simulation_info;
+  }
+
+  void DebugDrawer::handleVehicle()
+  {
+    if(this->getKey(GLFW_KEY_UP)==piksel::Window::KeyState::Press)
+      info_->setThrottleApplied(10.);
+    else if(this->getKey(GLFW_KEY_DOWN)==piksel::Window::KeyState::Press)
+      info_->setThrottleApplied(-5);
+    else
+      info_->setThrottleApplied(0.);
+
+    if(this->getKey(GLFW_KEY_SPACE)==piksel::Window::KeyState::Press)
+      info_->setBrakeApplied(1);
+    else
+      info_->setBrakeApplied(0.);
+
+    if(this->getKey(GLFW_KEY_LEFT)==piksel::Window::KeyState::Press)
+      info_->setSteeringApplied(-0.3);
+    else if(this->getKey(GLFW_KEY_RIGHT)==piksel::Window::KeyState::Press)
+      info_->setSteeringApplied(0.3);
+    else
+      info_->setSteeringApplied(0.0);
+
+    // update camera
+    const auto& vehicle_info=
+      info_->simulation_info.vehicles_info[info_->getSelectedVehicleId()];
+    
+    const auto& trans=vehicle_info.chassis_position;
+    btVector3 back=trans.getBasis()*btVector3(0,0.25,-1);
+    btVector3 cam_pos=trans.getOrigin() + back*15;
+
+    this->setCamera(cam_pos,trans.getOrigin());
   }
 
 #ifdef NDEBUG

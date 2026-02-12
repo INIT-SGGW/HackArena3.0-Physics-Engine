@@ -105,7 +105,7 @@ target_include_directories(boink
     ${CMAKE_CURRENT_BINARY_DIR}/generated
 )
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 include(CTest)
 
 set(TEST_SOURCES_C
@@ -123,7 +123,7 @@ foreach(name IN LISTS TEST_SOURCES_C)
   set_tests_properties(${name} PROPERTIES
     ENVIRONMENT "${LSAN_ENV_VAR}")
 endforeach()
-endif()
+#endif()
 
 # Include the module that defines standard installation directory variables
 include(GNUInstallDirs)

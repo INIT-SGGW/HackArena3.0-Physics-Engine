@@ -40,7 +40,10 @@ namespace boink
   {
     if(p_debug_drawer && p_debug_drawer->isSimulationToFreeze())
       return;
-    updateDebugInfo();
+    if(p_debug_drawer)
+    {
+      updateDebugInfo();
+    }
 
     // With large dt simulation behaves strangely.
     // Must use hard clamp or assert
@@ -159,6 +162,20 @@ namespace boink
         it=sim_info.vehicles_info.erase(it);
       }
     }
+    int car_id=p_debug_drawer->getDebugInfoGui()->getSelectedVehicleId();
+
+    if(car_id<0)
+      return;
+
+    btScalar brake=p_debug_drawer->getDebugInfoGui()->getBrakeApplied();
+    btScalar throttle=p_debug_drawer->getDebugInfoGui()->getThrottleApplied();
+    btScalar steering=p_debug_drawer->getDebugInfoGui()->getSteeringApplied();
+
+    this->getVehicle(car_id).setEngineForce(throttle);
+    this->getVehicle(car_id).setBrake(brake);
+    this->getVehicle(car_id).setSteering(
+        btFabs(steering),
+        steering<0?Vehicle::TurnDirection::Left:Vehicle::TurnDirection::Right);
   }
 
   void Simulation::writeDebugInfo()
@@ -179,7 +196,7 @@ namespace boink
       VehicleInfo vehicle_info;
       vehicle_info.brake=0;
       vehicle_info.center_of_mass_cs=vehicle.getCenterOfMassCS();
-      vehicle_info.chassis_position=vehicle.getChassisWorldTransform().getOrigin();
+      vehicle_info.chassis_position=vehicle.getChassisWorldTransform();
       vehicle_info.engine_force=0;
       vehicle_info.mass=vehicle.getMass();
       vehicle_info.max_steer_angle=0;

@@ -2,8 +2,8 @@
 
 #include "LinearMath/btScalar.h"
 #include "LinearMath/btVector3.h"
+#include "LinearMath/btTransform.h"
 #include <unordered_map>
-#include <cstdint>
 
 namespace boink
 {
@@ -23,7 +23,7 @@ namespace boink
 
     btScalar max_steer_angle;
     btVector3 center_of_mass_cs;
-    btVector3 chassis_position;
+    btTransform chassis_position;
     btScalar mass;
     btScalar speed;
 
@@ -38,6 +38,7 @@ namespace boink
     WheelInfo front_right;
     WheelInfo rear_left;
     WheelInfo rear_right;
+
   };
 
   struct TrackInfo

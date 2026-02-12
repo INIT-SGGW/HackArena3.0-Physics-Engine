@@ -117,7 +117,7 @@ int main()
     updateTransform(vehicle_model1,sim.getVehicle(car_id1));
 
     const auto& trans=sim.getVehicle(car_id1).getWorldTransform();
-    btVector3 back=trans.getBasis()*btVector3(1,0.25,0);
+    btVector3 back=trans.getBasis()*btVector3(0,0.25,1);
     btVector3 cam_pos=trans.getOrigin() + back*15;
 
     dbg.setCamera(cam_pos,trans.getOrigin());
@@ -191,24 +191,6 @@ VehicleModel createVehicleModel(
 
 void handleVehicle(Vehicle& vehicle,const DebugDrawer& dbg)
 {
-  if(dbg.getKey(GLFW_KEY_UP)==Window::KeyState::Press)
-    vehicle.setEngineForce(10.);
-  else if(dbg.getKey(GLFW_KEY_DOWN)==Window::KeyState::Press)
-    vehicle.setEngineForce(-5);
-  else
-    vehicle.setEngineForce(0.);
-
-  if(dbg.getKey(GLFW_KEY_SPACE)==Window::KeyState::Press)
-    vehicle.setBrake(1);
-  else
-    vehicle.setBrake(0.);
-
-  if(dbg.getKey(GLFW_KEY_LEFT)==Window::KeyState::Press)
-    vehicle.setSteering(0.3,Vehicle::TurnDirection::Left);
-  else if(dbg.getKey(GLFW_KEY_RIGHT)==Window::KeyState::Press)
-    vehicle.setSteering(0.3,Vehicle::TurnDirection::Right);
-  else
-    vehicle.setSteering(0.0,Vehicle::TurnDirection::Right);
   
 }
 void drawCenterline(DebugDrawer& dbg, const GltfExtractor::Node& node,float elapsed_time)
