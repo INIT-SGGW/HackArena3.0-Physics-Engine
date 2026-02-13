@@ -1,4 +1,4 @@
-#include "boink/simulation/vehicle_mesh.h"
+#include "boink/simulators/vehicle/vehicle_mesh.h"
 
 #include <LinearMath/btMatrix3x3.h>
 #include <LinearMath/btQuaternion.h>

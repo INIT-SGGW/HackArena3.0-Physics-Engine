@@ -1,4 +1,4 @@
-#include "boink/utils/utility.h"
+#include "boink/utility.h"
 
 #include <LinearMath/btQuaternion.h>
 #include <glm/ext/matrix_transform.hpp>

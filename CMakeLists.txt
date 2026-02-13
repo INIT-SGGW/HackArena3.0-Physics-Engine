@@ -83,7 +83,6 @@ target_sources(boink
   PRIVATE
     src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
-    src/debug_drawer.cc
     src/simulation.cc
     src/utility.cc
     src/track.cc
@@ -92,9 +91,12 @@ target_sources(boink
     src/vehicle_mesh.cc
     src/gltf_extractor.cc
     src/exception.cc
-    src/debug_info_gui.cc
     src/custom_raycast_vehicle.cc
     src/ground.cc
+    src/centerline.cc
+    src/race.cc
+    src/debugger.cc
+    src/renderer.cc
 )
 
 target_include_directories(boink

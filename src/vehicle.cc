@@ -1,6 +1,6 @@
-#include "boink/simulation/vehicle.h"
-#include "boink/simulation/custom_raycast_vehicle.h"
-#include "boink/simulation/wheel_position.h"
+#include "boink/simulators/vehicle/vehicle.h"
+#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
@@ -15,12 +15,14 @@ namespace boink
 {
   Vehicle::Vehicle(
       const CreationInfo& create_info,
+      std::shared_ptr<const Track> track,
       std::shared_ptr<btDynamicsWorld> world)
     :
       mesh_(create_info.mesh),
       world_(world),
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
       raycaster_(new btDefaultVehicleRaycaster(world_.get())),
+      track_(track),
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning)
@@ -133,25 +135,39 @@ namespace boink
     }
   }
 
+  void Vehicle::update(btScalar dt)
+  {
+    (void)dt;
+    btScalar track_length=track_->getCenterline().getLength();
+
+    int curr_laps_completed=this->getLapsCompleted();
+
+    const btVector3 vehicle_pos=this->getWorldTransform().getOrigin();
+    btScalar prev_coverage=this->getCurrentLapDistanceCovered();
+    btScalar curr_coverage=track_->getCenterline().getCoverage(vehicle_pos);
+
+    btScalar v=curr_coverage-prev_coverage;
+    if(btFabs(v)>track_length/2.)
+    {
+      // Means that finish line was crossed
+      if(v>0)
+        curr_laps_completed--;
+      else
+        curr_laps_completed++;
+    }
+
+    laps_completed_=curr_laps_completed;
+    curr_lap_dist_point_=curr_coverage;
+  }
+
+  void Vehicle::updateDebug(Debugger* p_dbg)
+  {
+    (void)p_dbg;
+  }
+
   void Vehicle::setPosition(const btVector3& position)
   {
     rigidbody_->getWorldTransform().setOrigin(position);
-  }
-
-  void Vehicle::setTrackPosition(int laps_completed, btScalar curr_lap_dist_cov)
-  {
-    laps_completed_=laps_completed;
-    curr_lap_dist_point_=curr_lap_dist_cov;
-  }
-
-  int Vehicle::getLapsCompleted() const
-  {
-    return laps_completed_;
-  }
-
-  btScalar Vehicle::getCurrentLapDistanceCovered() const
-  {
-    return curr_lap_dist_point_;
   }
 
   btTransform Vehicle::getWorldTransform() const

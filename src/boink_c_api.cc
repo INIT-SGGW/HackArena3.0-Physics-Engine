@@ -1,12 +1,13 @@
 #include "boink/boink_c_api.h"
 
-#include "boink/debug_drawer.h"
+#include "boink/debugger/debugger.h"
 #include "boink/exception.h"
-#include "boink/simulation.h"
-#include "boink/simulation/vehicle.h"
-#include "boink/simulation/vehicle_mesh.h"
+#include "boink/simulation/race.h"
+#include "boink/simulation/simulation.h"
+#include "boink/simulators/vehicle/vehicle.h"
+#include "boink/simulators/vehicle/vehicle_mesh.h"
 
-#include "boink/simulation/wheel_position.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/version.h"
 
 #include <LinearMath/btQuaternion.h>
@@ -37,7 +38,7 @@ static BoinkVec3 bt2boink(btVector3 bt_vec);
 static BoinkQuaternion bt2boink(btQuaternion bt_quat);
 //static btQuaternion boink2bt(BoinkQuaternion boink_quat);
 
-static boink::DebugDrawer* g_drawer=NULL;
+static boink::Debugger* gp_dbg=nullptr;
 
 int boink_get_c_api_version(unsigned int *out_major,
                                  unsigned int *out_minor,
@@ -76,15 +77,21 @@ int boink_init(bool debug_drawer_enable)
   if(debug_drawer_enable)
   {
     HANDLE_EXCEPTIONS(
-      g_drawer=new boink::DebugDrawer())
+      gp_dbg=new boink::Debugger(
+        "Boink Debugger",
+        {0.f,0.f,1.f},
+        {0.f,0.f,0.f}))
   }
   return BOINK_OK;
 }
 
 void boink_terminate()
 {
-  if(g_drawer!=NULL)
-    delete g_drawer;
+  if(gp_dbg!=nullptr)
+  {
+    delete gp_dbg;
+    gp_dbg=nullptr;
+  }
 }
 
 BoinkHandle boink_create_race(const char* track_glb_filename)
@@ -93,10 +100,10 @@ BoinkHandle boink_create_race(const char* track_glb_filename)
     return nullptr;
   try
   {
-    boink::Simulation* p_sim=new boink::Simulation(track_glb_filename);
-    if(g_drawer!=NULL)
-      p_sim->registerDebugDrawer(g_drawer);
-    return reinterpret_cast<BoinkHandle>(p_sim);
+    boink::Race* p_race=new boink::Race(track_glb_filename);
+    if(gp_dbg!=nullptr)
+      p_race->registerDebugger(gp_dbg);
+    return reinterpret_cast<BoinkHandle>(p_race);
   }
   catch(boink::Exception& e)
   {
@@ -114,6 +121,12 @@ BoinkHandle boink_create_race(const char* track_glb_filename)
     std::cout << "Unknown Exception" << std::endl;
     return nullptr;
   }
+}
+
+void boink_destroy_race(BoinkHandle handle)
+{
+  if(handle!=nullptr)
+    delete (boink::Race*) handle;
 }
 
 int boink_create_vehicle_mesh(
@@ -152,45 +165,39 @@ int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
 
 int boink_step_race(BoinkHandle handle, Real dt)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
   if(dt<0)
     return BOINK_ERR_INVALID_ARG;
 
-  p_sim->step(dt);
+  p_race->update(dt);
   return BOINK_OK;
 }
 
 void boink_update_debug()
 {
-  if(g_drawer!=NULL)
+  if(gp_dbg)
   {
-    g_drawer->drawFrameOrigin();
-    g_drawer->update();
+    gp_dbg->getRendererPtr()->drawFrameOrigin();
+    gp_dbg->update();
   }
 }
 
 Real boink_get_time_debug()
 {
-  if(g_drawer!=NULL)
-    return (Real)g_drawer->getTime();
+  if(gp_dbg)
+    return gp_dbg->getTime();
 
   return 0;
 }
 
 bool boink_should_close_debug()
 {
-  if(g_drawer!=NULL)
-    return !static_cast<bool>(*g_drawer);
+  if(gp_dbg)
+    return gp_dbg->shouldClose();
 
   return true;
-}
-
-void boink_destroy_race(BoinkHandle handle)
-{
-  if(handle!=nullptr)
-    delete (boink::Simulation*) handle;
 }
 
 int boink_spawn_vehicle(
@@ -198,8 +205,8 @@ int boink_spawn_vehicle(
     const BoinkVehicleModel* p_vehicle_model,
     uint64_t* out_vehicle_id)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
   if(p_vehicle_model==nullptr)
     return BOINK_ERR_INVALID_ARG;
@@ -224,19 +231,19 @@ int boink_spawn_vehicle(
   // TODO
   // I think try is not needed here but it must be checked
   HANDLE_EXCEPTIONS(
-    *out_vehicle_id=p_sim->addVehicle(create_info))
+    *out_vehicle_id=p_race->addVehicle(create_info))
 
   return BOINK_OK;
 }
 
 int boink_despawn_vehicle(BoinkHandle handle, uint64_t vehicle_id)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
 
   HANDLE_EXCEPTIONS(
-    p_sim->removeVehicle(vehicle_id))
+    p_race->removeVehicle(vehicle_id))
   
   return BOINK_OK;
 }
@@ -246,15 +253,15 @@ int boink_set_controls(
     uint64_t vehicle_id, 
     const BoinkControls* controls)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
   if(controls==nullptr)
     return BOINK_ERR_INVALID_ARG;
   
-  boink::Vehicle* p_vehicle=nullptr;
+  std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
-    p_vehicle=&p_sim->getVehicle(vehicle_id))
+    vehicle=p_race->getVehicle(vehicle_id))
 
   if(controls->throttle>1. || controls->throttle<0.)
   {
@@ -274,15 +281,15 @@ int boink_set_controls(
     return BOINK_ERR_INVALID_ARG;
   }
 
-  p_vehicle->setEngineForce(controls->throttle);
-  p_vehicle->setBrake(controls->brake);
+  vehicle->setEngineForce(controls->throttle);
+  vehicle->setBrake(controls->brake);
 
   Real steer=std::abs(controls->steer);
   boink::Vehicle::TurnDirection dir=
     controls->steer<0.0?
     boink::Vehicle::TurnDirection::Left:
     boink::Vehicle::TurnDirection::Right;
-  p_vehicle->setSteering(steer,dir);
+  vehicle->setSteering(steer,dir);
 
   return BOINK_OK;
 }
@@ -292,26 +299,26 @@ int boink_set_vehicle_position(
     uint64_t vehicle_id, 
     const struct BoinkVec3* position)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
   if(position==nullptr)
     return BOINK_ERR_INVALID_ARG;
 
-  boink::Vehicle* p_vehicle;
+  std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
-    p_vehicle=&p_sim->getVehicle(vehicle_id));
+    vehicle=p_race->getVehicle(vehicle_id));
   
   btVector3 pos(position->x,position->y,position->z);
-  p_vehicle->setPosition(pos);
+  vehicle->setPosition(pos);
 
   return BOINK_OK;
 }
 
 int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
   if(position==nullptr)
     return BOINK_ERR_INVALID_ARG;
@@ -320,7 +327,7 @@ int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position
   btTransform trans;
   trans.setIdentity();
   trans.setOrigin(pos);
-  p_sim->getTrack().setWorldTransform(trans);
+  p_race->getTrack()->setWorldTransform(trans);
 
   return BOINK_OK;
 }
@@ -328,15 +335,15 @@ int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position
 int boink_read_vehicle_state(
     BoinkHandle handle, uint64_t vehicle_id, BoinkVehicleState *out_state)
 {
-  boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
+  boink::Race* p_race=(boink::Race*)handle;
+  if(p_race==nullptr)
     return BOINK_ERR_INVALID_ARG;
   if(out_state==nullptr)
     return BOINK_ERR_INVALID_ARG;
   
-  boink::Vehicle* p_vehicle=nullptr;
+  std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
-    p_vehicle=&p_sim->getVehicle(vehicle_id))
+    vehicle=p_race->getVehicle(vehicle_id))
 
   out_state->engine_rpm=0.0;
   out_state->gear=0;
@@ -348,27 +355,27 @@ int boink_read_vehicle_state(
   out_state->throttle_applied=0.0;
 
   out_state->vehicle_id=vehicle_id;
-  out_state->speed=p_vehicle->getSpeed();
+  out_state->speed=vehicle->getSpeed();
 
-  btTransform chassis_transform=p_vehicle->getChassisWorldTransform();
+  btTransform chassis_transform=vehicle->getChassisWorldTransform();
   out_state->chassis_position=bt2boink(chassis_transform.getOrigin());
   out_state->vehicle_orientation=bt2boink(chassis_transform.getRotation());
   
   btTransform wheel_transform;
 
-  wheel_transform=p_vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
+  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
   out_state->wheel_position[0]=bt2boink(wheel_transform.getOrigin());
   //out_state->wheel_orientation[0]=bt2boink(wheel_transform.getRotation());
 
-  wheel_transform=p_vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
+  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
   out_state->wheel_position[1]=bt2boink(wheel_transform.getOrigin());
   //out_state->wheel_orientation[1]=bt2boink(wheel_transform.getRotation());
 
-  wheel_transform=p_vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
+  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
   out_state->wheel_position[2]=bt2boink(wheel_transform.getOrigin());
   //out_state->wheel_orientation[2]=bt2boink(wheel_transform.getRotation());
 
-  wheel_transform=p_vehicle->getWheelWorldTransform(boink::WheelPosition::RearRight);
+  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearRight);
   out_state->wheel_position[3]=bt2boink(wheel_transform.getOrigin());
   //out_state->wheel_orientation[3]=bt2boink(wheel_transform.getRotation());
 
@@ -387,6 +394,8 @@ int exceptionType2api(boink::Exception::Type type)
       return BOINK_ERR_IO;
     case boink::Exception::Type::NotFoundError:
       return BOINK_ERR_NOT_FOUND;
+    case boink::Exception::Type::InternalError:
+      return BOINK_ERR_INTERNAL;
   }
 
   return BOINK_ERR_INTERNAL;

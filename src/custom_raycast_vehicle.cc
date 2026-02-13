@@ -1,4 +1,4 @@
-#include "boink/simulation/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
 

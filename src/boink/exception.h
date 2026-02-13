@@ -14,6 +14,7 @@ namespace boink{
       InvalidArgumentError,
       UnsupportedFormatError,
       NotFoundError,
+      InternalError
     };
   public:
     Exception(

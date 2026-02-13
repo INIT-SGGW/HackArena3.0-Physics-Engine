@@ -7,7 +7,7 @@
 #include <LinearMath/btVector3.h>
 #include <LinearMath/btTransform.h>
 
-#include "boink/simulation/wheel_position.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 
 namespace boink
 {

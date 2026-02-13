@@ -10,15 +10,17 @@
 #include <LinearMath/btDefaultMotionState.h>
 #include <LinearMath/btMotionState.h>
 
-#include "boink/simulation/vehicle_mesh.h"
-#include "boink/simulation/custom_raycast_vehicle.h"
-#include "boink/simulation/wheel_position.h"
+#include "boink/simulators/simulator.h"
+#include "boink/simulators/track/track.h"
+#include "boink/simulators/vehicle/vehicle_mesh.h"
+#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 
 #include <memory>
 
 namespace boink
 {
-  class Vehicle
+  class Vehicle : public Simulator
   {
   public:
     struct CreationInfo
@@ -40,6 +42,7 @@ namespace boink
   public:
     Vehicle(
         const CreationInfo& create_info,
+        std::shared_ptr<const Track> track,
         std::shared_ptr<btDynamicsWorld> world);
     Vehicle(const Vehicle&)=delete;
     Vehicle(Vehicle&&)noexcept=default;
@@ -49,11 +52,13 @@ namespace boink
 
     ~Vehicle() noexcept;
 
+    void update(btScalar dt) override;
+    void updateDebug(Debugger* p_dbg) override;
+
     void setPosition(const btVector3& position);
 
-    void setTrackPosition(int laps_completed,btScalar curr_lap_dist_coverage);
-    int getLapsCompleted() const;
-    btScalar getCurrentLapDistanceCovered() const;
+    int getLapsCompleted() const {return laps_completed_;}
+    btScalar getCurrentLapDistanceCovered() const {return curr_lap_dist_point_;}
 
     btTransform getWorldTransform() const;
     btTransform getChassisWorldTransform() const;
@@ -87,6 +92,8 @@ namespace boink
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<btVehicleRaycaster> raycaster_;
     std::unique_ptr<CustomRaycastVehicle> vehicle_;
+
+    std::shared_ptr<const Track> track_;
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;

@@ -11,7 +11,7 @@
 #include <piksel/window.hh>
 #include <vector>
 
-#include "boink/utils/utility.h"
+#include "boink/utility.h"
 
 namespace boink
 {
