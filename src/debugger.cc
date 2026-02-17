@@ -1,6 +1,10 @@
 #include "boink/debugger/debugger.h"
 
+#include <piksel/gui_object.hh>
+#include <piksel/window.hh>
+
 #include "boink/utility.h"
+#include "boink/debugger/camera_controller.h"
 
 namespace boink
 {
@@ -12,10 +16,18 @@ namespace boink
       wnd_(title.data()),
       cam_(bt2glm(camera_position),bt2glm(camera_target)),
       renderer_(wnd_,cam_),
+      gui_manager_(wnd_.getGLFWPointer()),
+      gui_(std::make_shared<DebuggerGui>()),
+      default_controller_(std::make_shared<CameraController>()),
       fps_(0.f)
   {
     cam_.setMovementSpeed(5.f);
     cam_.setRotationSpeed(0.3f);
+
+    gui_->mouse_speed=cam_.getRotationSpeed();
+    gui_->camera_speed=cam_.getMovementSpeed();
+
+    gui_manager_.addObject(gui_);
   }
 
   void Debugger::update()
@@ -28,9 +40,12 @@ namespace boink
     this->calculateFramerate(dt);
 
     this->handleWindowClose();
-    this->handleCameraMovement(dt);
+    this->updateController(dt);
+
+    this->updateGui();
 
     renderer_.render();
+    gui_manager_.render();
     wnd_.update();
   }
 
@@ -39,9 +54,35 @@ namespace boink
     return (btScalar)wnd_.getTime();
   }
 
+  void Debugger::addGui(std::shared_ptr<piksel::GuiObject> gui_object)
+  {
+    gui_manager_.addObject(gui_object);
+  }
+
+  void Debugger::setControllers(
+      std::vector<
+        std::pair<Simulator::ID,std::shared_ptr<Controller>>> controllers)
+  {
+    controllers_=controllers;
+  }
+
   bool Debugger::shouldClose() const
   {
     return !(bool)wnd_;
+  }
+
+  void Debugger::updateGui()
+  {
+    cam_.setMovementSpeed(gui_->camera_speed);
+    cam_.setRotationSpeed(gui_->mouse_speed);
+
+    gui_->fps=this->getFramerate();
+
+    std::vector<std::pair<Simulator::ID,std::string>> con_pair;
+    con_pair.reserve(controllers_.size());
+    for(const auto& p : controllers_)
+      con_pair.emplace_back(p.first,std::string("Vehicle id="+std::to_string(p.first)));
+    gui_->controller_ids=std::move(con_pair);
   }
 
   void Debugger::handleWindowClose()
@@ -50,30 +91,32 @@ namespace boink
       wnd_.close();
   }
 
-  void Debugger::handleCameraMovement(float dt)
+  void Debugger::updateController(float dt)
   {
-    static piksel::Window::MousePos prev_mouse_pos=wnd_.getMousePos();
-
-    if(wnd_.getKey(GLFW_KEY_W)==piksel::Window::KeyState::Press){
-      cam_.moveLongitudinal(dt);
+    int selected_controller=gui_->selected_controller;
+    if(selected_controller==-1 &&
+        wnd_.getKey(GLFW_KEY_LEFT_SHIFT)!=piksel::Window::KeyState::Press)
+    {
+      gui_manager_.ignoreInput();
+      default_controller_->update(wnd_,cam_,dt);
     }
-    if(wnd_.getKey(GLFW_KEY_S)==piksel::Window::KeyState::Press){
-      cam_.moveLongitudinal(-dt);
-    }
+    else
+    {
+      gui_manager_.ignoreInput(false);
+      wnd_.setCursor();
+      default_controller_->updateMouse(wnd_);
 
-    if(wnd_.getKey(GLFW_KEY_A)==piksel::Window::KeyState::Press){
-      cam_.moveLateral(-dt);
-    }
-    if(wnd_.getKey(GLFW_KEY_D)==piksel::Window::KeyState::Press){
-      cam_.moveLateral(dt);
-    }
+      if(selected_controller==-1)
+        return;
 
-    piksel::Window::MousePos mouse_pos=wnd_.getMousePos();
-    wnd_.setCursor(false);
-    cam_.rotateYaw((float)(prev_mouse_pos.x-mouse_pos.x)*dt);
-    cam_.rotatePitch((float)(prev_mouse_pos.y-mouse_pos.y)*dt);
+      auto it=std::find_if(controllers_.begin(),controllers_.end(),
+          [=](const auto& p)
+          {
+            return p.first==(Simulator::ID)selected_controller;
+          });
+      assert(it!=controllers_.end());
 
-    prev_mouse_pos.x=mouse_pos.x;
-    prev_mouse_pos.y=mouse_pos.y;
+      it->second->update(wnd_,cam_,dt);
+    }
   }
 }

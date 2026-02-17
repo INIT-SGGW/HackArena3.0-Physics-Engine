@@ -11,6 +11,7 @@
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/centerline.h"
 #include "boink/simulators/track/ground.h"
+#include "boink/gui/track_gui.h"
 
 #include <memory>
 #include <string_view>
@@ -25,12 +26,16 @@ namespace boink
         std::shared_ptr<btDiscreteDynamicsWorld> world);
 
     void update(btScalar dt) override;
-    void updateDebug(Debugger* p_dbg) override;
+    void updateRender(Renderer* p_renderer) override;
+    std::shared_ptr<piksel::GuiObject> getGui() override {return gui_;}
 
     const btTransform& getWorldTransform() const {return transform_;}
     void setWorldTransform(const btTransform& position);
 
     const Centerline& getCenterline() const {return centerline_;}
+    std::string_view getFilename() const { return filename_;}
+  private:
+    void updateGui();
   private:
     static constexpr std::string_view TRACK_NAME="Sideroad";
     static constexpr std::string_view CENTERLINE_NAME="Centerline";
@@ -40,5 +45,7 @@ namespace boink
 
     Centerline centerline_;
     btTransform transform_=btTransform::getIdentity();
+    std::string_view filename_;
+    std::shared_ptr<TrackGui> gui_;
   };
 }

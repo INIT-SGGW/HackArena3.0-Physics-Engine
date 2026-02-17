@@ -97,6 +97,13 @@ target_sources(boink
     src/race.cc
     src/debugger.cc
     src/renderer.cc
+    src/simulation_gui.cc
+    src/debugger_gui.cc
+    src/race_gui.cc
+    src/track_gui.cc
+    src/vehicle_gui.cc
+    src/camera_controller.cc
+    src/vehicle_contoller.cc
 )
 
 target_include_directories(boink

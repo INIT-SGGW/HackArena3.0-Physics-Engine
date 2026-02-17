@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
 namespace boink
 {
@@ -35,6 +36,12 @@ namespace boink
           creation_order_.end());
 
       return true;
+    }
+
+    size_t size() const
+    {
+      assert(creation_order_.size()==values_.size());
+      return creation_order_.size();
     }
 
     const Value_& at(ID_ id) const {return values_.at(id);}

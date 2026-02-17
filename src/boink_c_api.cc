@@ -100,9 +100,8 @@ BoinkHandle boink_create_race(const char* track_glb_filename)
     return nullptr;
   try
   {
-    boink::Race* p_race=new boink::Race(track_glb_filename);
-    if(gp_dbg!=nullptr)
-      p_race->registerDebugger(gp_dbg);
+    boink::Race* p_race=new boink::Race(9.71f,track_glb_filename,gp_dbg);
+    
     return reinterpret_cast<BoinkHandle>(p_race);
   }
   catch(boink::Exception& e)
@@ -172,6 +171,7 @@ int boink_step_race(BoinkHandle handle, Real dt)
     return BOINK_ERR_INVALID_ARG;
 
   p_race->update(dt);
+  p_race->updateDebug();
   return BOINK_OK;
 }
 

@@ -2,15 +2,29 @@
 
 #include "boink/exception.h"
 #include "boink/simulators/track/track.h"
+#include "boink/gui/race_gui.h"
+#include "boink/debugger/vehicle_controller.h"
 
 #include <sstream>
 
 namespace boink
 {
-  Race::Race(std::string_view track_filename)
+  Race::Race(
+        btScalar gravity_acceleration,
+        std::string_view track_filename,
+        Debugger* p_dbg)
+    :
+      Simulation(gravity_acceleration,p_dbg,std::make_shared<RaceGui>()),
+      track_(std::make_shared<Track>(
+            track_filename,this->getDynamicsWorld()))
   {
-    track_=std::make_shared<Track>(track_filename,this->getDynamicsWorld());
-    this->getSimulators().add(track_);
+    this->addSimulator(track_);
+  }
+
+  Race::~Race()
+  {
+    if(p_dbg_)
+      p_dbg_->setControllers({});
   }
 
   std::shared_ptr<Track> Race::getTrack()
@@ -22,10 +36,12 @@ namespace boink
   {
     auto vehicle=
         std::make_shared<Vehicle>(ci,track_,this->getDynamicsWorld());
-    Simulator::ID vehicle_id=this->getSimulators().add(vehicle);
+    Simulator::ID vehicle_id=this->addSimulator(vehicle);
 
     vehicles_.emplace(vehicle_id,vehicle);
 
+    if(p_dbg_)
+      p_dbg_->setControllers(this->getControllers());
     return vehicle_id;
   }
 
@@ -41,7 +57,7 @@ namespace boink
           ss.str());
     }
 
-    bool is_deleted=this->getSimulators().remove(id);
+    bool is_deleted=this->removeSimulator(id);
 
     if(!is_deleted)
       throw Exception(
@@ -53,6 +69,9 @@ namespace boink
 
     if(it!=vehicles_.end())
       vehicles_.erase(it);
+
+    if(p_dbg_)
+      p_dbg_->setControllers(this->getControllers());
   }
 
   std::shared_ptr<Vehicle> Race::getVehicle(Simulator::ID id)
@@ -69,5 +88,44 @@ namespace boink
     }
 
     return vehicles_.at(id);
+  }
+
+  std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 
+    Race::getControllers() const 
+  {
+    std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 
+      controllers;
+    controllers.reserve(vehicles_.size());
+
+    for(const auto& p : vehicles_)
+    {
+      controllers.emplace_back(
+          p.first,std::make_shared<VehicleController>(p.second));
+    }
+
+    return controllers;
+  }
+
+  void Race::updateDebug()
+  {
+    Simulation::updateDebug();
+
+    this->updateGui();
+  }
+
+  void Race::updateGui()
+  {
+    if(!gui_)
+      return;
+
+#ifdef NDEBUG
+    // We use faster alternative because it shuld be guranteed that
+    // gui pointer is of type RaceGui
+    RaceGui* p_race_gui=static_cast<RaceGui*>(gui_.get());
+#else
+    RaceGui* p_race_gui=dynamic_cast<RaceGui*>(gui_.get());
+    assert(p_race_gui!=nullptr);
+#endif
+    p_race_gui->num_vehicles=vehicles_.size();
   }
 }

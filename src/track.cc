@@ -15,7 +15,9 @@ namespace boink
   Track::Track(std::string_view filename,
       std::shared_ptr<btDiscreteDynamicsWorld> world)
     :
-      world_(world)
+      world_(world),
+      filename_(filename),
+      gui_(std::make_shared<TrackGui>())
   {
     GltfExtractor extractor(filename);
     auto& nodes=extractor.getNodes();
@@ -69,16 +71,25 @@ namespace boink
     (void)dt;
   }
 
-  void Track::updateDebug(Debugger* p_dbg)
+  void Track::updateRender(Renderer* p_renderer)
   {
-    (void)p_dbg;
+    assert(p_renderer!=nullptr);
+
+    this->updateGui();
+  }
+
+  void Track::updateGui()
+  {
+    gui_->pos=this->getWorldTransform().getOrigin();
+    gui_->filename=this->getFilename();
   }
 
   void Track::setWorldTransform(const btTransform& transform)
   {
+    transform_=transform;
     for(auto& ground:grounds)
     {
-      btTransform new_transform=transform*ground.getModelTransform();
+      btTransform new_transform=transform_*ground.getModelTransform();
       ground.setWorldTransform(new_transform);
     }
   }
