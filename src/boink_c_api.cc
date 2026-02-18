@@ -14,22 +14,50 @@
 #include <LinearMath/btVector3.h>
 #include <exception>
 #include <memory>
-#include <iostream>
 #include <numbers>
+#include <sstream>
+
+#define RETURN_STATUS(x) \
+    {\
+    set_last_error(\
+        __func__,#x,\
+        nullptr);\
+    return x;\
+    }
+
+#define RETURN_CODE_STR(x) #x
+
+#define RETURN_STATUS_INVALID_ARG(arg,reason) \
+    {\
+    set_last_error(\
+        __func__,\
+        RETURN_CODE_STR(BOINK_ERR_INVALID_ARG),\
+        #arg " " reason);\
+    return BOINK_ERR_INVALID_ARG;\
+    }
+
+#define IF_RETURN_STATUS_INVALID_ARG_NULL(arg) \
+          if(arg==nullptr)\
+  RETURN_STATUS_INVALID_ARG(arg, "was null")
 
 #define HANDLE_EXCEPTIONS(block)       \
 try {                                  \
     block;                              \
 } catch (const boink::Exception& e) {  \
-    std::cout << e.what() << std::endl; \
-    return exceptionType2api(e.getType()); \
+    int code=exceptionType2api(e.getType()); \
+    set_last_error(\
+        __func__,\
+        returnCodeStr(code),\
+        e.what());\
+    return code;\
 } catch (const std::exception& e) {    \
-    std::cout << "STL exception" << std::endl; \
-    std::cout << e.what() << std::endl; \
+    set_last_error(\
+        __func__,\
+        returnCodeStr(BOINK_ERR_INTERNAL),\
+        e.what());\
     return BOINK_ERR_INTERNAL;          \
 } catch (...) {                         \
-    std::cout << "Unknown Exception" << std::endl; \
-    return BOINK_ERR_INTERNAL;          \
+    RETURN_STATUS(BOINK_ERR_INTERNAL);\
 }
 
 static int exceptionType2api(boink::Exception::Type type);
@@ -39,15 +67,21 @@ static BoinkQuaternion bt2boink(btQuaternion bt_quat);
 //static btQuaternion boink2bt(BoinkQuaternion boink_quat);
 
 static boink::Debugger* gp_dbg=nullptr;
+static thread_local std::string g_last_error="";
+
+static void set_last_error(const char* function, const char* return_code_str,const char* opt_desc);
+static const char* returnCodeStr(int code);
 
 int boink_get_c_api_version(unsigned int *out_major,
                                  unsigned int *out_minor,
                                  unsigned int *out_patch)
 {
-  if (out_major == nullptr || 
-    out_minor == nullptr || 
-    out_patch == nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_major);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_minor);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_patch);
 
   *out_major=BOINK_C_API_VERSION_MAJOR;
   *out_minor=BOINK_C_API_VERSION_MINOR;
@@ -60,16 +94,75 @@ int boink_get_engine_version(unsigned int *out_major,
                                  unsigned int *out_minor,
                                  unsigned int *out_patch)
 {
-  if (out_major == nullptr ||
-    out_minor == nullptr ||
-    out_patch == nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_major);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_minor);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_patch);
 
   *out_major=BOINK_VERSION_MAJOR;
   *out_minor=BOINK_VERSION_MINOR;
   *out_patch=BOINK_VERSION_PATCH;
 
   return BOINK_OK;
+}
+
+int boink_get_engine_profile(char* out_buf, unsigned int* in_out_len)
+{
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      in_out_len);
+
+#ifdef NDEBUG
+  const char* profile_name="release";
+#else
+  const char* profile_name="debug";
+#endif
+  unsigned int required_size=strlen(profile_name)+1;
+
+  if(!out_buf || *in_out_len<required_size)
+  {
+    *in_out_len=required_size;
+    RETURN_STATUS(BOINK_ERR_BUFFER_TOO_SMALL);
+  }
+
+  memcpy(out_buf,profile_name,required_size);
+  *in_out_len=required_size;
+
+  return BOINK_OK;
+}
+
+int boink_get_last_error(char* out_buf, unsigned int* in_out_len)
+{
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      in_out_len);
+
+  const char* error_desc=g_last_error.c_str();
+  unsigned int required_size=g_last_error.length()+1;
+
+  if(!out_buf || *in_out_len<required_size)
+  {
+    *in_out_len=required_size;
+    return BOINK_ERR_BUFFER_TOO_SMALL;
+  }
+
+  memcpy(out_buf,error_desc,required_size);
+  *in_out_len=required_size;
+  return BOINK_OK;
+}
+
+void set_last_error(const char* function, const char* return_code_string,const char* opt_desc)
+{
+  std::stringstream ss;
+  ss<<"Error type: "<<return_code_string<<std::endl;
+  ss<<"Function: "<<function;
+  if(opt_desc)
+  {
+    ss<<std::endl<<"Description: ";
+    ss<<opt_desc;
+  }
+
+  g_last_error=ss.str();
 }
 
 int boink_init(bool debug_drawer_enable)
@@ -97,7 +190,13 @@ void boink_terminate()
 BoinkHandle boink_create_race(const char* track_glb_filename)
 {
   if(track_glb_filename==nullptr)
+  {
+    set_last_error(
+        __func__,
+        RETURN_CODE_STR(BOINK_ERR_INVALID_ARG),
+        "track_glb_filename was null");
     return nullptr;
+  }
   try
   {
     boink::Race* p_race=new boink::Race(9.71f,track_glb_filename,gp_dbg);
@@ -106,18 +205,27 @@ BoinkHandle boink_create_race(const char* track_glb_filename)
   }
   catch(boink::Exception& e)
   {
-    std::cout << e.what() << std::endl;
+    int code=exceptionType2api(e.getType());
+    set_last_error(
+        __func__,
+        returnCodeStr(code),
+        e.what());
     return nullptr;
   }
   catch (const std::exception& e) 
   {
-    std::cout << "STL exception" << std::endl;
-    std::cout << e.what() << std::endl;
+    set_last_error(
+        __func__,
+        RETURN_CODE_STR(BOINK_ERR_INTERNAL),
+        e.what());
     return nullptr;
   }
   catch(...)
   {
-    std::cout << "Unknown Exception" << std::endl;
+    set_last_error(
+        __func__,
+        RETURN_CODE_STR(BOINK_ERR_INTERNAL),
+        nullptr);
     return nullptr;
   }
 }
@@ -132,10 +240,10 @@ int boink_create_vehicle_mesh(
     const char* glb_model_filename,
     BoinkVehicleMeshHandle* out_mesh_handle)
 {
-  if(glb_model_filename==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(out_mesh_handle==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      glb_model_filename);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_mesh_handle);
 
   HANDLE_EXCEPTIONS(
     *out_mesh_handle=reinterpret_cast<BoinkVehicleMeshHandle>(
@@ -153,10 +261,10 @@ void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle)
 int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
 {
   boink::Simulation* p_sim=(boink::Simulation*)handle;
-  if(p_sim==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(out_dur==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_dur);
 
   *out_dur=p_sim->getSimulationDuration();
   return BOINK_OK;
@@ -165,10 +273,11 @@ int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
 int boink_step_race(BoinkHandle handle, Real dt)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(dt<0)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  if(dt<0.)
+    RETURN_STATUS_INVALID_ARG(
+        dt,"was lesser than 0");
 
   p_race->update(dt);
   p_race->updateDebug();
@@ -206,12 +315,14 @@ int boink_spawn_vehicle(
     uint64_t* out_vehicle_id)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(p_vehicle_model==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(out_vehicle_id==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      p_vehicle_model);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_vehicle_id);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      p_vehicle_model->mesh);
 
   boink::Vehicle::CreationInfo create_info;
   create_info.center_of_mass.setX(p_vehicle_model->center_of_mass.x);
@@ -228,6 +339,13 @@ int boink_spawn_vehicle(
       (const boink::VehicleMesh*)p_vehicle_model->mesh,
       [](const boink::VehicleMesh*){});
 
+  create_info.tuning.m_frictionSlip=3.5f;
+  create_info.tuning.m_maxSuspensionForce=20000.f;
+  create_info.tuning.m_maxSuspensionTravelCm=8.f;
+  create_info.tuning.m_suspensionStiffness=75.f;
+  create_info.tuning.m_suspensionDamping=2.5f;
+  create_info.tuning.m_suspensionCompression=2.5f;
+
   // TODO
   // I think try is not needed here but it must be checked
   HANDLE_EXCEPTIONS(
@@ -239,8 +357,8 @@ int boink_spawn_vehicle(
 int boink_despawn_vehicle(BoinkHandle handle, uint64_t vehicle_id)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
 
   HANDLE_EXCEPTIONS(
     p_race->removeVehicle(vehicle_id))
@@ -254,10 +372,10 @@ int boink_set_controls(
     const BoinkControls* controls)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(controls==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      controls);
   
   std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
@@ -265,20 +383,23 @@ int boink_set_controls(
 
   if(controls->throttle>1. || controls->throttle<0.)
   {
-    std::cout<<"BoinkControls::throttle should be in the range [0.0, 1.0]."<<std::endl;
-    return BOINK_ERR_INVALID_ARG;
+    RETURN_STATUS_INVALID_ARG(
+        controls->throttle,
+        "was lesser than 0 or greater than 1");
   }
     
   if(controls->brake>1. || controls->brake<0.)
   {
-    std::cout<<"BoinkControls::brake should be in the range [0.0, 1.0]."<<std::endl;
-    return BOINK_ERR_INVALID_ARG;
+    RETURN_STATUS_INVALID_ARG(
+        controls->brake,
+        "was lesser than 0 or greater than 1");
   }
 
   if(controls->steer>1. || controls->steer<-1.)
   {
-    std::cout<<"BoinkControls::brake should be in the range [-1.0, 1.0]."<<std::endl;
-    return BOINK_ERR_INVALID_ARG;
+    RETURN_STATUS_INVALID_ARG(
+        controls->steer,
+        "was lesser than -1 or greater than 1");
   }
 
   vehicle->setEngineForce(controls->throttle);
@@ -300,10 +421,10 @@ int boink_set_vehicle_position(
     const struct BoinkVec3* position)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(position==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      position);
 
   std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
@@ -318,10 +439,10 @@ int boink_set_vehicle_position(
 int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(position==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      position);
 
   btVector3 pos(position->x,position->y,position->z);
   btTransform trans;
@@ -336,10 +457,10 @@ int boink_read_vehicle_state(
     BoinkHandle handle, uint64_t vehicle_id, BoinkVehicleState *out_state)
 {
   boink::Race* p_race=(boink::Race*)handle;
-  if(p_race==nullptr)
-    return BOINK_ERR_INVALID_ARG;
-  if(out_state==nullptr)
-    return BOINK_ERR_INVALID_ARG;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_state);
   
   std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
@@ -347,10 +468,11 @@ int boink_read_vehicle_state(
 
   out_state->engine_rpm=0.0;
   out_state->gear=0;
-  out_state->wheel_speeds[0]=0.0;
-  out_state->wheel_speeds[1]=0.0;
-  out_state->wheel_speeds[2]=0.0;
-  out_state->wheel_speeds[3]=0.0;
+  for(int i=0;i<4;i++)
+  {
+    btScalar angular_speed=vehicle->getWheelAngularSpeed((boink::WheelPosition)i);
+    out_state->wheel_speeds[i]=angular_speed* (60.0f / (2.0f * SIMD_PI));
+  }
   out_state->brake_applied=0.0;
   out_state->throttle_applied=0.0;
 
@@ -363,21 +485,33 @@ int boink_read_vehicle_state(
   
   btTransform wheel_transform;
 
+  // TODO 
+  // maybe change name to front wheels orientation?
+  // and add rear wheel orientation?
+
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
   out_state->wheel_position[0]=bt2boink(wheel_transform.getOrigin());
-  //out_state->wheel_orientation[0]=bt2boink(wheel_transform.getRotation());
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
   out_state->wheel_position[1]=bt2boink(wheel_transform.getOrigin());
-  //out_state->wheel_orientation[1]=bt2boink(wheel_transform.getRotation());
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
   out_state->wheel_position[2]=bt2boink(wheel_transform.getOrigin());
-  //out_state->wheel_orientation[2]=bt2boink(wheel_transform.getRotation());
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearRight);
   out_state->wheel_position[3]=bt2boink(wheel_transform.getOrigin());
-  //out_state->wheel_orientation[3]=bt2boink(wheel_transform.getRotation());
+
+  return BOINK_OK;
+}
+
+int boink_set_weather(BoinkHandle handle, const BoinkWeather* weather)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      weather);
+  (void)p_race;
 
   return BOINK_OK;
 }
@@ -399,6 +533,25 @@ int exceptionType2api(boink::Exception::Type type)
   }
 
   return BOINK_ERR_INTERNAL;
+}
+
+#define RETURN_CODE_CASE(x) case x: return #x;
+
+const char* returnCodeStr(int code)
+{
+    switch (code)
+    {
+        RETURN_CODE_CASE(BOINK_OK)
+        RETURN_CODE_CASE(BOINK_ERR_INVALID_ARG)
+        RETURN_CODE_CASE(BOINK_ERR_BUFFER_TOO_SMALL)
+        RETURN_CODE_CASE(BOINK_ERR_NOT_FOUND)
+        RETURN_CODE_CASE(BOINK_ERR_UNSUPPORTED_FORMAT)
+        RETURN_CODE_CASE(BOINK_ERR_IO)
+        RETURN_CODE_CASE(BOINK_ERR_INTERNAL)
+
+        default:
+            return "Unknown return code string";
+    }
 }
 
 BoinkVec3 bt2boink(btVector3 bt_vec)

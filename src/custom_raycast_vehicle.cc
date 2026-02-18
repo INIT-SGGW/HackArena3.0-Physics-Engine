@@ -2,6 +2,9 @@
 
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
 
+#include <BulletDynamics/Vehicle/btWheelInfo.h>
+
+#include "boink/simulators/track/ground.h"
 #include <cassert>
 
 namespace boink
@@ -10,7 +13,8 @@ namespace boink
       const btVehicleTuning& tuning,
       btRigidBody* chassis, 
       btVehicleRaycaster* raycaster )
-    :btRaycastVehicle(tuning,chassis,raycaster)
+    :btRaycastVehicle(tuning,chassis,raycaster),
+    p_raycaster_(raycaster)
   {
   }
 
@@ -32,6 +36,7 @@ namespace boink
 
   void CustomRaycastVehicle::updateFriction(btScalar time_step)
   {
+    this->updateWheelsFrictions();
     btRaycastVehicle::updateFriction(time_step);
     (void)time_step;
   }
@@ -98,5 +103,40 @@ namespace boink
           getWheelInfo(v).m_raycastInfo.m_hardPointWS,
           {1,0,0});
     }      
+  }
+
+  void* CustomRaycastVehicle::getGroundObject(btWheelInfo& wheel)
+  {
+      btScalar raylen = wheel.getSuspensionRestLength() + wheel.m_wheelsRadius;
+
+      btVector3 rayvector = wheel.m_raycastInfo.m_wheelDirectionWS * (raylen);
+      const btVector3& source = wheel.m_raycastInfo.m_hardPointWS;
+      btVector3 target = source+rayvector;
+
+      btVehicleRaycaster::btVehicleRaycasterResult rayResults;
+
+      btAssert(p_raycaster_);
+
+      void* object = p_raycaster_->castRay(source, target, rayResults);
+      return object;
+  }
+
+  void CustomRaycastVehicle::updateWheelsFrictions()
+  {
+    for(int i=0;i<this->getNumWheels();i++)
+    {
+      btWheelInfo& wheel=this->getWheelInfo(i);
+      void* p_ground=this->getGroundObject(wheel);
+
+      if(!p_ground)
+        return;
+
+      btRigidBody* ground_rb=(btRigidBody*)p_ground;
+      Ground::SurfaceInfo& surface_info=
+        *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
+
+      wheel.m_frictionSlip=surface_info.friction;
+      wheel.m_rollInfluence=surface_info.rolling_resistance;
+    }
   }
 }

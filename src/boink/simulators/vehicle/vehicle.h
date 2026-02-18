@@ -5,8 +5,6 @@
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
-#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
-#include <BulletDynamics/Vehicle/btVehicleRaycaster.h>
 #include <LinearMath/btDefaultMotionState.h>
 #include <LinearMath/btMotionState.h>
 
@@ -18,6 +16,7 @@
 #include "boink/gui/vehicle_gui.h"
 
 #include <memory>
+#include <unordered_map>
 
 namespace boink
 {
@@ -32,7 +31,7 @@ namespace boink
       btScalar suspension_rest_length;
       btScalar max_steer_angle;
       btVector3 center_of_mass;
-      btRaycastVehicle::btVehicleTuning tuning;
+      CustomRaycastVehicle::btVehicleTuning tuning;
     };
     
     enum class TurnDirection
@@ -66,14 +65,15 @@ namespace boink
     btTransform getChassisWorldTransform() const;
 
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
+    btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
     btScalar getSpeed() const;
     btScalar getMass() const;
     btVector3 getCenterOfMassCS() const;
 
-    void setTuning(const btRaycastVehicle::btVehicleTuning& tuning);
-    const btRaycastVehicle::btVehicleTuning& getTuning() const;
+    void setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning);
+    const CustomRaycastVehicle::btVehicleTuning& getTuning() const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);
@@ -100,10 +100,19 @@ namespace boink
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;
-    btRaycastVehicle::btVehicleTuning tuning_;
+    CustomRaycastVehicle::btVehicleTuning tuning_;
 
     int laps_completed_=0;
     btScalar curr_lap_dist_point_=0;
+
+    // TODO
+    // We need to rewrite it
+    std::unordered_map<WheelPosition,btScalar> wheel_speeds_={
+      {WheelPosition::FrontLeft,0.f},
+      {WheelPosition::FrontRight,0.f},
+      {WheelPosition::RearLeft,0.f},
+      {WheelPosition::RearRight,0.f},
+    };
 
     std::shared_ptr<VehicleGui> gui_;
   };

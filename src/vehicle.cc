@@ -159,6 +159,15 @@ namespace boink
 
     laps_completed_=curr_laps_completed;
     curr_lap_dist_point_=curr_coverage;
+
+    // TODO
+    // move this to CustomRaycastVehicle
+    for(const auto&[which,speed] : wheel_speeds_)
+    {
+      const auto& wheel_info=vehicle_->getWheelInfo((int)which);
+      wheel_speeds_[which]=wheel_info.m_deltaRotation/dt;
+    }
+    
   }
 
   void Vehicle::updateRender(Renderer* renderer)
@@ -192,7 +201,7 @@ namespace boink
     p_vehicle_gui->mass=this->getMass();
     p_vehicle_gui->speed=this->getSpeed();
 
-    btRaycastVehicle::btVehicleTuning tuning;
+    CustomRaycastVehicle::btVehicleTuning tuning;
     tuning.m_frictionSlip = p_vehicle_gui->friction_slip;
     tuning.m_maxSuspensionForce = p_vehicle_gui->max_suspension_force;
     tuning.m_maxSuspensionTravelCm = p_vehicle_gui->max_suspension_travel_cm;
@@ -235,6 +244,11 @@ namespace boink
     return vehicle_->getWheelTransformWS((int)wheel_pos);
   }
 
+  btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
+  {
+    return wheel_speeds_.at(wheel_pos);
+  }
+
   const btTransform& Vehicle::getCenterOfMassTransform() const
   {
     return rigidbody_->getCenterOfMassTransform();
@@ -255,7 +269,7 @@ namespace boink
     return center_of_mass_;
   }
 
-  void Vehicle::setTuning(const btRaycastVehicle::btVehicleTuning& tuning)
+  void Vehicle::setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning)
   {
     assert(vehicle_->getNumWheels()==4);
     tuning_=tuning;
@@ -288,7 +302,7 @@ namespace boink
     p_vehicle_gui->suspension_stiffness=tuning.m_suspensionStiffness;
   }
 
-  const btRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
+  const CustomRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
   {
     assert(vehicle_->getNumWheels()==4);
     return tuning_;

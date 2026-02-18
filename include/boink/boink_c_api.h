@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 3
+#define BOINK_C_API_VERSION_MINOR 5
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -247,6 +247,24 @@ typedef struct BoinkVehicleState {
   Real wheel_speeds[4];
 } BoinkVehicleState;
 
+/**
+ * Represents weather parameters applied globally to the race simulation.
+ */
+typedef struct BoinkWeather {
+  /**
+   * Cloudiness in range [0.0, 1.0].
+   */
+  Real cloudiness;
+  /**
+   * Ambient temperature in Celsius.
+   */
+  Real temperature_c;
+  /**
+   * Rain intensity in range [0.0, 1.0].
+   */
+  Real rain_intensity;
+} BoinkWeather;
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -282,6 +300,36 @@ BOINK_API int boink_get_c_api_version(unsigned int *out_major,
 BOINK_API int boink_get_engine_version(unsigned int *out_major,
                                     unsigned int *out_minor,
                                     unsigned int *out_patch);
+
+/**
+ * Retrieves the build profile string of the Boink engine library.
+ *
+ * Parameters:
+ * - `out_buf` - destination buffer for a null-terminated string.
+ * - `in_out_len` - in: buffer size in bytes; out: required size (incl. null).
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_BUFFER_TOO_SMALL` if the buffer is too small.
+ * - `BOINK_ERR_INVALID_ARG` on invalid pointers.
+ */
+BOINK_API int boink_get_engine_profile(char *out_buf, unsigned int *in_out_len);
+
+/**
+ * Retrieves a human-readable description of the last engine error.
+ *
+ * The error string is thread-local and is updated when a Boink API call fails.
+ *
+ * Parameters:
+ * - `out_buf` - destination buffer for a null-terminated string.
+ * - `in_out_len` - in: buffer size in bytes; out: required size (incl. null).
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_BUFFER_TOO_SMALL` if the buffer is too small.
+ * - `BOINK_ERR_INVALID_ARG` on invalid pointers.
+ */
+BOINK_API int boink_get_last_error(char *out_buf, unsigned int *in_out_len);
 
 /**
  * Initializes the Boink engine library.
@@ -534,6 +582,20 @@ BOINK_API int boink_set_track_position(BoinkHandle h, const struct BoinkVec3 *po
 BOINK_API int boink_read_vehicle_state(BoinkHandle h,
                                     uint64_t vehicle_id,
                                     struct BoinkVehicleState *out_state);
+
+/**
+ * Sets global weather parameters used by the simulation engine.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `weather` - non-null pointer to weather parameters.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `weather` is null.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_weather(BoinkHandle h, const struct BoinkWeather *weather);
 
 #ifdef __cplusplus
 }  // extern "C"

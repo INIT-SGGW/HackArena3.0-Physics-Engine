@@ -3,6 +3,15 @@
 #include <stdio.h>
 
 void printVehicleState(const BoinkVehicleState* state);
+#define PRINT_ERROR()\
+{\
+    unsigned int size;\
+    boink_get_last_error(NULL,&size);\
+    char* err_buf=malloc(size);\
+    boink_get_last_error(err_buf,&size);\
+    printf("%s\n",err_buf);\
+}
+
 int main()
 {
 #ifdef WIN32
@@ -26,21 +35,21 @@ int main()
 
   if((code=boink_init(debug_enable))!=BOINK_OK)
   {
-    printf("boink_init() failed: code %d.\n",code);
+    PRINT_ERROR();
     return -1;
   }
 
   BoinkVehicleMeshHandle mesh_handle;
   if((code=boink_create_vehicle_mesh(vehicle_filename,&mesh_handle))!=BOINK_OK)
   {
-    printf("boink_create_vehicle_mesh() failed: code %d.\n",code);
+    PRINT_ERROR();
     boink_terminate();
     return -1;
   }
   
   BoinkHandle handle=boink_create_race(track_filename);
   if(handle==NULL){
-    printf("boink_create_create_race() failed.\n");
+    PRINT_ERROR();
 
     boink_destroy_vehicle_mesh(mesh_handle);
     boink_terminate();
@@ -60,7 +69,7 @@ int main()
   uint64_t id0;
   if((code=boink_spawn_vehicle(handle,&model,&id0))!=BOINK_OK)
   {
-    printf("boink_spawn_vehicle() failed: code %d.\n",code);
+    PRINT_ERROR();
     goto clear;
   }
 
@@ -70,7 +79,7 @@ int main()
   track_pos.z=0.;
   if((code=boink_set_track_position(handle,&track_pos))!=BOINK_OK)
   {
-    printf("boink_set_track_position() failed: code %d.\n",code);
+    PRINT_ERROR();
     goto clear;
   }
   
@@ -80,19 +89,19 @@ int main()
   vehicle_pos.z=7.;
   if((code=boink_set_vehicle_position(handle,id0,&vehicle_pos))!=BOINK_OK)
   {
-    printf("boink_set_vehicle_position() failed: code %d.\n",code);
+    PRINT_ERROR();
     goto clear;
   }
-  //BoinkControls controls;
-  //controls.brake=0.0;
-  //controls.steer=0.0;
-  //controls.throttle=1.;
-  //
-  //if((code=boink_set_controls(handle,id0,&controls))!=BOINK_OK)
-  //{
-  //  printf("boink_set_controls() failed: code %d.\n",code);
-  //  goto clear;
-  //}
+  BoinkControls controls;
+  controls.brake=0.0;
+  controls.steer=0.0;
+  controls.throttle=1.;
+  
+  if((code=boink_set_controls(handle,id0,&controls))!=BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
   Real prev=boink_get_time_debug();
   while(!boink_should_close_debug())
   {
@@ -102,7 +111,13 @@ int main()
 
     if((code=boink_step_race(handle,dt))!=BOINK_OK)
     {
-      printf("boink_step_race() failed: code %d.\n",code);
+      PRINT_ERROR();
+      goto clear;
+    }
+    struct BoinkVehicleState state;
+    if((code=boink_read_vehicle_state(handle,id0,&state))!=BOINK_OK)
+    {
+      PRINT_ERROR();
       goto clear;
     }
     boink_update_debug();
