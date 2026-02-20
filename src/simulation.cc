@@ -19,10 +19,12 @@ namespace boink
           solver_.get(),collision_configuration_.get()))
   {
     dynamics_world_->setGravity(btVector3(0, -gravity_acceleration, 0));
-    dynamics_world_->setDebugDrawer(p_dbg_->getRendererPtr());
 
     if(p_dbg_)
+    {
+      dynamics_world_->setDebugDrawer(p_dbg_->getRendererPtr());
       p_dbg_->addGui(gui_);
+    }
   } 
 
   Simulator::ID Simulation::addSimulator(std::shared_ptr<Simulator> simulator)
