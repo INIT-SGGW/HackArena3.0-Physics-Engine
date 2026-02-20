@@ -135,7 +135,6 @@ namespace boink
       Ground::SurfaceInfo& surface_info=
         *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
 
-      wheel.m_frictionSlip=surface_info.friction;
       wheel.m_rollInfluence=surface_info.rolling_resistance;
     }
   }

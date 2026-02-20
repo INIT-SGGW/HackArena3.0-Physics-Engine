@@ -1,25 +1,33 @@
 #include "boink/simulators/track/ground.h"
+
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
+
+#include "boink/exception.h"
+
 #include <memory>
 
 namespace boink
 {
   Ground::Ground(
       const std::vector<btVector3>& vertices, 
-      const std::vector<unsigned int> indices,
+      const std::vector<unsigned int>& indices,
       const btTransform& transform,
-      Type type,
+      const SurfaceInfo* p_surface_info,
       std::shared_ptr<btDiscreteDynamicsWorld> world)
     :
       mesh_(new btTriangleMesh()),
       world_(world),
-      surface_type_(type),
+      p_surface_info_(p_surface_info),
       model_transform_(transform)
   {
     motion_state_=std::unique_ptr<btDefaultMotionState>(
         new btDefaultMotionState(transform));
-    assert(indices.size()%3==0);
+
+    if(indices.size()%3!=0)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Expected indices size to be multiply of 3");
 
     for(size_t i=0;i<indices.size();i+=3)
     {
@@ -40,7 +48,7 @@ namespace boink
 
     rigidbody_=std::unique_ptr<btRigidBody>(new btRigidBody(rb_info));
 
-    rigidbody_->setUserPointer(&this->getSurfaceInfo(surface_type_));
+    rigidbody_->setUserPointer((void*)p_surface_info_);
 
 		world_->addRigidBody(rigidbody_.get());
   }
@@ -62,24 +70,11 @@ namespace boink
     return rigidbody_->getWorldTransform();
   }
 
-  Ground::SurfaceInfo Ground::s_kGrassSuraface_= {1.5f,0.5f,0.3f,Type::Grass};
-  Ground::SurfaceInfo Ground::s_kSandSuraface_= {3.5f,5.f,0.4f,Type::Sand};
-  Ground::SurfaceInfo Ground::s_kTarmacSuraface_= {3.5f,0.0f,0.1f,Type::Tarmac};
-
-  Ground::SurfaceInfo& Ground::getSurfaceInfo(Type type)
+  void Ground::setSurfaceInfo(const SurfaceInfo* p_surface_info)
   {
-    switch(type)
-    {
-      case Type::Grass:
-        return s_kGrassSuraface_;
-      case Type::Tarmac:
-        return s_kTarmacSuraface_;
-      case Type::Sand:
-        return s_kSandSuraface_;
-    }
-
-    assert(false && "Invalid Ground Type");
-    return s_kTarmacSuraface_;
+    p_surface_info_=p_surface_info;
   }
+
+
 
 }

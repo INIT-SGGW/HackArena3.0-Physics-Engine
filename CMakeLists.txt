@@ -104,6 +104,8 @@ target_sources(boink
     src/vehicle_gui.cc
     src/camera_controller.cc
     src/vehicle_contoller.cc
+    src/weather.cc
+    src/weather_gui.cc
 )
 
 target_include_directories(boink

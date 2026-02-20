@@ -6,6 +6,8 @@
 #include "boink/utility.h"
 #include "boink/debugger/camera_controller.h"
 
+#include <algorithm>
+
 namespace boink
 {
   Debugger::Debugger(

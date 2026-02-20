@@ -8,6 +8,7 @@
 #include <LinearMath/btVector3.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 
+#include "boink/gltf_extractor.h"
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/centerline.h"
 #include "boink/simulators/track/ground.h"
@@ -35,6 +36,9 @@ namespace boink
     const Centerline& getCenterline() const {return centerline_;}
     std::string_view getFilename() const { return filename_;}
   private:
+    void initSurfaceInfos();
+    void initGrounds(const GltfExtractor& extractor);
+    void createCenterline(const GltfExtractor& extractor);
     void updateGui();
   private:
     static constexpr std::string_view TRACK_NAME="Sideroad";
@@ -42,6 +46,11 @@ namespace boink
   private:
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
+
+    Ground::SurfaceInfo s_kGrassSuraface_;
+    Ground::SurfaceInfo s_kSandSuraface_; 
+    Ground::SurfaceInfo s_kGravelSurface_; 
+    Ground::SurfaceInfo s_kAsphaltSuraface_; 
 
     Centerline centerline_;
     btTransform transform_=btTransform::getIdentity();

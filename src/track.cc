@@ -19,10 +19,30 @@ namespace boink
       filename_(filename),
       gui_(std::make_shared<TrackGui>())
   {
-    GltfExtractor extractor(filename);
-    auto& nodes=extractor.getNodes();
+    this->initSurfaceInfos();
 
-    for(auto& node : nodes)
+    GltfExtractor extractor(filename);
+    this->initGrounds(extractor);
+    this->createCenterline(extractor);
+  }
+
+  void Track::initSurfaceInfos()
+  {
+    s_kGrassSuraface_= 
+      {0.f,0.3f,Ground::Type::Grass};
+    s_kSandSuraface_= 
+      {5.f,0.4f,Ground::Type::Sand};
+    s_kGravelSurface_= 
+      {3.f,0.4f,Ground::Type::Gravel};
+    s_kAsphaltSuraface_= 
+      {0.0f,0.1f,Ground::Type::Asphalt};
+  }
+
+  void Track::initGrounds(const GltfExtractor& extractor)
+  {
+    const auto& nodes=extractor.getNodes();
+
+    for(const auto& node : nodes)
     {
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
         continue;
@@ -32,14 +52,17 @@ namespace boink
             Exception::Type::InvalidArgumentError,
             "Ground mesh is empty.");
 
+      // TODO
       grounds.emplace_back(
           node.vertices,
           node.indices,
           node.transform,
-          Ground::Type::Tarmac,world_);
+          &s_kAsphaltSuraface_,world_);
     }
+  }
 
-    // Load centerline
+  void Track::createCenterline(const GltfExtractor& extractor)
+  {
     auto& centerline_node=extractor.getNode(CENTERLINE_NAME);
     if(centerline_node.type!=TINYGLTF_MODE_LINE)
       throw Exception(
@@ -93,4 +116,5 @@ namespace boink
       ground.setWorldTransform(new_transform);
     }
   }
+
 }

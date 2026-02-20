@@ -15,10 +15,12 @@ namespace boink
         Debugger* p_dbg)
     :
       Simulation(gravity_acceleration,p_dbg,std::make_shared<RaceGui>()),
+      weather_(std::make_shared<Weather>(Weather::Sunny)),
       track_(std::make_shared<Track>(
             track_filename,this->getDynamicsWorld()))
   {
     this->addSimulator(track_);
+    this->addSimulator(weather_);
   }
 
   Race::~Race()
@@ -30,6 +32,11 @@ namespace boink
   std::shared_ptr<Track> Race::getTrack()
   {
     return track_;
+  }
+
+  std::shared_ptr<Weather> Race::getWeather()
+  {
+    return weather_;
   }
 
   Simulator::ID Race::addVehicle(const Vehicle::CreationInfo& ci)

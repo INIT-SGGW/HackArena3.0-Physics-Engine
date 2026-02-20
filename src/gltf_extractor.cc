@@ -45,6 +45,23 @@ namespace boink
     return *it;
   }
 
+  const GltfExtractor::Node& 
+    GltfExtractor::getNode(std::string_view name) const
+  {
+    auto it=std::find_if(nodes_.begin(),nodes_.end(),
+        [=](const Node& node)
+        {
+          return node.name==name;
+        });
+    if(it==nodes_.end())
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          "Node with a given name was not found.");
+
+    return *it;
+  }
+
+
   void GltfExtractor::bindNode(
       const tinygltf::Node& node, 
       btTransform transform)

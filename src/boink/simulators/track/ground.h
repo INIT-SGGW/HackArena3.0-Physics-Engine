@@ -19,14 +19,14 @@ namespace boink
   public:
     enum class Type
     {
-      Tarmac,
+      Asphalt,
       Grass,
-      Sand
+      Sand,
+      Gravel
     };
 
     struct SurfaceInfo
     {
-      btScalar friction;
       btScalar resistive_coef;
       btScalar rolling_resistance;
       Type type;
@@ -34,9 +34,9 @@ namespace boink
   public:
     Ground(
         const std::vector<btVector3>& vertices, 
-        const std::vector<unsigned int> indices,
+        const std::vector<unsigned int>& indices,
         const btTransform& transform,
-        Type type,
+        const SurfaceInfo* p_surface_info,
         std::shared_ptr<btDiscreteDynamicsWorld> world);
 
     Ground(const Ground&)=delete;
@@ -50,6 +50,9 @@ namespace boink
     void setWorldTransform(const btTransform& transform);
     btTransform getWorldTransform() const;
 
+    void setSurfaceInfo(const SurfaceInfo* p_surface_info);
+    const SurfaceInfo* getSurfaceInfo() const {return p_surface_info_;}
+
     const btTransform& getModelTransform() const {return model_transform_;}
   private:
     std::unique_ptr<btTriangleMesh> mesh_;
@@ -59,23 +62,20 @@ namespace boink
 
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
 
-    Type surface_type_;
+    const SurfaceInfo* p_surface_info_;
     const btTransform model_transform_;
-  private:
-    static SurfaceInfo s_kTarmacSuraface_;
-    static SurfaceInfo s_kGrassSuraface_;
-    static SurfaceInfo s_kSandSuraface_;
   public:
-    static SurfaceInfo& getSurfaceInfo(Type type);
     static inline const char* toString(Type type)
     {
       switch(type)
       {
         case Type::Grass:
           return "grass";
-        case Type::Tarmac:
-          return "tarmac";
+        case Type::Asphalt:
+          return "asphalt";
         case Type::Sand:
+          return "sand";
+        case Type::Gravel:
           return "sand";
       }
 
