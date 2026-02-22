@@ -103,8 +103,8 @@ namespace boink
 
   void Track::updateGui()
   {
-    gui_->pos=this->getWorldTransform().getOrigin();
-    gui_->filename=this->getFilename();
+    gui_->pos=&this->getWorldTransform().getOrigin();
+    gui_->filename=this->getFilename().data();
   }
 
   void Track::setWorldTransform(const btTransform& transform)

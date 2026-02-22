@@ -12,7 +12,7 @@ namespace boink
     std::string_view getTitle() const override { return "Track";}
     void draw() override;
   public:
-    btVector3 pos;
+    const btVector3* pos;
     std::string_view filename;
   };
 }
