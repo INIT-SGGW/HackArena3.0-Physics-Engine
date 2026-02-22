@@ -2,6 +2,8 @@
 
 #include <piksel/gui_object.hh>
 
+#include <BulletDynamics/Vehicle/btRaycastVehicle.h>
+
 namespace boink
 {
   class VehicleGui : public piksel::GuiObject
@@ -10,12 +12,7 @@ namespace boink
     std::string_view getTitle() const override { return "Vehicle";}
     void draw() override;
   public:
-    float friction_slip;
-    float max_suspension_force;
-    float max_suspension_travel_cm;
-    float suspension_compression;
-    float suspension_damping;
-    float suspension_stiffness;
+    btRaycastVehicle::btVehicleTuning* tunning=nullptr;
 
     int laps_completed;
     float curr_lap_coverage;

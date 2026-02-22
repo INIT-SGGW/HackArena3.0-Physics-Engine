@@ -101,7 +101,7 @@ namespace boink
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;
-    CustomRaycastVehicle::btVehicleTuning tuning_;
+    btRaycastVehicle::btVehicleTuning tuning_;
 
     int laps_completed_=0;
     btScalar curr_lap_dist_point_=0;

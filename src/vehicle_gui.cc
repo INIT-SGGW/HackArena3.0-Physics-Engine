@@ -7,17 +7,17 @@ namespace boink
   void VehicleGui::draw()
   {
     ImGui::SliderFloat(
-        "Friction slip",&friction_slip,0.f,10.f);
+        "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
     ImGui::SliderFloat(
-        "Max suspension force",&max_suspension_force,0.f,50000.f);
+        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,50000.f);
     ImGui::SliderFloat(
-        "Max suspension travel",&max_suspension_travel_cm,0.f,20.f);
+        "Max suspension travel",&tunning->m_maxSuspensionTravelCm,0.f,20.f);
     ImGui::SliderFloat(
-        "Suspension compression",&suspension_compression,0.f,100.f);
+        "Suspension compression",&tunning->m_suspensionCompression,0.f,100.f);
     ImGui::SliderFloat(
-        "Suspension damping",&suspension_damping,0.f,100.f);
+        "Suspension damping",&tunning->m_suspensionDamping,0.f,100.f);
     ImGui::SliderFloat(
-        "Suspension stifness",&suspension_stiffness,0.f,100.f);
+        "Suspension stifness",&tunning->m_suspensionStiffness,0.f,100.f);
     
     ImGui::Text("Laps completed: %d",laps_completed);
     ImGui::Text("Current lap coverage: %.2f [m]",curr_lap_coverage);

@@ -116,6 +116,8 @@ namespace boink
     );
 
     this->setTuning(tuning_);
+    
+    gui_->tunning=&tuning_;
   }
 
   Vehicle::~Vehicle() noexcept
@@ -173,43 +175,31 @@ namespace boink
 
   void Vehicle::updateRender(Renderer* renderer)
   {
-    assert(renderer!=nullptr);
+    if(renderer==nullptr)
+      return;
 
     this->updateGui();
   }
 
   void Vehicle::updateGui()
   {
-#ifdef NDEBUG
-    VehicleGui* p_vehicle_gui=static_cast<VehicleGui*>(gui_.get());
-#else
-    VehicleGui* p_vehicle_gui=dynamic_cast<VehicleGui*>(gui_.get());
-    assert(p_vehicle_gui!=nullptr);
-#endif
     const auto& com=this->getCenterOfMassCS();
-    p_vehicle_gui->center_of_mass_cs[0]=com.getX();
-    p_vehicle_gui->center_of_mass_cs[1]=com.getY();
-    p_vehicle_gui->center_of_mass_cs[2]=com.getZ();
+    gui_->center_of_mass_cs[0]=com.getX();
+    gui_->center_of_mass_cs[1]=com.getY();
+    gui_->center_of_mass_cs[2]=com.getZ();
 
     btTransform chassis_transform=this->getChassisWorldTransform();
     const auto& chassis_pos=chassis_transform.getOrigin();
-    p_vehicle_gui->chassis_position[0]=chassis_pos.getX();
-    p_vehicle_gui->chassis_position[1]=chassis_pos.getY();
-    p_vehicle_gui->chassis_position[2]=chassis_pos.getZ();
+    gui_->chassis_position[0]=chassis_pos.getX();
+    gui_->chassis_position[1]=chassis_pos.getY();
+    gui_->chassis_position[2]=chassis_pos.getZ();
 
-    p_vehicle_gui->curr_lap_coverage=this->getCurrentLapDistanceCovered();
-    p_vehicle_gui->laps_completed=this->getLapsCompleted();
-    p_vehicle_gui->mass=this->getMass();
-    p_vehicle_gui->speed=this->getSpeed();
+    gui_->curr_lap_coverage=this->getCurrentLapDistanceCovered();
+    gui_->laps_completed=this->getLapsCompleted();
+    gui_->mass=this->getMass();
+    gui_->speed=this->getSpeed();
 
-    CustomRaycastVehicle::btVehicleTuning tuning;
-    tuning.m_frictionSlip = p_vehicle_gui->friction_slip;
-    tuning.m_maxSuspensionForce = p_vehicle_gui->max_suspension_force;
-    tuning.m_maxSuspensionTravelCm = p_vehicle_gui->max_suspension_travel_cm;
-    tuning.m_suspensionCompression = p_vehicle_gui->suspension_compression;
-    tuning.m_suspensionDamping = p_vehicle_gui->suspension_damping;
-    tuning.m_suspensionStiffness = p_vehicle_gui->suspension_stiffness;
-    this->setTuning(tuning);
+    this->setTuning(tuning_);
   }
 
   void Vehicle::setPosition(const btVector3& position)
@@ -288,19 +278,6 @@ namespace boink
       // Some magic number
       wheel.m_rollInfluence=btScalar(0.1);
     }
-
-#ifdef NDEBUG
-    VehicleGui* p_vehicle_gui=static_cast<VehicleGui*>(gui_.get());
-#else
-    VehicleGui* p_vehicle_gui=dynamic_cast<VehicleGui*>(gui_.get());
-    assert(p_vehicle_gui!=nullptr);
-#endif
-    p_vehicle_gui->friction_slip=tuning.m_frictionSlip;
-    p_vehicle_gui->max_suspension_force=tuning.m_maxSuspensionForce;
-    p_vehicle_gui->max_suspension_travel_cm=tuning.m_maxSuspensionTravelCm;
-    p_vehicle_gui->suspension_compression=tuning.m_suspensionCompression;
-    p_vehicle_gui->suspension_damping=tuning.m_suspensionDamping;
-    p_vehicle_gui->suspension_stiffness=tuning.m_suspensionStiffness;
   }
 
   const CustomRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
