@@ -39,7 +39,6 @@ namespace boink
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
     void createCenterline(const GltfExtractor& extractor);
-    void updateGui();
   private:
     static constexpr std::string_view TRACK_NAME="Sideroad";
     static constexpr std::string_view CENTERLINE_NAME="Centerline";
@@ -55,6 +54,7 @@ namespace boink
     Centerline centerline_;
     btTransform transform_=btTransform::getIdentity();
     std::string_view filename_;
+
     std::shared_ptr<TrackGui> gui_;
   };
 }

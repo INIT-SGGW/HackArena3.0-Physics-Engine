@@ -24,6 +24,9 @@ namespace boink
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
     this->createCenterline(extractor);
+
+    gui_->pos=&this->getWorldTransform().getOrigin();
+    gui_->filename=this->getFilename().data();
   }
 
   void Track::initSurfaceInfos()
@@ -96,15 +99,8 @@ namespace boink
 
   void Track::updateRender(Renderer* p_renderer)
   {
-    assert(p_renderer!=nullptr);
-
-    this->updateGui();
-  }
-
-  void Track::updateGui()
-  {
-    gui_->pos=&this->getWorldTransform().getOrigin();
-    gui_->filename=this->getFilename().data();
+    if(p_renderer==nullptr)
+      return;
   }
 
   void Track::setWorldTransform(const btTransform& transform)

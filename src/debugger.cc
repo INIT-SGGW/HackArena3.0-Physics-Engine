@@ -25,9 +25,13 @@ namespace boink
   {
     cam_.setMovementSpeed(5.f);
     cam_.setRotationSpeed(0.3f);
+    mouse_speed_=cam_.getRotationSpeed();
+    cam_speed_=cam_.getMovementSpeed();
 
-    gui_->mouse_speed=cam_.getRotationSpeed();
-    gui_->camera_speed=cam_.getMovementSpeed();
+    gui_->camera_speed=&cam_speed_;
+    gui_->mouse_speed=&mouse_speed_;
+    gui_->fps=&fps_;
+    gui_->selected_controller=&selected_controller_;
 
     gui_manager_.addObject(gui_);
   }
@@ -39,12 +43,19 @@ namespace boink
     float dt=(float)(now-prev);
     prev=now;
 
+    cam_.setMovementSpeed(cam_speed_);
+    cam_.setRotationSpeed(mouse_speed_);
+
+    std::vector<std::pair<Simulator::ID,std::string>> con_pair;
+    con_pair.reserve(controllers_.size());
+    for(const auto& p : controllers_)
+      con_pair.emplace_back(p.first,std::string("Vehicle id="+std::to_string(p.first)));
+    gui_->controller_ids=std::move(con_pair);
+
     this->calculateFramerate(dt);
 
     this->handleWindowClose();
     this->updateController(dt);
-
-    this->updateGui();
 
     renderer_.render();
     gui_manager_.render();
@@ -73,20 +84,6 @@ namespace boink
     return !(bool)wnd_;
   }
 
-  void Debugger::updateGui()
-  {
-    cam_.setMovementSpeed(gui_->camera_speed);
-    cam_.setRotationSpeed(gui_->mouse_speed);
-
-    gui_->fps=this->getFramerate();
-
-    std::vector<std::pair<Simulator::ID,std::string>> con_pair;
-    con_pair.reserve(controllers_.size());
-    for(const auto& p : controllers_)
-      con_pair.emplace_back(p.first,std::string("Vehicle id="+std::to_string(p.first)));
-    gui_->controller_ids=std::move(con_pair);
-  }
-
   void Debugger::handleWindowClose()
   {
     if(wnd_.getKey(GLFW_KEY_ESCAPE)==piksel::Window::KeyState::Press)
@@ -95,8 +92,7 @@ namespace boink
 
   void Debugger::updateController(float dt)
   {
-    int selected_controller=gui_->selected_controller;
-    if(selected_controller==-1 &&
+    if(selected_controller_==-1 &&
         wnd_.getKey(GLFW_KEY_LEFT_SHIFT)!=piksel::Window::KeyState::Press)
     {
       gui_manager_.ignoreInput();
@@ -108,13 +104,14 @@ namespace boink
       wnd_.setCursor();
       default_controller_->updateMouse(wnd_);
 
-      if(selected_controller==-1)
+      if(selected_controller_==-1)
         return;
 
+      int selected=selected_controller_;
       auto it=std::find_if(controllers_.begin(),controllers_.end(),
           [=](const auto& p)
           {
-            return p.first==(Simulator::ID)selected_controller;
+            return p.first==(Simulator::ID)selected;
           });
       assert(it!=controllers_.end());
 

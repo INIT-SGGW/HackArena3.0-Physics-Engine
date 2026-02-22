@@ -36,7 +36,6 @@ namespace boink
 
     bool shouldClose() const;
   private:
-    void updateGui();
     void handleWindowClose();
     void updateController(float dt);
     inline void calculateFramerate(float dt) {fps_=1.f/dt;}
@@ -51,6 +50,10 @@ namespace boink
 
     std::vector<
       std::pair<Simulator::ID,std::shared_ptr<Controller>>> controllers_;
+
     float fps_;
+    int selected_controller_=-1;
+    float cam_speed_;
+    float mouse_speed_;
   };
 }

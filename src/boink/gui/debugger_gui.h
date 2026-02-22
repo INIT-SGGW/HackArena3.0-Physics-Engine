@@ -13,10 +13,10 @@ namespace boink
     std::string_view getTitle() const override { return "Debug";}
     void draw() override;
   public:
-    float mouse_speed;
-    float camera_speed;
-    float fps;
+    float* mouse_speed=nullptr;
+    float* camera_speed=nullptr;
+    const float* fps=nullptr;
     std::vector<std::pair<Simulator::ID,std::string>> controller_ids;
-    int selected_controller=-1;
+    int* selected_controller=nullptr;
   };
 }

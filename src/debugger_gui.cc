@@ -8,9 +8,9 @@ namespace boink
 {
   void DebuggerGui::draw()
   {
-    ImGui::Text("FPS: %.2f",fps);
-    ImGui::SliderFloat("Mouse speed",&mouse_speed,0.f,1.f);
-    ImGui::SliderFloat("Camera speed",&camera_speed,0.f,100.f);
+    ImGui::Text("FPS: %.2f",*fps);
+    ImGui::SliderFloat("Mouse speed",mouse_speed,0.f,1.f);
+    ImGui::SliderFloat("Camera speed",camera_speed,0.f,100.f);
 
     static size_t selected=0;
     const char* camera_option="Free camera";
@@ -34,8 +34,8 @@ namespace boink
       ImGui::EndCombo();
     }
     if(controller_ids[selected].second==camera_option)
-      selected_controller=-1;
+      *selected_controller=-1;
     else
-      selected_controller=controller_ids[selected].first;
+      *selected_controller=controller_ids[selected].first;
   }
 }
