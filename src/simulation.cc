@@ -22,9 +22,15 @@ namespace boink
 
     if(p_dbg_)
     {
+      freeze_=true;
       dynamics_world_->setDebugDrawer(p_dbg_->getRendererPtr());
       p_dbg_->addGui(gui_);
     }
+    else
+      freeze_=false;
+
+    gui_->duration=&simulation_duration_;
+    gui_->freeze=&freeze_;
   } 
 
   Simulator::ID Simulation::addSimulator(std::shared_ptr<Simulator> simulator)
@@ -62,7 +68,7 @@ namespace boink
       btScalar fixed_delta_time,
       btScalar max_delta_time)
   {
-    if(gui_ && gui_->freeze)
+    if(freeze_)
       return;
 
     // With large delta time simulation behaves oddly.
@@ -101,7 +107,6 @@ namespace boink
       return;
 
     gui_->gravity_acc=this->getGravitationalAcceleration();
-    gui_->duration=this->getSimulationDuration();
     gui_->num_simulators=this->simulatorsSize();
   }
 }

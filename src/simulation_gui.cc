@@ -10,8 +10,8 @@ namespace boink
 {
   void SimulationGui::draw()
   {
-    ImGui::Checkbox("Freeze simulation",&freeze);
-    ImGui::Text("Simulation duration: %.2f [s]",duration);
+    ImGui::Checkbox("Freeze simulation",freeze);
+    ImGui::Text("Simulation duration: %.2f [s]",*duration);
     ImGui::Text("Gravitational acceleration: %.2f [m/s^2]",gravity_acc);
     ImGui::Text("# of simulators: %lu",num_simulators);
 
