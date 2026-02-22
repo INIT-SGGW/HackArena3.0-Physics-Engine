@@ -29,6 +29,7 @@ namespace boink
       tuning_(create_info.tuning),
       gui_(std::make_shared<VehicleGui>())
   {
+    this->correctCOM();
     collision_shape_=createCollisonShape(
         mesh_->getChassis().vertices,
         center_of_mass_);
@@ -336,6 +337,25 @@ namespace boink
     vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
     vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
     vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
+  }
+
+  void Vehicle::correctCOM()
+  {
+    btVector3 front_left_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin();
+    btVector3 front_right_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin();
+    btVector3 rear_left_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin();
+    btVector3 rear_right_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin();
+    btVector3 mid_front=front_left_cs+(front_right_cs-front_left_cs)/2.f;
+    btVector3 mid_rear=rear_left_cs+(rear_right_cs-rear_left_cs)/2.f;
+
+    btVector3 mid_point=mid_rear+(mid_front-mid_rear)/2.f;
+    mid_point.setY(0.f);
+
+    center_of_mass_+=mid_point;
   }
 
   std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(

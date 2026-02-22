@@ -80,6 +80,7 @@ namespace boink
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
   private:
+    void correctCOM();
     std::unique_ptr<btCompoundShape> createCollisonShape(
         const std::vector<btVector3>& vertices,
         const btVector3& center_of_mass);
