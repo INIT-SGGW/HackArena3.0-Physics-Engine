@@ -162,15 +162,6 @@ namespace boink
 
     laps_completed_=curr_laps_completed;
     curr_lap_dist_point_=curr_coverage;
-
-    // TODO
-    // move this to CustomRaycastVehicle
-    for(const auto&[which,speed] : wheel_speeds_)
-    {
-      const auto& wheel_info=vehicle_->getWheelInfo((int)which);
-      wheel_speeds_[which]=wheel_info.m_deltaRotation/dt;
-    }
-    
   }
 
   void Vehicle::updateRender(Renderer* renderer)
@@ -237,7 +228,7 @@ namespace boink
 
   btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
   {
-    return wheel_speeds_.at(wheel_pos);
+    return vehicle_->getWheelAngularSpeed(wheel_pos);
   }
 
   const btTransform& Vehicle::getCenterOfMassTransform() const

@@ -31,6 +31,7 @@ namespace boink
   {
     btRaycastVehicle::updateVehicle(step);
 
+    this->updateWheels(step);
     this->applyAerodynamics();
   }
 
@@ -39,6 +40,15 @@ namespace boink
     this->updateWheelsFrictions();
     btRaycastVehicle::updateFriction(time_step);
     (void)time_step;
+  }
+
+  void CustomRaycastVehicle::updateWheels(btScalar step)
+  {
+    for(const auto&[which,speed] : wheel_speeds_)
+    {
+      const auto& wheel_info=this->getWheelInfo((int)which);
+      wheel_speeds_[which]=wheel_info.m_deltaRotation/step;
+    }
   }
 
   void CustomRaycastVehicle::applyAerodynamics()

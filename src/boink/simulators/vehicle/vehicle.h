@@ -16,7 +16,6 @@
 #include "boink/gui/vehicle_gui.h"
 
 #include <memory>
-#include <unordered_map>
 
 namespace boink
 {
@@ -105,15 +104,6 @@ namespace boink
 
     int laps_completed_=0;
     btScalar curr_lap_dist_point_=0;
-
-    // TODO
-    // We need to rewrite it
-    std::unordered_map<WheelPosition,btScalar> wheel_speeds_={
-      {WheelPosition::FrontLeft,0.f},
-      {WheelPosition::FrontRight,0.f},
-      {WheelPosition::RearLeft,0.f},
-      {WheelPosition::RearRight,0.f},
-    };
 
     std::shared_ptr<VehicleGui> gui_;
   };
