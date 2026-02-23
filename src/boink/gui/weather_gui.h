@@ -15,6 +15,8 @@ namespace boink
     SmoothedValue* cloudiness=nullptr;
     SmoothedValue* temperature_celsius=nullptr;
     SmoothedValue* rain_indensity=nullptr;
+
+    const float* wetness=nullptr;
   private:
     float transition_duration_=0.f;
   };

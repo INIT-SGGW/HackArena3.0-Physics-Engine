@@ -4,13 +4,16 @@
 #include <piksel/gui_object.hh>
 
 #include "boink/simulators/simulator.h"
-#include "boink/gui/weather_gui.h"
+//#include "boink/gui/weather_gui.h"
 #include "boink/smoothed_value.h"
 
 namespace boink
 {
+  class WeatherGui;
   class Weather : public Simulator
   {
+  public:
+    friend class WeatherGui;
   public:
     Weather(
         btScalar cloundiness, 
@@ -33,10 +36,19 @@ namespace boink
   public:
     static const Weather Sunny;
     static const Weather Rainy;
+    static const Weather HeavyRainy;
+  private:
+    static btScalar s_kSunFactorConstant;
+    static btScalar s_kTempRateConstant;
+    static btScalar s_kDryRateConstant;
+    static btScalar s_kRainAddConstant;
+    static btScalar s_kTimeConstant;
   private:
     SmoothedValue cloudiness_;
     SmoothedValue temperature_celsius_;
     SmoothedValue rain_indensity_;
+
+    btScalar wetness_=0.0f;
 
     std::shared_ptr<WeatherGui> gui_;
   };

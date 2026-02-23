@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "boink/gui/slider_value.h"
+#include "boink/simulators/weather.h"
 
 namespace boink
 {
@@ -15,6 +16,13 @@ namespace boink
     SliderValue rain_indensity_target_=
       SliderValue(rain_indensity->getTarget());
 
+    ImGui::Text("Weather tuning");
+    ImGui::SliderFloat("Sun factor const",&Weather::s_kSunFactorConstant,0,1);
+    ImGui::SliderFloat("Temp rate const",&Weather::s_kTempRateConstant,0,1);
+    ImGui::SliderFloat("Dry rate const",&Weather::s_kDryRateConstant,0,1);
+    ImGui::SliderFloat("Rain add const",&Weather::s_kRainAddConstant,0,1);
+    ImGui::NewLine();
+
     ImGui::SliderFloat(
         "Transition duration [s]",&transition_duration_,0,60);
     ImGui::Text("Temperature: %.2f [C]",temperature_celsius->getCurrent());
@@ -23,6 +31,8 @@ namespace boink
     ImGui::SliderFloat("Cloudiness",&cloudiness_target_.get(),0,1);
     ImGui::Text("Rain indensity: %.2f",rain_indensity->getCurrent());
     ImGui::SliderFloat("Rain indensity",&rain_indensity_target_.get(),0,1);
+
+    ImGui::Text("Ground wetness: %.2f",*wetness);
 
     if(temperature_celsius_target_.hasChanged())
       temperature_celsius->setTarget(
