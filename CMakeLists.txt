@@ -121,6 +121,7 @@ include(CTest)
 
 set(TEST_SOURCES_C
   capi_test
+  capi_without_debugger_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)
