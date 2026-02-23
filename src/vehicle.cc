@@ -293,7 +293,10 @@ namespace boink
   {
     // TODO
     // Make it much smarter
-    force*=500.;
+    force*=5000.;
+    if(force<0.0f)
+      force/=2.f;
+
     vehicle_->applyEngineForce(force,(int)WheelPosition::RearLeft);
     vehicle_->applyEngineForce(force,(int)WheelPosition::RearRight);
   }

@@ -17,9 +17,9 @@ namespace boink
   void VehicleController::update(piksel::Window& wnd, piksel::Camera& camera,float )
   {
     if(wnd.getKey(GLFW_KEY_UP)==piksel::Window::KeyState::Press)
-      vehicle_->setEngineForce(10.f);
+      vehicle_->setEngineForce(1.f);
     else if(wnd.getKey(GLFW_KEY_DOWN)==piksel::Window::KeyState::Press)
-      vehicle_->setEngineForce(-5.f);
+      vehicle_->setEngineForce(-1.f);
     else
       vehicle_->setEngineForce(0.f);
 
