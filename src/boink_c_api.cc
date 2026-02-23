@@ -471,7 +471,7 @@ int boink_read_vehicle_state(
   for(int i=0;i<4;i++)
   {
     btScalar angular_speed=vehicle->getWheelAngularSpeed((boink::WheelPosition)i);
-    out_state->wheel_speeds[i]=angular_speed* (60.0f / (2.0f * SIMD_PI));
+    out_state->wheel_speeds[i]=angular_speed;
   }
   out_state->brake_applied=0.0;
   out_state->throttle_applied=0.0;

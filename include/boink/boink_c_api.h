@@ -32,9 +32,9 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 6
+#define BOINK_C_API_VERSION_MINOR 5
 
-#define BOINK_C_API_VERSION_PATCH 0
+#define BOINK_C_API_VERSION_PATCH 1
 
 /**
  * Indicates successful operation.
@@ -316,7 +316,7 @@ typedef struct BoinkVehicleState {
    */
   struct BoinkVec3 wheel_position[4];
   /**
-   * Wheel angular speeds in revolutions per minute.
+   * Wheel angular speeds in radians per second.
    *
    * Index mapping:
    *   [0] = front-left
