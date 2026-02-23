@@ -2,6 +2,8 @@
 
 #include <piksel/gui_object.hh>
 
+#include "boink/smoothed_value.h"
+
 namespace boink
 {
   class WeatherGui : public piksel::GuiObject
@@ -10,12 +12,10 @@ namespace boink
     void draw() override;
     std::string_view getTitle() const override {return "Weather";}
   public:
-    const float* cloudiness;
-    const float* temperature_celsius;
-    const float* rain_indensity;
-
-    float* cloudiness_target;
-    float* temperature_celsius_target;
-    float* rain_indensity_target;
+    SmoothedValue* cloudiness=nullptr;
+    SmoothedValue* temperature_celsius=nullptr;
+    SmoothedValue* rain_indensity=nullptr;
+  private:
+    float transition_duration_=0.f;
   };
 }

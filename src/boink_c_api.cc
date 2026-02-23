@@ -513,6 +513,13 @@ int boink_set_weather(BoinkHandle handle, const BoinkWeather* weather)
       weather);
   (void)p_race;
 
+  Real transition_duration=30.f;
+  
+  auto weather_sim=p_race->getWeather();
+  weather_sim->setTemperatureCelcius(weather->temperature_c,transition_duration);
+  weather_sim->setCloudiness(weather->cloudiness,transition_duration);
+  weather_sim->setRainIndensity(weather->rain_intensity,transition_duration);
+
   return BOINK_OK;
 }
 

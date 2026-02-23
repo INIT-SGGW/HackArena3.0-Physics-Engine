@@ -116,6 +116,19 @@ int main()
         goto clear;
       }
     }
+
+    BoinkWeather weather_state;
+    weather_state.cloudiness=0.5f;
+    weather_state.rain_intensity=0.4f;
+    weather_state.temperature_c=10.f;
+    if(i==5)
+    {
+      if((code=boink_set_weather(handle,&weather_state))!=BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+    }
     struct BoinkVehicleState state;
     if((code=boink_read_vehicle_state(handle,id0,&state))!=BOINK_OK)
     {

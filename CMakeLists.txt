@@ -106,6 +106,7 @@ target_sources(boink
     src/vehicle_contoller.cc
     src/weather.cc
     src/weather_gui.cc
+    src/smoothed_value.cc
 )
 
 target_include_directories(boink
