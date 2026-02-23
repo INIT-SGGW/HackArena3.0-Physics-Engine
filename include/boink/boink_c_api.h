@@ -32,9 +32,9 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 5
+#define BOINK_C_API_VERSION_MINOR 6
 
-#define BOINK_C_API_VERSION_PATCH 1
+#define BOINK_C_API_VERSION_PATCH 0
 
 /**
  * Indicates successful operation.

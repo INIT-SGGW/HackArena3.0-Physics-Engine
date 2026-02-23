@@ -10,7 +10,7 @@
 
 #include "boink/gltf_extractor.h"
 #include "boink/simulators/simulator.h"
-#include "boink/simulators/track/centerline.h"
+#include "boink/simulators/track/line.h"
 #include "boink/simulators/track/ground.h"
 #include "boink/gui/track_gui.h"
 
@@ -33,7 +33,7 @@ namespace boink
     const btTransform& getWorldTransform() const {return transform_;}
     void setWorldTransform(const btTransform& position);
 
-    const Centerline& getCenterline() const {return centerline_;}
+    const Line& getCenterline() const {return centerline_;}
     std::string_view getFilename() const { return filename_;}
   private:
     void initSurfaceInfos();
@@ -51,7 +51,7 @@ namespace boink
     Ground::SurfaceInfo s_kGravelSurface_; 
     Ground::SurfaceInfo s_kAsphaltSuraface_; 
 
-    Centerline centerline_;
+    Line centerline_;
     btTransform transform_=btTransform::getIdentity();
     std::string_view filename_;
 

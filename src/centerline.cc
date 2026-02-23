@@ -1,4 +1,4 @@
-#include "boink/simulators/track/centerline.h"
+#include "boink/simulators/track/line.h"
 
 #include "boink/exception.h"
 
@@ -7,7 +7,7 @@
 namespace boink
 {
 
-  Centerline::Centerline(
+  Line::Line(
       const std::vector<btVector3>& points)
     :points_dist_(points.size())
   {
@@ -59,7 +59,6 @@ namespace boink
           std::find(unused_indices.begin(),unused_indices.end(),curr_i));
     }
 
-
     assert(sorted_indices.size()==points_dist_.size());
     assert(sorted_indices.size()==points.size());
 
@@ -75,12 +74,12 @@ namespace boink
     }
   }
 
-  btScalar Centerline::getLength() const
+  btScalar Line::getLength() const
   {
     return points_dist_[points_dist_.size()-1].second;
   }
 
-  btScalar Centerline::getCoverage(const btVector3& point) const
+  btScalar Line::getCoverage(const btVector3& point) const
   {
     size_t closest_i=this->getClosestIndex(point).first;
     size_t sec_closest_i=this->getSecondClosestIndex(point).first;
@@ -118,7 +117,7 @@ namespace boink
     return our_vec.dot(dir) + points_dist_[first_i].second;
   }
 
-  std::pair<size_t,btScalar> Centerline::getClosestIndex(
+  std::pair<size_t,btScalar> Line::getClosestIndex(
       const btVector3& point) const
   {
     size_t closest_i=0;
@@ -136,7 +135,7 @@ namespace boink
     return {closest_i,btSqrt(closest_dist2)};
   }
 
-  std::pair<size_t,btScalar> Centerline::getSecondClosestIndex(
+  std::pair<size_t,btScalar> Line::getSecondClosestIndex(
       const btVector3& point) const
   {
     const size_t closest_i=this->getClosestIndex(point).first;
@@ -162,7 +161,7 @@ namespace boink
     return {sec_closest_i,btSqrt(sec_closest_dist2)};
   }
 
-  std::pair<size_t,btScalar> Centerline::getIthClosestIndex(
+  std::pair<size_t,btScalar> Line::getIthClosestIndex(
       const btVector3& point, size_t ith) const
   {
     assert(points_dist_.size()>ith);
@@ -201,12 +200,12 @@ namespace boink
     return {ith_closest_i,btSqrt(ith_closest_dist2)};
   }
 
-  btVector3& Centerline::getPoint(size_t index)
+  btVector3& Line::getPoint(size_t index)
   {
     return points_dist_[index].first;
   }
 
-  const btVector3& Centerline::getPoint(size_t index) const
+  const btVector3& Line::getPoint(size_t index) const
   {
     return points_dist_.at(index).first;
   }

@@ -47,6 +47,8 @@ namespace boink
 
     for(const auto& node : nodes)
     {
+      if(node.name!=TRACK_NAME)
+        continue;
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
         continue;
 
@@ -66,30 +68,30 @@ namespace boink
 
   void Track::createCenterline(const GltfExtractor& extractor)
   {
-    auto& centerline_node=extractor.getNode(CENTERLINE_NAME);
-    if(centerline_node.type!=TINYGLTF_MODE_LINE)
+    auto& line_node=extractor.getNode(CENTERLINE_NAME);
+    if(line_node.type!=TINYGLTF_MODE_LINE)
       throw Exception(
           Exception::Type::UnsupportedFormatError,
           "Centerline mesh unsupported mode. Use lines mode for centerline mesh.");
 
-    auto& centerline_vertices=centerline_node.vertices;
-    auto& centerline_indices=centerline_node.indices;
-    if(centerline_vertices.size()==0 || centerline_indices.size()==0)
+    auto& line_vertices=line_node.vertices;
+    auto& line_indices=line_node.indices;
+    if(line_vertices.size()==0 || line_indices.size()==0)
       throw Exception(
           Exception::Type::InvalidArgumentError,
           "Centerline mesh is empty.");
 
     std::vector<btVector3> points;
-    points.reserve(centerline_indices.size());
+    points.reserve(line_indices.size());
 
-    for(size_t i=0;i<centerline_indices.size();i+=2)
-      points.push_back(centerline_vertices[centerline_indices[i]]);
+    for(size_t i=0;i<line_indices.size();i+=2)
+      points.push_back(line_vertices[line_indices[i]]);
 
     // Add last point
     points.push_back(
-        centerline_vertices[centerline_indices[centerline_indices.size()-1]]);
+        line_vertices[line_indices[line_indices.size()-1]]);
     
-    centerline_=Centerline(std::move(points));
+    centerline_=Line(std::move(points));
   }
 
   void Track::update(btScalar dt)

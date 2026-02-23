@@ -7,11 +7,11 @@
 
 namespace boink
 {
-  class Centerline
+  class Line
   {
   public:
-    Centerline()=default;
-    Centerline(
+    Line()=default;
+    Line(
         const std::vector<btVector3>& points);
 
     btScalar getLength() const;
