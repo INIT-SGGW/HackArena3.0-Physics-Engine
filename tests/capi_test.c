@@ -72,6 +72,23 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
+  uint64_t id1;
+  if((code=boink_spawn_vehicle(handle,&model,&id1))!=BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+
+  if((code=boink_despawn_vehicle(handle,id0))!=BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+  if((code=boink_spawn_vehicle(handle,&model,&id0))!=BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
 
   BoinkVec3 track_pos;
   track_pos.x=5.;

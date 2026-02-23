@@ -4,7 +4,6 @@
 
 #include <BulletDynamics/Vehicle/btWheelInfo.h>
 
-#include "boink/simulators/track/ground.h"
 #include <cassert>
 
 namespace boink
@@ -133,19 +132,20 @@ namespace boink
 
   void CustomRaycastVehicle::updateWheelsFrictions()
   {
-    for(int i=0;i<this->getNumWheels();i++)
-    {
-      btWheelInfo& wheel=this->getWheelInfo(i);
-      void* p_ground=this->getGroundObject(wheel);
+    // Unsafe access sometimes via nullptr
+    //for(int i=0;i<this->getNumWheels();i++)
+    //{
+    //  btWheelInfo& wheel=this->getWheelInfo(i);
+    //  void* p_ground=this->getGroundObject(wheel);
 
-      if(!p_ground)
-        return;
+    //  if(!p_ground)
+    //    return;
 
-      btRigidBody* ground_rb=(btRigidBody*)p_ground;
-      Ground::SurfaceInfo& surface_info=
-        *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
+    //  btRigidBody* ground_rb=(btRigidBody*)p_ground;
+    //  Ground::SurfaceInfo& surface_info=
+    //    *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
 
-      wheel.m_rollInfluence=surface_info.rolling_resistance;
-    }
+    //  wheel.m_rollInfluence=surface_info.rolling_resistance;
+    //}
   }
 }

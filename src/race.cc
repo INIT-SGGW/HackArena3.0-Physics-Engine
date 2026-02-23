@@ -72,7 +72,6 @@ namespace boink
           "Containers misalignment. Panic.");
 
     assert(is_deleted && it!=vehicles_.end());
-    assert(!is_deleted && it==vehicles_.end());
 
     if(it!=vehicles_.end())
       vehicles_.erase(it);
