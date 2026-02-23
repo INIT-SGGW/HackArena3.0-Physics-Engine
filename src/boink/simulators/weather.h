@@ -29,13 +29,16 @@ namespace boink
         btScalar cloundiness, 
         btScalar temperature, 
         btScalar rain_indensity);
+    Weather(const Weather& other);
+    Weather& operator=(const Weather&)=delete;
+
     void update(btScalar dt) override;
     void updateRender(Renderer* p_renderer) override;
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
-    SmoothedValue getCloudiness() const {return cloudiness_;}
-    SmoothedValue getTemperatureCelsius() const {return temperature_celsius_;}
-    SmoothedValue getRainIndensity() const {return rain_indensity_;}
+    const SmoothedValue& getCloudiness() const {return cloudiness_;}
+    const SmoothedValue& getTemperatureCelsius() const {return temperature_celsius_;}
+    const SmoothedValue& getRainIndensity() const {return rain_indensity_;}
 
     void setCloudiness(btScalar target, bool instant=false);
     void setTemperature(btScalar target, bool instant=false);
@@ -43,8 +46,6 @@ namespace boink
   public:
     static const Weather Sunny;
     static const Weather Rainy;
-  private:
-    void updateGui();
   private:
     SmoothedValue cloudiness_;
     SmoothedValue temperature_celsius_;

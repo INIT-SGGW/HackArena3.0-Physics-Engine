@@ -18,9 +18,12 @@ namespace boink
   void Weather::SmoothedValue::update(btScalar dt)
   {
     btScalar diff=target-current;
-    current+=diff*rate*dt;
+    if(diff>0.f)
+      current+=rate*dt;
+    else
+      current-=rate*dt;
 
-    if(btFabs(diff)<0.01)
+    if(btFabs(diff)<rate*dt)
       current=target;
   }
 
@@ -34,14 +37,29 @@ namespace boink
     this->setCloudiness(cloundiness,true);
     this->setRainIndensity(rain_indensity,true);
 
-    gui_->cloudiness=this->getCloudiness().current;
-    gui_->rain_indensity=this->getRainIndensity().current;
-    gui_->temperature_celsius=this->getTemperatureCelsius().current;
+    gui_->cloudiness=&(this->getCloudiness().current);
+    gui_->rain_indensity=&this->getRainIndensity().current;
+    gui_->temperature_celsius=&this->getTemperatureCelsius().current;
 
-    gui_->cloudiness_target=this->getCloudiness().target;
-    gui_->rain_indensity_target=this->getRainIndensity().target;
-    gui_->temperature_celsius_target=this->getTemperatureCelsius().target;
+    gui_->cloudiness_target=&cloudiness_.target;
+    gui_->rain_indensity_target=&rain_indensity_.target;
+    gui_->temperature_celsius_target=&temperature_celsius_.target;
   }
+
+  Weather::Weather(const Weather& other)
+    : cloudiness_(other.cloudiness_),
+      temperature_celsius_(other.temperature_celsius_),
+      rain_indensity_(other.rain_indensity_),
+      gui_(std::make_shared<WeatherGui>())
+  {
+    gui_->cloudiness = &cloudiness_.current;
+    gui_->rain_indensity = &rain_indensity_.current;
+    gui_->temperature_celsius = &temperature_celsius_.current;
+
+    gui_->cloudiness_target = &cloudiness_.target;
+    gui_->rain_indensity_target = &rain_indensity_.target;
+    gui_->temperature_celsius_target = &temperature_celsius_.target;
+}
 
   void Weather::setCloudiness(btScalar target, bool instant)
   {
@@ -75,28 +93,11 @@ namespace boink
   {
     if(!p_renderer)
       return;
-
-    this->updateGui();
   }
   
   std::shared_ptr<piksel::GuiObject> Weather::getGui()
   {
     return gui_;
-  }
-
-  void Weather::updateGui()
-  {
-    setTemperature(gui_->temperature_celsius_target,false);
-    setCloudiness(gui_->cloudiness_target,false);
-    setRainIndensity(gui_->rain_indensity_target,false);
-
-    gui_->cloudiness=this->getCloudiness().current;
-    gui_->rain_indensity=this->getRainIndensity().current;
-    gui_->temperature_celsius=this->getTemperatureCelsius().current;
-
-    gui_->cloudiness_target=this->getCloudiness().target;
-    gui_->rain_indensity_target=this->getRainIndensity().target;
-    gui_->temperature_celsius_target=this->getTemperatureCelsius().target;
   }
 
   const Weather Weather::Sunny{0,20,0};
