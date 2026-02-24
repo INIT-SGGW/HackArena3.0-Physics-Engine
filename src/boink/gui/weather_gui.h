@@ -14,6 +14,6 @@ namespace boink
     std::string_view getTitle() const override {return "Weather";}
   private:
     float transition_duration_=0.f;
-    Weather* p_weather_;
+    Weather* p_weather_=nullptr;
   };
 }

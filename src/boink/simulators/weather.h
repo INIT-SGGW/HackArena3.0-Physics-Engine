@@ -25,6 +25,8 @@ namespace boink
     void updateRender(Renderer* p_renderer) override;
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
+    btScalar getWetness() const {return wetness_;}
+
     const SmoothedValue& getCloudiness() const {return cloudiness_;}
     const SmoothedValue& getTemperatureCelsius() const {return temperature_celsius_;}
     const SmoothedValue& getRainIndensity() const {return rain_indensity_;}

@@ -34,7 +34,9 @@ namespace boink
   private:
     void updateWheels(btScalar step);
     void applyAerodynamics();
-    void* getGroundObject(btWheelInfo& wheel);
+    void* getGroundObject(
+        btWheelInfo& wheel,
+        btVehicleRaycaster::btVehicleRaycasterResult& out_result);
     void updateWheelsFrictions();
   private:
     btVehicleRaycaster* p_raycaster_;

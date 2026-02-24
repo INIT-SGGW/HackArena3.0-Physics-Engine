@@ -6,6 +6,7 @@
 
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
+#include "boink/gui/track_gui.h"
 #include "boink/utility.h"
 
 #include <memory>
@@ -13,12 +14,14 @@
 
 namespace boink
 {
-  Track::Track(std::string_view filename,
+  Track::Track(
+      std::string_view filename,
+      std::shared_ptr<const Weather> weather,
       std::shared_ptr<btDiscreteDynamicsWorld> world)
     :
       world_(world),
       filename_(filename),
-      gui_(std::make_shared<TrackGui>())
+      weather_(weather)
   {
     this->initSurfaceInfos();
 
@@ -27,20 +30,25 @@ namespace boink
     this->createCenterline(extractor);
     this->createRightline(extractor);
 
-    gui_->pos=&this->getWorldTransform().getOrigin();
-    gui_->filename=this->getFilename().data();
+    gui_=std::make_shared<TrackGui>(this);
+  }
+
+  std::shared_ptr<piksel::GuiObject> Track::getGui() 
+  {
+    return gui_;
   }
 
   void Track::initSurfaceInfos()
   {
-    s_kGrassSuraface_= 
-      {0.f,0.3f,Ground::Type::Grass};
-    s_kSandSuraface_= 
-      {5.f,0.4f,Ground::Type::Sand};
-    s_kGravelSurface_= 
-      {3.f,0.4f,Ground::Type::Gravel};
-    s_kAsphaltSuraface_= 
-      {0.0f,0.1f,Ground::Type::Asphalt};
+    btScalar wetness=weather_->getWetness();
+    surface_infos_[Ground::Type::Grass]= 
+      {0.f,0.3f,wetness,Ground::Type::Grass};
+    surface_infos_[Ground::Type::Sand]= 
+      {5.f,0.4f,wetness,Ground::Type::Sand};
+    surface_infos_[Ground::Type::Gravel]= 
+      {3.f,0.4f,wetness,Ground::Type::Gravel};
+    surface_infos_[Ground::Type::Asphalt]= 
+      {0.0f,0.1f,wetness,Ground::Type::Asphalt};
   }
 
   void Track::initGrounds(const GltfExtractor& extractor)
@@ -62,7 +70,7 @@ namespace boink
           node.vertices,
           node.indices,
           node.transform,
-          &s_kAsphaltSuraface_,world_);
+          &surface_infos_[Ground::Type::Asphalt],world_);
     }
   }
 
@@ -158,6 +166,9 @@ namespace boink
   void Track::update(btScalar dt)
   {
     (void)dt;
+
+    for(auto& [key,info]:surface_infos_)
+      info.wetness=weather_->getWetness();
   }
 
   void Track::updateRender(Renderer* p_renderer)
@@ -175,5 +186,4 @@ namespace boink
       ground.setWorldTransform(new_transform);
     }
   }
-
 }

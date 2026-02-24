@@ -107,6 +107,7 @@ target_sources(boink
     src/weather.cc
     src/weather_gui.cc
     src/smoothed_value.cc
+    src/surface_info_gui.cc
 )
 
 target_include_directories(boink

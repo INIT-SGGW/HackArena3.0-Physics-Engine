@@ -24,13 +24,7 @@ namespace boink
       Sand,
       Gravel
     };
-
-    struct SurfaceInfo
-    {
-      btScalar resistive_coef;
-      btScalar rolling_resistance;
-      Type type;
-    };
+    struct SurfaceInfo;
   public:
     Ground(
         const std::vector<btVector3>& vertices, 
@@ -76,11 +70,19 @@ namespace boink
         case Type::Sand:
           return "sand";
         case Type::Gravel:
-          return "sand";
+          return "gravel";
       }
 
       assert(false && "Invalid Ground Type");
       return "Unknown";
     }
+  };
+
+  struct Ground::SurfaceInfo
+  {
+    btScalar resistive_coef;
+    btScalar rolling_resistance;
+    btScalar wetness;
+    Type type;
   };
 }

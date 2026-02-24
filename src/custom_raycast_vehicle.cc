@@ -1,8 +1,10 @@
 #include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
-
 #include <BulletDynamics/Vehicle/btWheelInfo.h>
+
+#include "boink/simulators/track/ground.h"
+
 
 #include <cassert>
 
@@ -114,38 +116,45 @@ namespace boink
     }      
   }
 
-  void* CustomRaycastVehicle::getGroundObject(btWheelInfo& wheel)
+  void* CustomRaycastVehicle::getGroundObject(
+      btWheelInfo& wheel,
+      btVehicleRaycaster::btVehicleRaycasterResult& out_result)
   {
-      btScalar raylen = wheel.getSuspensionRestLength() + wheel.m_wheelsRadius;
+    // TODO
+    // Can be optimized
+    btScalar raylen = wheel.getSuspensionRestLength() + wheel.m_wheelsRadius;
 
-      btVector3 rayvector = wheel.m_raycastInfo.m_wheelDirectionWS * (raylen);
-      const btVector3& source = wheel.m_raycastInfo.m_hardPointWS;
-      btVector3 target = source+rayvector;
+    btVector3 rayvector = wheel.m_raycastInfo.m_wheelDirectionWS * (raylen);
+    const btVector3& source = wheel.m_raycastInfo.m_hardPointWS;
+    btVector3 target = source+rayvector;
 
-      btVehicleRaycaster::btVehicleRaycasterResult rayResults;
+    btAssert(p_raycaster_);
 
-      btAssert(p_raycaster_);
-
-      void* object = p_raycaster_->castRay(source, target, rayResults);
-      return object;
+    void* object = p_raycaster_->castRay(source, target, out_result);
+    return object;
   }
 
   void CustomRaycastVehicle::updateWheelsFrictions()
   {
+    // WARNING
     // Unsafe access sometimes via nullptr
-    //for(int i=0;i<this->getNumWheels();i++)
-    //{
-    //  btWheelInfo& wheel=this->getWheelInfo(i);
-    //  void* p_ground=this->getGroundObject(wheel);
+    for(int i=0;i<this->getNumWheels();i++)
+    {
+      btWheelInfo& wheel=this->getWheelInfo(i);
+      btVehicleRaycaster::btVehicleRaycasterResult result;
+      void* p_ground=this->getGroundObject(wheel,result);
 
-    //  if(!p_ground)
-    //    return;
+      if(!p_ground)
+        return;
 
-    //  btRigidBody* ground_rb=(btRigidBody*)p_ground;
-    //  Ground::SurfaceInfo& surface_info=
-    //    *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
+      btRigidBody* ground_rb=(btRigidBody*)p_ground;
+      if(!ground_rb->isStaticObject())
+        return;
+      
+      Ground::SurfaceInfo& surface_info=
+        *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
 
-    //  wheel.m_rollInfluence=surface_info.rolling_resistance;
-    //}
+      wheel.m_rollInfluence=surface_info.rolling_resistance;
+    }
   }
 }

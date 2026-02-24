@@ -17,7 +17,7 @@ namespace boink
       Simulation(gravity_acceleration,p_dbg,std::make_shared<RaceGui>()),
       weather_(std::make_shared<Weather>(Weather::Sunny)),
       track_(std::make_shared<Track>(
-            track_filename,this->getDynamicsWorld()))
+            track_filename,weather_,this->getDynamicsWorld()))
   {
     this->addSimulator(track_);
     this->addSimulator(weather_);

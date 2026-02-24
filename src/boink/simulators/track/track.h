@@ -12,23 +12,30 @@
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/line.h"
 #include "boink/simulators/track/ground.h"
-#include "boink/gui/track_gui.h"
+#include "boink/simulators/weather.h"
 
 #include <memory>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace boink
 {
+  class TrackGui;
   class Track : public Simulator
   {
   public:
-    Track(std::string_view filename,
+    friend class TrackGui;
+  public:
+    Track(
+        std::string_view filename,
+        std::shared_ptr<const Weather> weather,
         std::shared_ptr<btDiscreteDynamicsWorld> world);
+    Track(const Track&)=delete;
 
     void update(btScalar dt) override;
     void updateRender(Renderer* p_renderer) override;
-    std::shared_ptr<piksel::GuiObject> getGui() override {return gui_;}
+    std::shared_ptr<piksel::GuiObject> getGui() override;
 
     const btTransform& getWorldTransform() const {return transform_;}
     void setWorldTransform(const btTransform& position);
@@ -47,15 +54,14 @@ namespace boink
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
 
-    Ground::SurfaceInfo s_kGrassSuraface_;
-    Ground::SurfaceInfo s_kSandSuraface_; 
-    Ground::SurfaceInfo s_kGravelSurface_; 
-    Ground::SurfaceInfo s_kAsphaltSuraface_; 
+    std::unordered_map<Ground::Type,Ground::SurfaceInfo> surface_infos_;
 
     Line centerline_;
     Line rightline_;
     btTransform transform_=btTransform::getIdentity();
     std::string_view filename_;
+
+    std::shared_ptr<const Weather> weather_;
 
     std::shared_ptr<TrackGui> gui_;
   };
