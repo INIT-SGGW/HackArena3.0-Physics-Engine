@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "boink/simulators/vehicle/vehicle.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 
 namespace boink
 {
@@ -48,5 +49,10 @@ namespace boink
     btVector3 center_of_mass_cs=p_vehicle_->getCenterOfMassCS();
     ImGui::Text("COM in CS: (%.2f,%.2f,%.2f) [m]",
         center_of_mass_cs[0],center_of_mass_cs[1],center_of_mass_cs[2]);
+
+    ImGui::Text("Tyres type: %s",
+        Tyre::toString(p_vehicle_->getTyreType(WheelPosition::FrontLeft)));
+    ImGui::Text("Tyres health: %.2f",
+        p_vehicle_->getTyreHealth(WheelPosition::FrontLeft));
   }
 }

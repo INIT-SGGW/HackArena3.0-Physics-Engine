@@ -13,6 +13,7 @@
 #include "boink/simulators/vehicle/vehicle_mesh.h"
 #include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/simulators/vehicle/tyre.h"
 
 #include <memory>
 
@@ -72,6 +73,9 @@ namespace boink
     btScalar getMass() const;
     btVector3 getCenterOfMassCS() const;
 
+    btScalar getTyreHealth(WheelPosition pos) const;
+    Tyre::Type getTyreType(WheelPosition pos) const;
+
     void setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning);
     const CustomRaycastVehicle::btVehicleTuning& getTuning() const;
 
@@ -97,6 +101,10 @@ namespace boink
     std::unique_ptr<CustomRaycastVehicle> vehicle_;
 
     std::shared_ptr<const Track> track_;
+
+    // TODO
+    // create some kindof wheel object
+    std::unordered_map<WheelPosition,Tyre> tyres_;
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;

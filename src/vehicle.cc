@@ -117,6 +117,13 @@ namespace boink
         is_front_wheel
     );
 
+    // TODO
+    for(int i=0;i<(int)WheelPosition::Count;i++)
+    {
+      WheelPosition pos=(WheelPosition)i;
+      tyres_.emplace(pos,Tyre(Tyre::Type::Hard,0.0005f));
+    }
+
     this->setTuning(tuning_);
   }
 
@@ -162,6 +169,13 @@ namespace boink
 
     laps_completed_=curr_laps_completed;
     curr_lap_dist_point_=curr_coverage;
+
+    // TODO make it smarter
+    for(int i=0;i<(int)WheelPosition::Count;i++)
+    {
+      WheelPosition pos=(WheelPosition)i;
+      tyres_.at(pos).update(dt);
+    }
   }
 
   void Vehicle::updateRender(Renderer* renderer)
@@ -232,6 +246,16 @@ namespace boink
   btVector3 Vehicle::getCenterOfMassCS() const
   {
     return center_of_mass_;
+  }
+
+  btScalar Vehicle::getTyreHealth(WheelPosition pos) const
+  {
+    return tyres_.at(pos).getHealth();
+  }
+
+  Tyre::Type Vehicle::getTyreType(WheelPosition pos) const
+  {
+    return tyres_.at(pos).getType();
   }
 
   void Vehicle::setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning)
