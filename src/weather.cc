@@ -14,28 +14,19 @@ namespace boink
       btScalar cloundiness, 
       btScalar temperature_celsius, 
       btScalar rain_indensity)
-    :gui_(std::make_shared<WeatherGui>())
+    :gui_(std::make_shared<WeatherGui>(this))
   {
     this->setTemperatureCelcius(temperature_celsius);
     this->setCloudiness(cloundiness);
     this->setRainIndensity(rain_indensity);
-
-    gui_->cloudiness=&cloudiness_;
-    gui_->rain_indensity=&rain_indensity_;
-    gui_->temperature_celsius=&temperature_celsius_;
-    gui_->wetness=&wetness_;
   }
 
   Weather::Weather(const Weather& other)
     : cloudiness_(other.cloudiness_),
       temperature_celsius_(other.temperature_celsius_),
       rain_indensity_(other.rain_indensity_),
-      gui_(std::make_shared<WeatherGui>())
+      gui_(std::make_shared<WeatherGui>(this))
   {
-    gui_->cloudiness=&cloudiness_;
-    gui_->rain_indensity=&rain_indensity_;
-    gui_->temperature_celsius=&temperature_celsius_;
-    gui_->wetness=&wetness_;
   }
 
   void Weather::setCloudiness(btScalar target, btScalar transition_time)

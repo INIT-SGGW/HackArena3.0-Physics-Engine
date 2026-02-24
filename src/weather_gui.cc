@@ -7,14 +7,18 @@
 
 namespace boink
 {
+  WeatherGui::WeatherGui(Weather* p_weather)
+    :p_weather_(p_weather)
+  {}
+
   void WeatherGui::draw()
   {
     SliderValue temperature_celsius_target_=
-      SliderValue(temperature_celsius->getTarget());
+      SliderValue(p_weather_->temperature_celsius_.getTarget());
     SliderValue cloudiness_target_=
-      SliderValue(cloudiness->getTarget());
+      SliderValue(p_weather_->cloudiness_.getTarget());
     SliderValue rain_indensity_target_=
-      SliderValue(rain_indensity->getTarget());
+      SliderValue(p_weather_->rain_indensity_.getTarget());
 
     ImGui::Text("Weather tuning");
     ImGui::SliderFloat("Sun factor const",&Weather::s_kSunFactorConstant,0,1);
@@ -25,23 +29,26 @@ namespace boink
 
     ImGui::SliderFloat(
         "Transition duration [s]",&transition_duration_,0,60);
-    ImGui::Text("Temperature: %.2f [C]",temperature_celsius->getCurrent());
+    ImGui::Text("Temperature: %.2f [C]",
+        p_weather_->temperature_celsius_.getCurrent());
     ImGui::SliderFloat("Temperature [C]",&temperature_celsius_target_.get(),1,40);
-    ImGui::Text("Cloudiness: %.2f",cloudiness->getCurrent());
+    ImGui::Text("Cloudiness: %.2f",
+        p_weather_->cloudiness_.getCurrent());
     ImGui::SliderFloat("Cloudiness",&cloudiness_target_.get(),0,1);
-    ImGui::Text("Rain indensity: %.2f",rain_indensity->getCurrent());
+    ImGui::Text("Rain indensity: %.2f",
+        p_weather_->rain_indensity_.getCurrent());
     ImGui::SliderFloat("Rain indensity",&rain_indensity_target_.get(),0,1);
 
-    ImGui::Text("Ground wetness: %.2f",*wetness);
+    ImGui::Text("Ground wetness: %.2f",p_weather_->wetness_);
 
     if(temperature_celsius_target_.hasChanged())
-      temperature_celsius->setTarget(
+      p_weather_->temperature_celsius_.setTarget(
           temperature_celsius_target_.get(),transition_duration_);
     if(rain_indensity_target_.hasChanged())
-      rain_indensity->setTarget(
+      p_weather_->rain_indensity_.setTarget(
           rain_indensity_target_.get(),transition_duration_);
     if(cloudiness_target_.hasChanged())
-      cloudiness->setTarget(
+      p_weather_->cloudiness_.setTarget(
           cloudiness_target_.get(),transition_duration_);
   }
 }

@@ -4,7 +4,6 @@
 #include <piksel/gui_object.hh>
 
 #include "boink/simulators/simulator.h"
-//#include "boink/gui/weather_gui.h"
 #include "boink/smoothed_value.h"
 
 namespace boink
