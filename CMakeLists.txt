@@ -93,7 +93,7 @@ target_sources(boink
     src/exception.cc
     src/custom_raycast_vehicle.cc
     src/ground.cc
-    src/centerline.cc
+    src/line.cc
     src/race.cc
     src/debugger.cc
     src/renderer.cc

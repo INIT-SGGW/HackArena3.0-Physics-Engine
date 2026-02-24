@@ -3,6 +3,7 @@
 #include "boink/exception.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 namespace boink
 {
@@ -45,7 +46,7 @@ namespace boink
     while(unused_indices.size()>0)
     {
       size_t prev_i=sorted_indices[sorted_indices.size()-1];
-      size_t curr_i=this->getSecondClosestIndex(this->getPoint(prev_i)).first;
+      size_t curr_i=this->getIthClosestIndex(this->getPoint(prev_i),2).first;
       size_t ith=3;
       while(std::find(
             unused_indices.begin(),unused_indices.end(),curr_i)==unused_indices.end())
@@ -62,15 +63,30 @@ namespace boink
     assert(sorted_indices.size()==points_dist_.size());
     assert(sorted_indices.size()==points.size());
 
+    std::unordered_set<size_t> seen;
     btScalar length=0.0;
     size_t prev_index=sorted_indices[0];
     for(size_t i=0;i<sorted_indices.size();i++)
     {
       size_t index=sorted_indices[i];
-      length+=(points[index]-points[prev_index]).length();
-      points_dist_[i]={points[index],length};
+      if(seen.insert(index).second){
+        length+=(points[index]-points[prev_index]).length();
 
-      prev_index=index;
+        assert(length>1e-6 || i==0);
+        points_dist_[i]={points[index],length};
+        prev_index=index;
+      }
+    }
+    
+    // Delete duplicated entries in point_dist_
+    // they are sorted so we look for entries that are next to each other
+    for(auto it=points_dist_.begin();it+1!=points_dist_.end();)
+    {
+      auto it2=it+1;
+      if(btFabs(it->second-it2->second)<1e-8)
+        it=points_dist_.erase(it);
+      else
+        it++;
     }
   }
 
@@ -82,7 +98,7 @@ namespace boink
   btScalar Line::getCoverage(const btVector3& point) const
   {
     size_t closest_i=this->getClosestIndex(point).first;
-    size_t sec_closest_i=this->getSecondClosestIndex(point).first;
+    size_t sec_closest_i=this->getIthClosestIndex(point,2).first;
 
     size_t first_i;
     size_t second_i;
@@ -133,32 +149,6 @@ namespace boink
     }
 
     return {closest_i,btSqrt(closest_dist2)};
-  }
-
-  std::pair<size_t,btScalar> Line::getSecondClosestIndex(
-      const btVector3& point) const
-  {
-    const size_t closest_i=this->getClosestIndex(point).first;
-
-    // Now we ignore this index and do the same
-    // 0 also can be the second closest one
-    size_t sec_closest_i=closest_i!=0?0:1;
-    btScalar sec_closest_dist2=(points_dist_[sec_closest_i].first-point).length2();
-    for(size_t i=1;i<points_dist_.size();i++)
-    {
-      // if index is the closest one then we ignore
-      if(i==closest_i)
-        continue;
-
-      btScalar curr_len2=(points_dist_[i].first-point).length2();
-      if(curr_len2<sec_closest_dist2)
-      {
-        sec_closest_dist2=curr_len2;
-        sec_closest_i=i;
-      }
-    }
-
-    return {sec_closest_i,btSqrt(sec_closest_dist2)};
   }
 
   std::pair<size_t,btScalar> Line::getIthClosestIndex(

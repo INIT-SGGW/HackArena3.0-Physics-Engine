@@ -6,6 +6,7 @@
 
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
+#include "boink/utility.h"
 
 #include <memory>
 #include <vector>
@@ -24,6 +25,7 @@ namespace boink
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
     this->createCenterline(extractor);
+    this->createRightline(extractor);
 
     gui_->pos=&this->getWorldTransform().getOrigin();
     gui_->filename=this->getFilename().data();
@@ -47,8 +49,6 @@ namespace boink
 
     for(const auto& node : nodes)
     {
-      if(node.name!=TRACK_NAME)
-        continue;
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
         continue;
 
@@ -92,6 +92,67 @@ namespace boink
         line_vertices[line_indices[line_indices.size()-1]]);
     
     centerline_=Line(std::move(points));
+  }
+
+  void Track::createRightline(const GltfExtractor& extractor)
+  {
+    const auto& node=extractor.getNode(TRACK_NAME);
+    const btVector3 up_dir={0.f,1.f,0.f};
+    std::vector<btVector3> points;
+    points.reserve(centerline_.getPointsSize());
+    
+    btVector3 first_point=centerline_.getPoint(0);
+    btVector3 second_point=centerline_.getPoint(0+1);
+    btVector3 track_dir=second_point-first_point;
+    track_dir.normalize();
+
+    // We look for the closet point to centerline ith point which is not
+    // colinear to track_dir
+    btVector3 not_colinear=track_dir;
+    for(
+        size_t j=1;
+        areColinear(not_colinear,track_dir,1e-2);
+        j++)
+    {
+      size_t index=getIthClosestIndex(node.vertices,first_point,j);
+      not_colinear=node.vertices[index]-first_point;
+    }
+
+    // Now create orthonormal base
+    // we know that not_colinear will be in plane of track
+    btScalar in_track_dir=not_colinear.dot(track_dir);
+    
+    btVector3 right_dir=not_colinear-track_dir*in_track_dir;
+    right_dir.normalize();
+
+    // IMPORTANT
+    // up_dir is not normal to track plane
+    
+    // check if it is right or left
+    if(right_dir.cross(track_dir).dot(up_dir)<0.f)
+      right_dir*=-1.f;
+
+    btVector3 normal_dir=right_dir.cross(track_dir);
+    normal_dir.normalize();
+    btAssert(normal_dir.dot(up_dir)>0.f);
+
+    ///// Orthonormal base
+    /// track_dir
+    /// right_dir
+    /// normal_dir
+
+    // TODO
+    // We have orhonormal basis the only thing left is
+    // to move center line by right_dir * sth
+    // and check to ceratin limit lets say 100 meters
+    // which shift gave the most hits
+    // or we simply load left line and right line and
+    // then get one closest point which dot product
+    // with track_dir is positve and closest one which dot
+    // is negative we interpolate and then measure dist
+    // to this line and we have right width
+    // left symetrically
+
   }
 
   void Track::update(btScalar dt)

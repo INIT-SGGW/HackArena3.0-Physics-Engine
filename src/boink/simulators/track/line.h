@@ -3,6 +3,7 @@
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 
+#include <utility>
 #include <vector>
 
 namespace boink
@@ -17,9 +18,8 @@ namespace boink
     btScalar getLength() const;
     btScalar getCoverage(const btVector3& point) const;
     const auto& getPointsAndDist() const{return points_dist_;}
-  private:
+
     std::pair<size_t,btScalar> getClosestIndex(const btVector3& point) const;
-    std::pair<size_t,btScalar> getSecondClosestIndex(const btVector3& point) const;
     std::pair<size_t,btScalar> getIthClosestIndex(
         const btVector3& point, size_t ith) const;
 

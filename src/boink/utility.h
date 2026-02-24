@@ -10,6 +10,7 @@
 #include <glm/vec3.hpp>
 
 #include <utility>
+#include <vector>
 
 namespace boink
 {
@@ -23,4 +24,9 @@ namespace boink
 
   std::tuple<glm::mat4,glm::mat4,glm::mat4> 
   decomposeMatrix(const glm::mat4& transform);
+
+  bool areColinear(
+      const btVector3& a, const btVector3& b, btScalar epsilon=1e-6);
+  size_t getIthClosestIndex(const std::vector<btVector3>& vec,
+      const btVector3& point,size_t ith);
 }

@@ -39,6 +39,7 @@ namespace boink
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
     void createCenterline(const GltfExtractor& extractor);
+    void createRightline(const GltfExtractor& extractor);
   private:
     static constexpr std::string_view TRACK_NAME="Sideroad";
     static constexpr std::string_view CENTERLINE_NAME="Centerline";
@@ -52,6 +53,7 @@ namespace boink
     Ground::SurfaceInfo s_kAsphaltSuraface_; 
 
     Line centerline_;
+    Line rightline_;
     btTransform transform_=btTransform::getIdentity();
     std::string_view filename_;
 
