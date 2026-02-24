@@ -9,6 +9,8 @@
 
 #include <LinearMath/btDefaultMotionState.h>
 
+#include "boink/gui/vehicle_gui.h"
+
 #include <memory>
 #include <cassert>
 
@@ -27,7 +29,7 @@ namespace boink
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
-      gui_(std::make_shared<VehicleGui>())
+      gui_(std::make_shared<VehicleGui>(this))
   {
     this->correctCOM();
     collision_shape_=createCollisonShape(
@@ -116,8 +118,6 @@ namespace boink
     );
 
     this->setTuning(tuning_);
-    
-    gui_->tunning=&tuning_;
   }
 
   Vehicle::~Vehicle() noexcept
@@ -169,28 +169,11 @@ namespace boink
     if(renderer==nullptr)
       return;
 
-    this->updateGui();
   }
 
-  void Vehicle::updateGui()
+  std::shared_ptr<piksel::GuiObject> Vehicle::getGui()
   {
-    const auto& com=this->getCenterOfMassCS();
-    gui_->center_of_mass_cs[0]=com.getX();
-    gui_->center_of_mass_cs[1]=com.getY();
-    gui_->center_of_mass_cs[2]=com.getZ();
-
-    btTransform chassis_transform=this->getChassisWorldTransform();
-    const auto& chassis_pos=chassis_transform.getOrigin();
-    gui_->chassis_position[0]=chassis_pos.getX();
-    gui_->chassis_position[1]=chassis_pos.getY();
-    gui_->chassis_position[2]=chassis_pos.getZ();
-
-    gui_->curr_lap_coverage=this->getCurrentLapDistanceCovered();
-    gui_->laps_completed=this->getLapsCompleted();
-    gui_->mass=this->getMass();
-    gui_->speed=this->getSpeed();
-
-    this->setTuning(tuning_);
+    return gui_;
   }
 
   void Vehicle::setPosition(const btVector3& position)

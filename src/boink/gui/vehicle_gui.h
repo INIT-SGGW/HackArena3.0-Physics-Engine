@@ -6,20 +6,14 @@
 
 namespace boink
 {
+  class Vehicle;
   class VehicleGui : public piksel::GuiObject
   {
   public:
+    VehicleGui(Vehicle* p_vehicle);
     std::string_view getTitle() const override { return "Vehicle";}
     void draw() override;
   public:
-    btRaycastVehicle::btVehicleTuning* tunning=nullptr;
-
-    int laps_completed;
-    float curr_lap_coverage;
-    float chassis_position[3];
-
-    float mass;
-    float speed;
-    float center_of_mass_cs[3];
+    Vehicle* p_vehicle_=nullptr;
   };
 }

@@ -13,14 +13,15 @@
 #include "boink/simulators/vehicle/vehicle_mesh.h"
 #include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
-#include "boink/gui/vehicle_gui.h"
 
 #include <memory>
 
 namespace boink
 {
+  class VehicleGui;
   class Vehicle : public Simulator
   {
+    friend class VehicleGui;
   public:
     struct CreationInfo
     {
@@ -53,7 +54,7 @@ namespace boink
 
     void update(btScalar dt) override;
     void updateRender(Renderer* renderer) override;
-    std::shared_ptr<piksel::GuiObject> getGui() override{return gui_;}
+    std::shared_ptr<piksel::GuiObject> getGui() override;
 
     void setPosition(const btVector3& position);
 
@@ -85,7 +86,6 @@ namespace boink
         const btVector3& center_of_mass);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
-    void updateGui();
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
