@@ -14,6 +14,9 @@ namespace boink
     std::string_view getTitle() const override { return "Vehicle";}
     void draw() override;
   public:
+    bool mesh_enabled=true;
+    bool collider_enabled=true;
+  private:
     Vehicle* p_vehicle_=nullptr;
   };
 }

@@ -18,6 +18,8 @@ namespace boink
 
     btRaycastVehicle::btVehicleTuning* tunning=&p_vehicle_->tuning_;
 
+    ImGui::Checkbox("Mesh enabled",&mesh_enabled);
+    ImGui::Checkbox("Collider enabled",&collider_enabled);
     ImGui::SliderFloat(
         "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
     ImGui::SliderFloat(

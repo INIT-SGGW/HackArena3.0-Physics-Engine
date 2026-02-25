@@ -186,7 +186,10 @@ namespace boink
     if(renderer==nullptr)
       return;
 
-    if(gui_)
+    if(!gui_)
+      return;
+
+    if(gui_->mesh_enabled)
     {
       auto chassis_obj=std::make_shared<piksel::Object>(
           mesh_->getChassisPikselMesh(),
@@ -203,6 +206,20 @@ namespace boink
         renderer->addDrawable(wheel_obj);
       }
     }
+
+    if(!gui_->collider_enabled)
+    {
+      rigidbody_->setCollisionFlags(
+          rigidbody_->getCollisionFlags() |
+          btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+    }
+    else
+    {
+      rigidbody_->setCollisionFlags(
+          rigidbody_->getCollisionFlags() &
+          ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+    }
+    vehicle_->enableDraw(gui_->collider_enabled);
   }
 
   std::shared_ptr<piksel::GuiObject> Vehicle::getGui()

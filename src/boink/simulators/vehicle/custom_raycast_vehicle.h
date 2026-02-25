@@ -31,6 +31,11 @@ namespace boink
     {
       return wheel_speeds_.at(pos);
     }
+
+    void enableDraw(bool enable=true)
+    {
+      draw_enable=enable;
+    }
   private:
     void updateWheels(btScalar step);
     void applyAerodynamics();
@@ -47,5 +52,7 @@ namespace boink
       {WheelPosition::RearLeft,0.f},
       {WheelPosition::RearRight,0.f},
     };
+
+    bool draw_enable=true;
   };
 }

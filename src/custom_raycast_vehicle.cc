@@ -86,6 +86,8 @@ namespace boink
 
   void CustomRaycastVehicle::debugDraw(btIDebugDraw* dbg)
   {
+    if(!draw_enable)
+      return;
     //btRaycastVehicle::debugDraw(dbg);
     for (int v = 0; v < this->getNumWheels(); v++)
     {
