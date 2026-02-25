@@ -58,7 +58,7 @@ namespace boink
         2  // forward (Z)
     );
 
-    world_->addVehicle(vehicle_.get());
+    world_->addAction(vehicle_.get());
 
     btVector3 wheel_direction_cs0(0, -1, 0);
     btVector3 wheel_axle_cs(-1, 0, 0);
@@ -134,7 +134,7 @@ namespace boink
   {
     if(vehicle_)
     {
-      world_->removeVehicle(vehicle_.get());
+      world_->removeAction(vehicle_.get());
     }
     
     if(rigidbody_)
