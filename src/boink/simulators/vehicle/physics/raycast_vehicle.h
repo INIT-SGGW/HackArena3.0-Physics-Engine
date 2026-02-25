@@ -53,7 +53,9 @@ namespace boink
 
     virtual void updateAction(
         btCollisionWorld* collisionWorld, btScalar step);
+
     void debugDraw(btIDebugDraw* debugDrawer);
+    void enableDraw(bool enable=true){m_drawEnable=enable;}
 
     const btTransform& getChassisWorldTransform() const;
     const btTransform& getWheelTransformWS(int wheelIndex) const;
@@ -109,6 +111,9 @@ namespace boink
     void setUserConstraintId(int uid){m_userConstraintId = uid;}
     int getUserConstraintId() const {return m_userConstraintId;}
   private:
+    void applyAerodynamics(btScalar step);
+    void updateFrictionBasedOnSurface(btScalar step);
+  private:
     btAlignedObjectArray<btVector3> m_forwardWS;
     btAlignedObjectArray<btVector3> m_axle;
     btAlignedObjectArray<btScalar> m_forwardImpulse;
@@ -128,5 +133,7 @@ namespace boink
     int m_indexForwardAxis;
 
     btAlignedObjectArray<WheelInfo> m_wheelInfo;
+
+    bool m_drawEnable=true;
   };
 }

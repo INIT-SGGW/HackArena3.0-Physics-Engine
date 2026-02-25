@@ -8,7 +8,6 @@
 
 #include <piksel/object.hh>
 
-#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/gui/vehicle_gui.h"
@@ -48,8 +47,8 @@ namespace boink
     rigidbody_->setCcdMotionThreshold(1.0);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
-    vehicle_=std::unique_ptr<CustomRaycastVehicle>(
-        new CustomRaycastVehicle(rigidbody_.get(), raycaster_.get())
+    vehicle_=std::unique_ptr<RaycastVehicle>(
+        new RaycastVehicle(rigidbody_.get(), raycaster_.get())
     );
 
     vehicle_->setCoordinateSystem(
@@ -262,7 +261,7 @@ namespace boink
 
   btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
   {
-    return vehicle_->getWheelAngularSpeed(wheel_pos);
+    return vehicle_->getWheelInfo((int)wheel_pos).m_wheelAngularSpeed;
   }
 
   const btTransform& Vehicle::getCenterOfMassTransform() const
@@ -295,7 +294,7 @@ namespace boink
     return tyres_.at(pos).getType();
   }
 
-  void Vehicle::setTuning(const CustomRaycastVehicle::VehicleTuning& tuning)
+  void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
   {
     assert(vehicle_->getNumWheels()==4);
     tuning_=tuning;
@@ -317,7 +316,7 @@ namespace boink
     }
   }
 
-  const CustomRaycastVehicle::VehicleTuning& Vehicle::getTuning() const
+  const RaycastVehicle::VehicleTuning& Vehicle::getTuning() const
   {
     assert(vehicle_->getNumWheels()==4);
     return tuning_;

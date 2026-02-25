@@ -76,6 +76,7 @@ namespace boink
     btScalar m_wheelsRadius;              //const
     btScalar m_rotation;
     btScalar m_deltaRotation;
+    btScalar m_wheelAngularSpeed;
 
     btScalar m_frictionSlip;
     btScalar m_rollInfluence;

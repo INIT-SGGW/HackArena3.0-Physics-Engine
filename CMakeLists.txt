@@ -91,7 +91,6 @@ target_sources(boink
     src/vehicle_mesh.cc
     src/gltf_extractor.cc
     src/exception.cc
-    src/custom_raycast_vehicle.cc
     src/ground.cc
     src/line.cc
     src/race.cc

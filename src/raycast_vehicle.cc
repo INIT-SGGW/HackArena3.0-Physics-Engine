@@ -26,6 +26,7 @@
 
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
+#include "boink/simulators/track/ground.h"
 
 #define ROLLING_INFLUENCE_FIX
 
@@ -133,7 +134,11 @@ namespace boink
 
       //damping of rotation when not in contact
       wheel.m_deltaRotation *= btScalar(0.99);  
+
+      wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
     }
+
+    applyAerodynamics(step);
   }
 
   const btTransform& RaycastVehicle::getChassisWorldTransform() const
@@ -308,9 +313,7 @@ namespace boink
 
     btAssert(m_vehicleRaycaster);
 
-    void* object = m_vehicleRaycaster->castRay(source, target, rayResults);
-
-    wheel.m_raycastInfo.m_groundObject = 0;
+    btRigidBody* object = m_vehicleRaycaster->castRay(source, target, rayResults);
 
     if (object)
     {
@@ -319,8 +322,10 @@ namespace boink
       wheel.m_raycastInfo.m_contactNormalWS = rayResults.m_hitNormalInWorld;
       wheel.m_raycastInfo.m_isInContact = true;
 
-      wheel.m_raycastInfo.m_groundObject = &getFixedBody();  
-      //wheel.m_raycastInfo.m_groundObject = object;
+      if(object->isStaticObject())
+        wheel.m_raycastInfo.m_groundObject = object;
+      else
+        wheel.m_raycastInfo.m_groundObject = &getFixedBody();  
 
       btScalar hitDistance = param * raylen;
       wheel.m_raycastInfo.m_suspensionLength = 
@@ -514,6 +519,8 @@ namespace boink
   btScalar sideFrictionStiffness2 = btScalar(1.0);
   void RaycastVehicle::updateFriction(btScalar timeStep)
   {
+    updateFrictionBasedOnSurface(timeStep);
+
     //calculate the impulse, so that the wheels don't move sidewards
     int numWheel = getNumWheels();
     if (!numWheel)
@@ -709,6 +716,7 @@ namespace boink
         }
       }
     }
+
   }
    
   btVector3 RaycastVehicle::getForwardVector() const
@@ -733,6 +741,9 @@ namespace boink
 
   void RaycastVehicle::debugDraw(btIDebugDraw* debugDrawer)
   {
+    if(!m_drawEnable)
+      return;
+
     for (int v = 0; v < this->getNumWheels(); v++)
     {
       btVector3 wheelColor(0, 1, 1);
@@ -752,6 +763,70 @@ namespace boink
           wheelPosWS, 
           getWheelInfo(v).m_raycastInfo.m_contactPointWS, 
           wheelColor);
+      // Draw suspension
+      debugDrawer->drawLine(
+          wheelPosWS,
+          getWheelInfo(v).m_raycastInfo.m_hardPointWS,
+          {1,0,0});
+    }
+  }
+
+  void RaycastVehicle::applyAerodynamics(btScalar step)
+  {
+    (void)step;
+
+    auto rigidbody=this->getRigidBody();
+    const btVector3& velocity=rigidbody->getLinearVelocity();
+    const btScalar speed=velocity.length();
+
+    if(speed < 0.1)
+      return;
+
+    btVector3 vel_dir=velocity/speed;
+
+    constexpr btScalar kAirDensity=1.225f;
+    constexpr btScalar kAirDragCoef= 1.f;
+    constexpr btScalar kFrontalArea= 1.4f;
+
+    btVector3 air_drag_force= 
+      -0.5f*kAirDragCoef*kFrontalArea*kAirDensity*
+      speed*speed*vel_dir;
+
+    constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5f;
+
+    btVector3 down_dir=-rigidbody->getWorldTransform().getBasis().getColumn(1);
+
+    assert(down_dir.length()<1.01&&down_dir.length()>0.99);
+
+    btVector3 air_down_force=
+      0.5f*kAirLiftCoef*kFrontalArea*kAirDensity*
+      speed*speed*down_dir;
+
+    rigidbody->applyCentralForce(air_drag_force+air_down_force);
+  }
+
+  void RaycastVehicle::updateFrictionBasedOnSurface(btScalar step)
+  {
+    (void)step;
+    // WARNING
+    // Unsafe access sometimes via nullptr
+    for(int i=0;i<this->getNumWheels();i++)
+    {
+      WheelInfo& wheel=this->getWheelInfo(i);
+      VehicleRaycaster::VehicleRaycasterResult result;
+      btRigidBody* p_ground=wheel.m_raycastInfo.m_groundObject;
+
+      if(!p_ground)
+        return;
+
+      if(!p_ground->isStaticObject())
+        return;
+      
+      // Here it might be unsave
+      Ground::SurfaceInfo& surface_info=
+        *(Ground::SurfaceInfo*)(p_ground->getUserPointer());
+
+      wheel.m_rollInfluence=surface_info.rolling_resistance;
     }
   }
 }
