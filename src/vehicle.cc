@@ -1,12 +1,18 @@
-#include "boink/simulation/vehicle.h"
-#include "boink/simulation/custom_raycast_vehicle.h"
-#include "boink/simulation/wheel_position.h"
+#include "boink/simulators/vehicle/vehicle.h"
+#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/gui/vehicle_gui.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 
 #include <LinearMath/btDefaultMotionState.h>
+
+#include <piksel/object.hh>
+
+#include "boink/gui/vehicle_gui.h"
+#include <boink/utility.h>
 
 #include <memory>
 #include <cassert>
@@ -15,16 +21,20 @@ namespace boink
 {
   Vehicle::Vehicle(
       const CreationInfo& create_info,
+      std::shared_ptr<const Track> track,
       std::shared_ptr<btDynamicsWorld> world)
     :
       mesh_(create_info.mesh),
       world_(world),
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
       raycaster_(new btDefaultVehicleRaycaster(world_.get())),
+      track_(track),
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
-      tuning_(create_info.tuning)
+      tuning_(create_info.tuning),
+      gui_(std::make_shared<VehicleGui>(this))
   {
+    this->correctCOM();
     collision_shape_=createCollisonShape(
         mesh_->getChassis().vertices,
         center_of_mass_);
@@ -48,7 +58,7 @@ namespace boink
         2  // forward (Z)
     );
 
-    world_->addVehicle(vehicle_.get());
+    world_->addAction(vehicle_.get());
 
     btVector3 wheel_direction_cs0(0, -1, 0);
     btVector3 wheel_axle_cs(-1, 0, 0);
@@ -110,7 +120,13 @@ namespace boink
         is_front_wheel
     );
 
-    // just to be sure it isnt probably needed
+    // TODO
+    for(int i=0;i<(int)WheelPosition::Count;i++)
+    {
+      WheelPosition pos=(WheelPosition)i;
+      tyres_.emplace(pos,Tyre(Tyre::Type::Hard,0.0005f));
+    }
+
     this->setTuning(tuning_);
   }
 
@@ -118,7 +134,7 @@ namespace boink
   {
     if(vehicle_)
     {
-      world_->removeVehicle(vehicle_.get());
+      world_->removeAction(vehicle_.get());
     }
     
     if(rigidbody_)
@@ -133,25 +149,87 @@ namespace boink
     }
   }
 
+  void Vehicle::update(btScalar dt)
+  {
+    (void)dt;
+    btScalar track_length=track_->getCenterline().getLength();
+
+    int curr_laps_completed=this->getLapsCompleted();
+
+    const btVector3 vehicle_pos=this->getWorldTransform().getOrigin();
+    btScalar prev_coverage=this->getCurrentLapDistanceCovered();
+    btScalar curr_coverage=track_->getCenterline().getCoverage(vehicle_pos);
+
+    btScalar v=curr_coverage-prev_coverage;
+    if(btFabs(v)>track_length/2.)
+    {
+      // Means that finish line was crossed
+      if(v>0)
+        curr_laps_completed--;
+      else
+        curr_laps_completed++;
+    }
+
+    laps_completed_=curr_laps_completed;
+    curr_lap_dist_point_=curr_coverage;
+
+    // TODO make it smarter
+    for(int i=0;i<(int)WheelPosition::Count;i++)
+    {
+      WheelPosition pos=(WheelPosition)i;
+      tyres_.at(pos).update(dt);
+    }
+  }
+
+  void Vehicle::updateRender(Renderer* renderer)
+  {
+    if(renderer==nullptr)
+      return;
+
+    if(!gui_)
+      return;
+
+    if(gui_->mesh_enabled)
+    {
+      auto chassis_obj=std::make_shared<piksel::Object>(
+          mesh_->getChassisPikselMesh(),
+          bt2glm(this->getChassisWorldTransform()));
+      renderer->addDrawable(chassis_obj);
+
+      for(int i=0;i<(int)WheelPosition::Count;i++)
+      {
+        WheelPosition pos=(WheelPosition)i;
+
+        auto wheel_obj=std::make_shared<piksel::Object>(
+            mesh_->getWheelPikselMesh(pos),
+            bt2glm(this->getWheelWorldTransform(pos)));
+        renderer->addDrawable(wheel_obj);
+      }
+    }
+
+    if(!gui_->collider_enabled)
+    {
+      rigidbody_->setCollisionFlags(
+          rigidbody_->getCollisionFlags() |
+          btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+    }
+    else
+    {
+      rigidbody_->setCollisionFlags(
+          rigidbody_->getCollisionFlags() &
+          ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+    }
+    vehicle_->enableDraw(gui_->collider_enabled);
+  }
+
+  std::shared_ptr<piksel::GuiObject> Vehicle::getGui()
+  {
+    return gui_;
+  }
+
   void Vehicle::setPosition(const btVector3& position)
   {
     rigidbody_->getWorldTransform().setOrigin(position);
-  }
-
-  void Vehicle::setTrackPosition(int laps_completed, btScalar curr_lap_dist_cov)
-  {
-    laps_completed_=laps_completed;
-    curr_lap_dist_point_=curr_lap_dist_cov;
-  }
-
-  int Vehicle::getLapsCompleted() const
-  {
-    return laps_completed_;
-  }
-
-  btScalar Vehicle::getCurrentLapDistanceCovered() const
-  {
-    return curr_lap_dist_point_;
   }
 
   btTransform Vehicle::getWorldTransform() const
@@ -182,6 +260,11 @@ namespace boink
     return vehicle_->getWheelTransformWS((int)wheel_pos);
   }
 
+  btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
+  {
+    return vehicle_->getWheelAngularSpeed(wheel_pos);
+  }
+
   const btTransform& Vehicle::getCenterOfMassTransform() const
   {
     return rigidbody_->getCenterOfMassTransform();
@@ -202,7 +285,17 @@ namespace boink
     return center_of_mass_;
   }
 
-  void Vehicle::setTuning(const btRaycastVehicle::btVehicleTuning& tuning)
+  btScalar Vehicle::getTyreHealth(WheelPosition pos) const
+  {
+    return tyres_.at(pos).getHealth();
+  }
+
+  Tyre::Type Vehicle::getTyreType(WheelPosition pos) const
+  {
+    return tyres_.at(pos).getType();
+  }
+
+  void Vehicle::setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning)
   {
     assert(vehicle_->getNumWheels()==4);
     tuning_=tuning;
@@ -222,7 +315,7 @@ namespace boink
     }
   }
 
-  const btRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
+  const CustomRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
   {
     assert(vehicle_->getNumWheels()==4);
     return tuning_;
@@ -244,7 +337,10 @@ namespace boink
   {
     // TODO
     // Make it much smarter
-    force*=500.;
+    force*=5000.;
+    if(force<0.0f)
+      force/=2.f;
+
     vehicle_->applyEngineForce(force,(int)WheelPosition::RearLeft);
     vehicle_->applyEngineForce(force,(int)WheelPosition::RearRight);
   }
@@ -256,6 +352,25 @@ namespace boink
     vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
     vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
     vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
+  }
+
+  void Vehicle::correctCOM()
+  {
+    btVector3 front_left_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin();
+    btVector3 front_right_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin();
+    btVector3 rear_left_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin();
+    btVector3 rear_right_cs=
+      mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin();
+    btVector3 mid_front=front_left_cs+(front_right_cs-front_left_cs)/2.f;
+    btVector3 mid_rear=rear_left_cs+(rear_right_cs-rear_left_cs)/2.f;
+
+    btVector3 mid_point=mid_rear+(mid_front-mid_rear)/2.f;
+    mid_point.setY(0.f);
+
+    center_of_mass_+=mid_point;
   }
 
   std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(

@@ -58,6 +58,8 @@ namespace boink
         return "IOError";
       case Type::NotFoundError:
         return "NotFoundError";
+      case Type::InternalError:
+        return "InternalError";
     }
 
     return "";

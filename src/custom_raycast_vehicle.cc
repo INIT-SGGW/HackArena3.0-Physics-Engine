@@ -1,6 +1,10 @@
-#include "boink/simulation/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+#include <BulletDynamics/Vehicle/btWheelInfo.h>
+
+#include "boink/simulators/track/ground.h"
+
 
 #include <cassert>
 
@@ -10,7 +14,8 @@ namespace boink
       const btVehicleTuning& tuning,
       btRigidBody* chassis, 
       btVehicleRaycaster* raycaster )
-    :btRaycastVehicle(tuning,chassis,raycaster)
+    :btRaycastVehicle(tuning,chassis,raycaster),
+    p_raycaster_(raycaster)
   {
   }
 
@@ -27,13 +32,24 @@ namespace boink
   {
     btRaycastVehicle::updateVehicle(step);
 
+    this->updateWheels(step);
     this->applyAerodynamics();
   }
 
   void CustomRaycastVehicle::updateFriction(btScalar time_step)
   {
+    this->updateWheelsFrictions();
     btRaycastVehicle::updateFriction(time_step);
     (void)time_step;
+  }
+
+  void CustomRaycastVehicle::updateWheels(btScalar step)
+  {
+    for(const auto&[which,speed] : wheel_speeds_)
+    {
+      const auto& wheel_info=this->getWheelInfo((int)which);
+      wheel_speeds_[which]=wheel_info.m_deltaRotation/step;
+    }
   }
 
   void CustomRaycastVehicle::applyAerodynamics()
@@ -70,6 +86,8 @@ namespace boink
 
   void CustomRaycastVehicle::debugDraw(btIDebugDraw* dbg)
   {
+    if(!draw_enable)
+      return;
     //btRaycastVehicle::debugDraw(dbg);
     for (int v = 0; v < this->getNumWheels(); v++)
     {
@@ -98,5 +116,47 @@ namespace boink
           getWheelInfo(v).m_raycastInfo.m_hardPointWS,
           {1,0,0});
     }      
+  }
+
+  void* CustomRaycastVehicle::getGroundObject(
+      btWheelInfo& wheel,
+      btVehicleRaycaster::btVehicleRaycasterResult& out_result)
+  {
+    // TODO
+    // Can be optimized
+    btScalar raylen = wheel.getSuspensionRestLength() + wheel.m_wheelsRadius;
+
+    btVector3 rayvector = wheel.m_raycastInfo.m_wheelDirectionWS * (raylen);
+    const btVector3& source = wheel.m_raycastInfo.m_hardPointWS;
+    btVector3 target = source+rayvector;
+
+    btAssert(p_raycaster_);
+
+    void* object = p_raycaster_->castRay(source, target, out_result);
+    return object;
+  }
+
+  void CustomRaycastVehicle::updateWheelsFrictions()
+  {
+    // WARNING
+    // Unsafe access sometimes via nullptr
+    for(int i=0;i<this->getNumWheels();i++)
+    {
+      btWheelInfo& wheel=this->getWheelInfo(i);
+      btVehicleRaycaster::btVehicleRaycasterResult result;
+      void* p_ground=this->getGroundObject(wheel,result);
+
+      if(!p_ground)
+        return;
+
+      btRigidBody* ground_rb=(btRigidBody*)p_ground;
+      if(!ground_rb->isStaticObject())
+        return;
+      
+      Ground::SurfaceInfo& surface_info=
+        *(Ground::SurfaceInfo*)(ground_rb->getUserPointer());
+
+      wheel.m_rollInfluence=surface_info.rolling_resistance;
+    }
   }
 }

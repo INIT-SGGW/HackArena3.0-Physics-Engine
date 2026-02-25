@@ -23,6 +23,7 @@ int main()
   const char* vehicle_filename="Bolid_F1.glb";
   const char* track_filename = "lowpoly_track_1_test_5.glb";
 #endif
+  int simulation_steps=10;
 
   unsigned int major,minor,patch;
   boink_get_engine_version(&major,&minor,&patch);
@@ -30,7 +31,7 @@ int main()
   boink_get_c_api_version(&major,&minor,&patch);
   printf("C API verision: %d.%d.%d\n",major,minor,patch);
 
-  bool debug_enable=true;
+  bool debug_enable=false;
   int code;
 
   if((code=boink_init(debug_enable))!=BOINK_OK)
@@ -72,23 +73,6 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  uint64_t id1;
-  if((code=boink_spawn_vehicle(handle,&model,&id1))!=BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-
-  if((code=boink_despawn_vehicle(handle,id0))!=BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-  if((code=boink_spawn_vehicle(handle,&model,&id0))!=BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
 
   BoinkVec3 track_pos;
   track_pos.x=5.;
@@ -119,27 +103,25 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  Real prev=boink_get_time_debug();
-  while(!boink_should_close_debug())
-  {
-    Real now=boink_get_time_debug();
-    Real dt=now-prev;
-    prev=now;
 
-    if((code=boink_step_race(handle,dt))!=BOINK_OK)
+  for(int i=0;i<simulation_steps;i++)
+  {
+    
+    for(int j=0;j<10;j++)
     {
-      PRINT_ERROR();
-      goto clear;
+      Real dt=0.1;
+      if((code=boink_step_race(handle,dt))!=BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
     }
 
     BoinkWeather weather_state;
     weather_state.cloudiness=0.5f;
     weather_state.rain_intensity=0.4f;
     weather_state.temperature_c=10.f;
-
-    Real dur;
-    boink_get_race_duration(handle,&dur);
-    if(dur>4.f&&dur<4.6f)
+    if(i==5)
     {
       if((code=boink_set_weather(handle,&weather_state))!=BOINK_OK)
       {
@@ -147,14 +129,22 @@ int main()
         goto clear;
       }
     }
-
     struct BoinkVehicleState state;
     if((code=boink_read_vehicle_state(handle,id0,&state))!=BOINK_OK)
     {
       PRINT_ERROR();
       goto clear;
     }
-    boink_update_debug();
+    Real dur;
+    if((code=boink_get_race_duration(handle,&dur))!=BOINK_OK)
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
+    
+    printf("Simulation duration: %f\n",dur);
+    printVehicleState(&state);
+    printf("\n");
   }
 
   code=0;
@@ -183,4 +173,8 @@ void printVehicleState(const BoinkVehicleState* state)
   printStateReal(state->speed);
   printStateVec3(state->chassis_position);
   printStateQuat(state->vehicle_orientation);
+  printStateReal(state->wheel_speeds[0]);
+  printStateReal(state->wheel_speeds[1]);
+  printStateReal(state->wheel_speeds[2]);
+  printStateReal(state->wheel_speeds[3]);
 }

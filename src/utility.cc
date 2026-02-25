@@ -1,12 +1,15 @@
-#include "boink/utils/utility.h"
+#include "boink/utility.h"
 
 #include <LinearMath/btQuaternion.h>
+#include <LinearMath/btScalar.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_geometric.hpp>
 #include <glm/ext/vector_float3.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+#include <vector>
 
 namespace boink
 {
@@ -96,5 +99,41 @@ namespace boink
     rotation[2]=transform[2]/scale[2][2];
 
     return {translate,rotation,scale};
+  }
+
+  bool areColinear(
+      const btVector3& a, const btVector3& b, btScalar epsilon)
+  {
+    btVector3 cross=a.cross(b);
+    return cross.length2()<epsilon;
+  }
+
+  size_t getIthClosestIndex(const std::vector<btVector3>& vec,
+      const btVector3& point,size_t ith)
+  {
+    btAssert(ith<=vec.size());
+    btAssert(ith>=1);
+
+    std::vector<bool> used(vec.size(),false);
+    size_t i_closest;
+    for(size_t i=0;i<ith;i++)
+    {
+      btScalar i_length2=BT_LARGE_FLOAT;
+      for(size_t j=0;j<vec.size();j++)
+      {
+        if(used[j])
+          continue;
+
+        btScalar length2=(point-vec[j]).length2();
+        if(length2<i_length2)
+        {
+          i_closest=j;
+          i_length2=length2;
+        }
+      }
+      used[i_closest]=true;
+    }
+
+    return i_closest;
   }
 }

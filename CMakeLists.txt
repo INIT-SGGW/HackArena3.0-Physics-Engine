@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 0.3.1)
+project(BoinkEngine VERSION 0.5.3)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -83,7 +83,6 @@ target_sources(boink
   PRIVATE
     src/boink_c_api.cc
   ${BOINK_SOURCES_VISIBILITY}
-    src/debug_drawer.cc
     src/simulation.cc
     src/utility.cc
     src/track.cc
@@ -92,9 +91,24 @@ target_sources(boink
     src/vehicle_mesh.cc
     src/gltf_extractor.cc
     src/exception.cc
-    src/debug_info_gui.cc
     src/custom_raycast_vehicle.cc
     src/ground.cc
+    src/line.cc
+    src/race.cc
+    src/debugger.cc
+    src/renderer.cc
+    src/simulation_gui.cc
+    src/debugger_gui.cc
+    src/race_gui.cc
+    src/track_gui.cc
+    src/vehicle_gui.cc
+    src/camera_controller.cc
+    src/vehicle_contoller.cc
+    src/weather.cc
+    src/weather_gui.cc
+    src/smoothed_value.cc
+    src/surface_info_gui.cc
+    src/tyre.cc
 )
 
 target_include_directories(boink
@@ -110,6 +124,7 @@ include(CTest)
 
 set(TEST_SOURCES_C
   capi_test
+  capi_without_debugger_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
   add_executable(${name} tests/${name}.c)
