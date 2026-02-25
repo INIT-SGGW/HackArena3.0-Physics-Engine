@@ -1,20 +1,17 @@
 #include "boink/simulators/vehicle/custom_raycast_vehicle.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
-#include <BulletDynamics/Vehicle/btWheelInfo.h>
 
 #include "boink/simulators/track/ground.h"
-
 
 #include <cassert>
 
 namespace boink
 {
   CustomRaycastVehicle::CustomRaycastVehicle(
-      const btVehicleTuning& tuning,
       btRigidBody* chassis, 
-      btVehicleRaycaster* raycaster )
-    :btRaycastVehicle(tuning,chassis,raycaster),
+      VehicleRaycaster* raycaster )
+    :RaycastVehicle(chassis,raycaster),
     p_raycaster_(raycaster)
   {
   }
@@ -23,14 +20,7 @@ namespace boink
       btCollisionWorld* collision_world,
       btScalar step)
   {
-    (void)collision_world;
-
-    this->updateVehicle(step);
-  }
-
-  void CustomRaycastVehicle::updateVehicle(btScalar step)
-  {
-    btRaycastVehicle::updateVehicle(step);
+    RaycastVehicle::updateAction(collision_world,step);
 
     this->updateWheels(step);
     this->applyAerodynamics();
@@ -39,7 +29,7 @@ namespace boink
   void CustomRaycastVehicle::updateFriction(btScalar time_step)
   {
     this->updateWheelsFrictions();
-    btRaycastVehicle::updateFriction(time_step);
+    RaycastVehicle::updateFriction(time_step);
     (void)time_step;
   }
 
@@ -119,8 +109,8 @@ namespace boink
   }
 
   void* CustomRaycastVehicle::getGroundObject(
-      btWheelInfo& wheel,
-      btVehicleRaycaster::btVehicleRaycasterResult& out_result)
+      WheelInfo& wheel,
+      VehicleRaycaster::VehicleRaycasterResult& out_result)
   {
     // TODO
     // Can be optimized
@@ -142,8 +132,8 @@ namespace boink
     // Unsafe access sometimes via nullptr
     for(int i=0;i<this->getNumWheels();i++)
     {
-      btWheelInfo& wheel=this->getWheelInfo(i);
-      btVehicleRaycaster::btVehicleRaycasterResult result;
+      WheelInfo& wheel=this->getWheelInfo(i);
+      VehicleRaycaster::VehicleRaycasterResult result;
       void* p_ground=this->getGroundObject(wheel,result);
 
       if(!p_ground)

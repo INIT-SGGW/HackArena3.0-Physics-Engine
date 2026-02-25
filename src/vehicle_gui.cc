@@ -16,7 +16,7 @@ namespace boink
     if(p_vehicle_==nullptr)
       return;
 
-    btRaycastVehicle::btVehicleTuning* tunning=&p_vehicle_->tuning_;
+    RaycastVehicle::VehicleTuning* tunning=&p_vehicle_->tuning_;
 
     ImGui::Checkbox("Mesh enabled",&mesh_enabled);
     ImGui::Checkbox("Collider enabled",&collider_enabled);

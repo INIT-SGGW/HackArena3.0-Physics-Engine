@@ -1,7 +1,4 @@
 #include "boink/simulators/vehicle/vehicle.h"
-#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
-#include "boink/simulators/vehicle/wheel_position.h"
-#include "boink/gui/vehicle_gui.h"
 
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
@@ -11,8 +8,11 @@
 
 #include <piksel/object.hh>
 
+#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/gui/vehicle_gui.h"
-#include <boink/utility.h>
+#include "boink/gui/vehicle_gui.h"
+#include "boink/utility.h"
 
 #include <memory>
 #include <cassert>
@@ -27,7 +27,7 @@ namespace boink
       mesh_(create_info.mesh),
       world_(world),
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
-      raycaster_(new btDefaultVehicleRaycaster(world_.get())),
+      raycaster_(new VehicleRaycaster(world_.get())),
       track_(track),
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
@@ -49,7 +49,7 @@ namespace boink
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
     vehicle_=std::unique_ptr<CustomRaycastVehicle>(
-        new CustomRaycastVehicle(tuning_, rigidbody_.get(), raycaster_.get())
+        new CustomRaycastVehicle(rigidbody_.get(), raycaster_.get())
     );
 
     vehicle_->setCoordinateSystem(
@@ -295,19 +295,21 @@ namespace boink
     return tyres_.at(pos).getType();
   }
 
-  void Vehicle::setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning)
+  void Vehicle::setTuning(const CustomRaycastVehicle::VehicleTuning& tuning)
   {
     assert(vehicle_->getNumWheels()==4);
     tuning_=tuning;
 
     for(int i=0;i<vehicle_->getNumWheels();i++)
     {
-      btWheelInfo& wheel = vehicle_->getWheelInfo(i);
-      wheel.m_suspensionStiffness = tuning_.m_suspensionStiffness;
-      wheel.m_wheelsDampingRelaxation = tuning_.m_suspensionDamping;
-      wheel.m_wheelsDampingCompression = tuning_.m_suspensionCompression;
-      wheel.m_maxSuspensionTravelCm = tuning_.m_maxSuspensionTravelCm;
-      wheel.m_maxSuspensionForce=tuning_.m_maxSuspensionForce;
+      WheelInfo& wheel = vehicle_->getWheelInfo(i);
+      wheel.m_suspensionInfo.m_stiffness = tuning_.m_suspensionStiffness;
+      wheel.m_suspensionInfo.m_wheelsDampingRelaxation = 
+        tuning_.m_suspensionDamping;
+      wheel.m_suspensionInfo.m_wheelsDampingCompression = 
+        tuning_.m_suspensionCompression;
+      wheel.m_suspensionInfo.m_maxTravelCm = tuning_.m_maxSuspensionTravelCm;
+      wheel.m_suspensionInfo.m_maxForce=tuning_.m_maxSuspensionForce;
       wheel.m_frictionSlip=tuning_.m_frictionSlip;
 
       // Some magic number
@@ -315,7 +317,7 @@ namespace boink
     }
   }
 
-  const CustomRaycastVehicle::btVehicleTuning& Vehicle::getTuning() const
+  const CustomRaycastVehicle::VehicleTuning& Vehicle::getTuning() const
   {
     assert(vehicle_->getNumWheels()==4);
     return tuning_;
