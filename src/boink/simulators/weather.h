@@ -41,9 +41,9 @@ namespace boink
   private:
     static btScalar s_kSunFactorConstant;
     static btScalar s_kTempRateConstant;
-    static btScalar s_kDryRateConstant;
+    static btScalar s_kCloundinessRateConstant;
     static btScalar s_kRainAddConstant;
-    static btScalar s_kTimeConstant;
+    static btScalar s_kWetnessSpeedConstant;
   private:
     SmoothedValue cloudiness_;
     SmoothedValue temperature_celsius_;
