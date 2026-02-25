@@ -1,11 +1,14 @@
 #pragma once
 
+#include <piksel/mesh.hh>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
 
 #include <LinearMath/btVector3.h>
 #include <LinearMath/btTransform.h>
+
+#include <piksel/object.hh>
 
 #include "boink/simulators/vehicle/wheel_position.h"
 
@@ -18,6 +21,7 @@ namespace boink
     {
       std::vector<btVector3> vertices;
       std::vector<unsigned int> indices;
+      std::shared_ptr<const piksel::Mesh> piksel_mesh;
 
       btTransform transform;
     };
@@ -26,8 +30,21 @@ namespace boink
 
     const Element& getChassis() const;
     const Element& getWheel(WheelPosition wheel) const;
+    std::shared_ptr<const piksel::Mesh> getChassisPikselMesh() const
+    {
+      return chassis_.piksel_mesh;
+    }
+    std::shared_ptr<const piksel::Mesh> 
+      getWheelPikselMesh(WheelPosition pos) const
+    {
+      return wheels_.at(pos).piksel_mesh;
+    }
 
     btTransform getLocalWheelTransform(WheelPosition wheel) const;
+  private:
+    static std::shared_ptr<piksel::Mesh> createPikselMesh(
+        const std::vector<btVector3>& vertices,
+        const std::vector<unsigned int>& indices);
   private:
     static constexpr std::string_view CHASSIS_NAME="Cylinder.002";
     inline static const std::unordered_map<std::string_view, WheelPosition> 

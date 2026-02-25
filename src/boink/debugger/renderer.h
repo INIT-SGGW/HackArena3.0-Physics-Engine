@@ -2,6 +2,8 @@
 
 #include <LinearMath/btIDebugDraw.h>
 
+#include <memory>
+#include <piksel/IDrawable.hh>
 #include <piksel/graphics.hh>
 #include <piksel/window.hh>
 
@@ -20,6 +22,7 @@ namespace boink
     
     void setDebugMode(int mode) override { debug_mode_ = mode; }
     int getDebugMode() const override { return debug_mode_; }
+    void addDrawable(std::shared_ptr<const piksel::IDrawable> drawable);
 
     void drawLine(
         const btVector3& from,

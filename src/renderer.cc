@@ -44,6 +44,12 @@ namespace boink
         {0.f,0.f,1.f});
   }
 
+  void Renderer::addDrawable(
+      std::shared_ptr<const piksel::IDrawable> drawable)
+  {
+    gfx_.addDrawable(drawable);
+  }
+
   void Renderer::drawLine(
         const btVector3& from,
         const btVector3& to,

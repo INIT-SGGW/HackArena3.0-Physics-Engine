@@ -9,7 +9,10 @@
 
 #include <LinearMath/btDefaultMotionState.h>
 
+#include <piksel/object.hh>
+
 #include "boink/gui/vehicle_gui.h"
+#include <boink/utility.h>
 
 #include <memory>
 #include <cassert>
@@ -183,6 +186,23 @@ namespace boink
     if(renderer==nullptr)
       return;
 
+    if(gui_)
+    {
+      auto chassis_obj=std::make_shared<piksel::Object>(
+          mesh_->getChassisPikselMesh(),
+          bt2glm(this->getChassisWorldTransform()));
+      renderer->addDrawable(chassis_obj);
+
+      for(int i=0;i<(int)WheelPosition::Count;i++)
+      {
+        WheelPosition pos=(WheelPosition)i;
+
+        auto wheel_obj=std::make_shared<piksel::Object>(
+            mesh_->getWheelPikselMesh(pos),
+            bt2glm(this->getWheelWorldTransform(pos)));
+        renderer->addDrawable(wheel_obj);
+      }
+    }
   }
 
   std::shared_ptr<piksel::GuiObject> Vehicle::getGui()
