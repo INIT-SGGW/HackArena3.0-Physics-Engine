@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 
@@ -11,12 +12,14 @@ namespace boink
     :p_vehicle_(p_vehicle)
   {}
 
+  static const char* tyreTypeToStr(WheelInfo::TyreType type);
+  static const char* wheelPosToStr(WheelPosition pos);
   void VehicleGui::draw()
   {
     if(p_vehicle_==nullptr)
       return;
 
-    btRaycastVehicle::btVehicleTuning* tunning=&p_vehicle_->tuning_;
+    RaycastVehicle::VehicleTuning* tunning=&p_vehicle_->tuning_;
 
     ImGui::Checkbox("Mesh enabled",&mesh_enabled);
     ImGui::Checkbox("Collider enabled",&collider_enabled);
@@ -52,9 +55,75 @@ namespace boink
     ImGui::Text("COM in CS: (%.2f,%.2f,%.2f) [m]",
         center_of_mass_cs[0],center_of_mass_cs[1],center_of_mass_cs[2]);
 
-    ImGui::Text("Tyres type: %s",
-        Tyre::toString(p_vehicle_->getTyreType(WheelPosition::FrontLeft)));
-    ImGui::Text("Tyres health: %.2f",
-        p_vehicle_->getTyreHealth(WheelPosition::FrontLeft));
+    ImGui::SliderFloat(
+        "Wear rate soft",&WheelInfo::TyreInfo::s_softWearRatePerMin,0.f,0.1f);
+    ImGui::SliderFloat(
+        "Wear rate hard",&WheelInfo::TyreInfo::s_hardWearRatePerMin,0.f,0.1f);
+    ImGui::SliderFloat(
+        "Wear rate wet",&WheelInfo::TyreInfo::s_wetWearRatePerMin,0.f,0.1f);
+
+    for(int i=0;i<(int)WheelPosition::Count;i++)
+    {
+      WheelPosition pos=(WheelPosition)i;
+
+      std::string wheel_title="Wheel ";
+      wheel_title+=wheelPosToStr(pos);
+      ImGui::PushID(wheel_title.c_str());
+
+      if(ImGui::CollapsingHeader(wheel_title.c_str()))
+        drawWheel(pos);
+
+      ImGui::PopID();
+    }
+  }
+
+  void VehicleGui::drawWheel(WheelPosition pos)
+  {
+    btVector3 pos_v=p_vehicle_->getWheelWorldTransform(pos).getOrigin();
+    ImGui::Text("Position: (%.2f,%.2f,%.2f) [m]",
+        pos_v.getX(),pos_v.getY(),pos_v.getZ());
+    ImGui::Text("Angular speed: %.2f [rad/sec]",
+        p_vehicle_->getWheelAngularSpeed(pos));
+
+    ImGui::Text("Tyre type: %s",
+        tyreTypeToStr(p_vehicle_->getTyreType(pos)));
+    ImGui::Text("Tyre health: %.2f",
+        p_vehicle_->getTyreHealth(pos));
+    ImGui::Text("Tyre temp: %.2f [C]",
+        p_vehicle_->getTyreTempCelsius(pos));
+  }
+
+  const char* tyreTypeToStr(WheelInfo::TyreType type)
+  {
+    switch(type)
+    {
+      case WheelInfo::TyreType::Hard:
+        return "hard";
+      case WheelInfo::TyreType::Soft:
+        return "soft";
+      case WheelInfo::TyreType::Wet:
+        return "wet";
+      default:
+        btAssert(false && "Unknown TyreType");
+        return "unknown";
+    }
+  }
+
+  const char* wheelPosToStr(WheelPosition pos)
+  {
+    switch(pos)
+    {
+      case WheelPosition::FrontLeft:
+        return "Front left";
+      case WheelPosition::FrontRight:
+        return "Front right";
+      case WheelPosition::RearLeft:
+        return "Rear left";
+      case WheelPosition::RearRight:
+        return "Rear right";
+      default:
+        btAssert(false && "Unknown WheelPosition");
+        return "unknown";
+    }
   }
 }

@@ -10,10 +10,10 @@
 
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/track.h"
+#include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle_mesh.h"
-#include "boink/simulators/vehicle/custom_raycast_vehicle.h"
+#include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
-#include "boink/simulators/vehicle/tyre.h"
 
 #include <memory>
 
@@ -32,7 +32,8 @@ namespace boink
       btScalar suspension_rest_length;
       btScalar max_steer_angle;
       btVector3 center_of_mass;
-      CustomRaycastVehicle::btVehicleTuning tuning;
+      RaycastVehicle::VehicleTuning tuning;
+      WheelInfo::TyreType tyre_type;
     };
     
     enum class TurnDirection
@@ -74,10 +75,11 @@ namespace boink
     btVector3 getCenterOfMassCS() const;
 
     btScalar getTyreHealth(WheelPosition pos) const;
-    Tyre::Type getTyreType(WheelPosition pos) const;
+    WheelInfo::TyreType getTyreType(WheelPosition pos) const;
+    btScalar getTyreTempCelsius(WheelPosition pos) const;
 
-    void setTuning(const CustomRaycastVehicle::btVehicleTuning& tuning);
-    const CustomRaycastVehicle::btVehicleTuning& getTuning() const;
+    void setTuning(const RaycastVehicle::VehicleTuning& tuning);
+    const RaycastVehicle::VehicleTuning& getTuning() const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);
@@ -97,18 +99,14 @@ namespace boink
     std::unique_ptr<btCompoundShape> collision_shape_;
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
-    std::unique_ptr<btVehicleRaycaster> raycaster_;
-    std::unique_ptr<CustomRaycastVehicle> vehicle_;
+    std::unique_ptr<VehicleRaycaster> raycaster_;
+    std::unique_ptr<RaycastVehicle> vehicle_;
 
     std::shared_ptr<const Track> track_;
 
-    // TODO
-    // create some kindof wheel object
-    std::unordered_map<WheelPosition,Tyre> tyres_;
-
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;
-    btRaycastVehicle::btVehicleTuning tuning_;
+    RaycastVehicle::VehicleTuning tuning_;
 
     int laps_completed_=0;
     btScalar curr_lap_dist_point_=0;

@@ -91,7 +91,6 @@ target_sources(boink
     src/vehicle_mesh.cc
     src/gltf_extractor.cc
     src/exception.cc
-    src/custom_raycast_vehicle.cc
     src/ground.cc
     src/line.cc
     src/race.cc
@@ -108,7 +107,9 @@ target_sources(boink
     src/weather_gui.cc
     src/smoothed_value.cc
     src/surface_info_gui.cc
-    src/tyre.cc
+    src/vehicle_raycaster.cc
+    src/raycast_vehicle.cc
+    src/wheel_info.cc
 )
 
 target_include_directories(boink
