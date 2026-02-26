@@ -521,7 +521,7 @@ namespace boink
     return j1;
   }
 
-  btScalar sideFrictionStiffness2 = btScalar(1.0);
+  btScalar sideFrictionStiffness2 = btScalar(0.9);
   void RaycastVehicle::updateFriction(btScalar timeStep)
   {
 
@@ -637,6 +637,10 @@ namespace boink
             wheelInfo.m_wheelsSuspensionForce * 
             timeStep * 
             wheelInfo.m_frictionSlip;
+          btScalar hardCap=1500.f;
+          if(maximp>hardCap)
+            maximp=hardCap;
+
           btScalar maximpSide = maximp;
 
           btScalar maximpSquared = maximp * maximpSide;

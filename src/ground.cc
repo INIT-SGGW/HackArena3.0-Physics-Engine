@@ -46,6 +46,7 @@ namespace boink
 		btRigidBody::btRigidBodyConstructionInfo rb_info
       (mass, motion_state_.get(), collision_shape_.get(), local_inertia);
 
+    rb_info.m_friction=1.0f;
     rigidbody_=std::unique_ptr<btRigidBody>(new btRigidBody(rb_info));
 
     rigidbody_->setUserPointer((void*)p_surface_info_);
