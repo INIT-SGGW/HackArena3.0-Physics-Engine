@@ -10,10 +10,10 @@
 
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/track.h"
+#include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle_mesh.h"
 #include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
-#include "boink/simulators/vehicle/tyre.h"
 
 #include <memory>
 
@@ -33,6 +33,7 @@ namespace boink
       btScalar max_steer_angle;
       btVector3 center_of_mass;
       RaycastVehicle::VehicleTuning tuning;
+      WheelInfo::TyreType tyre_type;
     };
     
     enum class TurnDirection
@@ -74,7 +75,7 @@ namespace boink
     btVector3 getCenterOfMassCS() const;
 
     btScalar getTyreHealth(WheelPosition pos) const;
-    Tyre::Type getTyreType(WheelPosition pos) const;
+    WheelInfo::TyreType getTyreType(WheelPosition pos) const;
 
     void setTuning(const RaycastVehicle::VehicleTuning& tuning);
     const RaycastVehicle::VehicleTuning& getTuning() const;
@@ -101,10 +102,6 @@ namespace boink
     std::unique_ptr<RaycastVehicle> vehicle_;
 
     std::shared_ptr<const Track> track_;
-
-    // TODO
-    // create some kindof wheel object
-    std::unordered_map<WheelPosition,Tyre> tyres_;
 
     btVector3 center_of_mass_;
     btScalar max_steer_angle_;

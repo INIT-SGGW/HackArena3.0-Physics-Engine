@@ -227,7 +227,8 @@ namespace boink
       btScalar suspensionRestLength, 
       btScalar wheelRadius, 
       const VehicleTuning& tuning, 
-      bool isFrontWheel)
+      bool isFrontWheel,
+      WheelInfo::TyreType tyreType)
   {
     WheelInfoConstructionInfo ci;
 
@@ -243,6 +244,8 @@ namespace boink
     ci.m_bIsFrontWheel = isFrontWheel;
     ci.m_maxSuspensionTravelCm = tuning.m_maxSuspensionTravelCm;
     ci.m_maxSuspensionForce = tuning.m_maxSuspensionForce;
+
+    ci.m_tyreType=tyreType;
 
     m_wheelInfo.push_back(WheelInfo(ci));
 
@@ -315,6 +318,7 @@ namespace boink
 
     btRigidBody* object = m_vehicleRaycaster->castRay(source, target, rayResults);
 
+    wheel.m_raycastInfo.m_groundObject=0;
     if (object)
     {
       param = rayResults.m_distFraction;
@@ -520,6 +524,7 @@ namespace boink
   void RaycastVehicle::updateFriction(btScalar timeStep)
   {
     updateFrictionBasedOnSurface(timeStep);
+    updateTyres(timeStep);
 
     //calculate the impulse, so that the wheels don't move sidewards
     int numWheel = getNumWheels();
@@ -805,6 +810,20 @@ namespace boink
     rigidbody->applyCentralForce(air_drag_force+air_down_force);
   }
 
+
+  void RaycastVehicle::updateTyres(btScalar step)
+  {
+    for(int i=0;i<this->getNumWheels();i++)
+    {
+      WheelInfo& wheel=getWheelInfo(i);
+      btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
+
+      wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.;
+      if(wheel.m_tyreInfo.m_health<0.f)
+        wheel.m_tyreInfo.m_health=0.f;
+    }
+  }
+
   void RaycastVehicle::updateFrictionBasedOnSurface(btScalar step)
   {
     (void)step;
@@ -817,16 +836,35 @@ namespace boink
       btRigidBody* p_ground=wheel.m_raycastInfo.m_groundObject;
 
       if(!p_ground)
-        return;
+        continue;
 
       if(!p_ground->isStaticObject())
-        return;
+        continue;
+
+      if(!p_ground->getUserPointer())
+        continue;
       
       // Here it might be unsave
       Ground::SurfaceInfo& surface_info=
         *(Ground::SurfaceInfo*)(p_ground->getUserPointer());
 
       wheel.m_rollInfluence=surface_info.rolling_resistance;
+    }
+  }
+
+  btScalar RaycastVehicle::getTyreWearRatePerMin(WheelInfo::TyreType type)
+  {
+    switch(type)
+    {
+      case WheelInfo::TyreType::Hard:
+        return WheelInfo::TyreInfo::s_hardWearRatePerMin;
+      case WheelInfo::TyreType::Soft:
+        return WheelInfo::TyreInfo::s_softWearRatePerMin;
+      case WheelInfo::TyreType::Wet:
+        return WheelInfo::TyreInfo::s_wetWearRatePerMin;
+      default:
+        btAssert(false && "Unknown TyreType");
+        return WheelInfo::TyreInfo::s_softWearRatePerMin;
     }
   }
 }

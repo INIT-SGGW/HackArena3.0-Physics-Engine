@@ -71,7 +71,8 @@ namespace boink
         btScalar suspensionRestLength, 
         btScalar wheelRadius, 
         const VehicleTuning& tuning, 
-        bool isFrontWheel);
+        bool isFrontWheel,
+        WheelInfo::TyreType tyreType);
 
     inline int getNumWheels() const{return int(m_wheelInfo.size());}
     const WheelInfo& getWheelInfo(int index) const;
@@ -112,7 +113,10 @@ namespace boink
     int getUserConstraintId() const {return m_userConstraintId;}
   private:
     void applyAerodynamics(btScalar step);
+    void updateTyres(btScalar step);
     void updateFrictionBasedOnSurface(btScalar step);
+  private:
+    static btScalar getTyreWearRatePerMin(WheelInfo::TyreType type);
   private:
     btAlignedObjectArray<btVector3> m_forwardWS;
     btAlignedObjectArray<btVector3> m_axle;

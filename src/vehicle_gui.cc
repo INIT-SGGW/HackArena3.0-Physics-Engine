@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 
@@ -11,6 +12,7 @@ namespace boink
     :p_vehicle_(p_vehicle)
   {}
 
+  static const char* tyreTypeToStr(WheelInfo::TyreType type);
   void VehicleGui::draw()
   {
     if(p_vehicle_==nullptr)
@@ -53,8 +55,24 @@ namespace boink
         center_of_mass_cs[0],center_of_mass_cs[1],center_of_mass_cs[2]);
 
     ImGui::Text("Tyres type: %s",
-        Tyre::toString(p_vehicle_->getTyreType(WheelPosition::FrontLeft)));
+        tyreTypeToStr(p_vehicle_->getTyreType(WheelPosition::FrontLeft)));
     ImGui::Text("Tyres health: %.2f",
         p_vehicle_->getTyreHealth(WheelPosition::FrontLeft));
+  }
+
+  const char* tyreTypeToStr(WheelInfo::TyreType type)
+  {
+    switch(type)
+    {
+      case WheelInfo::TyreType::Hard:
+        return "hard";
+      case WheelInfo::TyreType::Soft:
+        return "soft";
+      case WheelInfo::TyreType::Wet:
+        return "wet";
+      default:
+        btAssert(false && "Unknown TyreType");
+        return "unknown";
+    }
   }
 }

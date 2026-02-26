@@ -107,7 +107,6 @@ target_sources(boink
     src/weather_gui.cc
     src/smoothed_value.cc
     src/surface_info_gui.cc
-    src/tyre.cc
     src/vehicle_raycaster.cc
     src/raycast_vehicle.cc
     src/wheel_info.cc

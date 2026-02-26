@@ -4,6 +4,7 @@
 #include "boink/exception.h"
 #include "boink/simulation/race.h"
 #include "boink/simulation/simulation.h"
+#include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/vehicle_mesh.h"
 
@@ -345,6 +346,8 @@ int boink_spawn_vehicle(
   create_info.tuning.m_suspensionStiffness=75.f;
   create_info.tuning.m_suspensionDamping=2.5f;
   create_info.tuning.m_suspensionCompression=2.5f;
+
+  create_info.tyre_type=boink::WheelInfo::TyreType::Wet;
 
   // TODO
   // I think try is not needed here but it must be checked

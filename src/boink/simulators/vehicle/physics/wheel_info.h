@@ -12,6 +12,7 @@
 // Modifications:
 // 2026 - v4m3rr
 // - Cosmetic changes
+// - Add tyre info
 #pragma once
 
 #include <LinearMath/btVector3.h>
@@ -20,24 +21,8 @@
 class btRigidBody;
 namespace boink
 {
-  struct WheelInfoConstructionInfo
-  {
-    btVector3 m_chassisConnectionCS;
-    btVector3 m_wheelDirectionCS;
-    btVector3 m_wheelAxleCS;
-    btScalar m_suspensionRestLength;
-    btScalar m_maxSuspensionTravelCm;
-    btScalar m_wheelRadius;
 
-    btScalar m_suspensionStiffness;
-    btScalar m_wheelsDampingCompression;
-    btScalar m_wheelsDampingRelaxation;
-    btScalar m_frictionSlip;
-    btScalar m_maxSuspensionForce;
-    btScalar m_rollInfluence=0.1f;
-    bool m_bIsFrontWheel;
-  };
-
+  struct WheelInfoConstructionInfo;
   struct WheelInfo
   {
     struct RaycastInfo
@@ -65,6 +50,25 @@ namespace boink
       btScalar m_maxForce;
     };
     SuspensionInfo m_suspensionInfo;
+
+    enum class TyreType
+    {
+      Soft,
+      Hard,
+      Wet
+    };
+    struct TyreInfo
+    {
+      TyreType m_type;
+      btScalar m_health=btScalar(1.0);
+      btScalar m_tempCelsius=btScalar(100.0); // TODO
+
+      static btScalar s_softWearRatePerMin;
+      static btScalar s_hardWearRatePerMin;
+      static btScalar s_wetWearRatePerMin;
+    };
+    TyreInfo m_tyreInfo;
+
     //why?
     btScalar getSuspensionRestLength() const
     { return m_suspensionInfo.m_restLength;}
@@ -100,5 +104,27 @@ namespace boink
     WheelInfo(WheelInfoConstructionInfo& ci);
 
     void updateWheel(const btRigidBody& chassis, RaycastInfo& raycastInfo);
+  };
+  
+  struct WheelInfoConstructionInfo
+  {
+    btVector3 m_chassisConnectionCS;
+    btVector3 m_wheelDirectionCS;
+    btVector3 m_wheelAxleCS;
+    btScalar m_wheelRadius;
+
+    btScalar m_suspensionStiffness;
+    btScalar m_wheelsDampingCompression;
+    btScalar m_wheelsDampingRelaxation;
+    btScalar m_maxSuspensionForce;
+    btScalar m_suspensionRestLength;
+    btScalar m_maxSuspensionTravelCm;
+
+    WheelInfo::TyreType m_tyreType;
+
+    btScalar m_frictionSlip;
+    btScalar m_rollInfluence=btScalar(0.1);
+
+    bool m_bIsFrontWheel;
   };
 }

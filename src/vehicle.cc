@@ -78,7 +78,8 @@ namespace boink
         suspension_rest_length,
         wheel_radius,
         tuning_,
-        is_front_wheel
+        is_front_wheel,
+        create_info.tyre_type
     );
 
     // Rear-right
@@ -90,7 +91,8 @@ namespace boink
         suspension_rest_length,
         wheel_radius,
         tuning_,
-        is_front_wheel
+        is_front_wheel,
+        create_info.tyre_type
     );
 
     is_front_wheel=true;
@@ -104,7 +106,8 @@ namespace boink
         suspension_rest_length,
         wheel_radius,
         tuning_,
-        is_front_wheel
+        is_front_wheel,
+        create_info.tyre_type
     );
 
     // Front-right
@@ -116,15 +119,9 @@ namespace boink
         suspension_rest_length,
         wheel_radius,
         tuning_,
-        is_front_wheel
+        is_front_wheel,
+        create_info.tyre_type
     );
-
-    // TODO
-    for(int i=0;i<(int)WheelPosition::Count;i++)
-    {
-      WheelPosition pos=(WheelPosition)i;
-      tyres_.emplace(pos,Tyre(Tyre::Type::Hard,0.0005f));
-    }
 
     this->setTuning(tuning_);
   }
@@ -171,13 +168,6 @@ namespace boink
 
     laps_completed_=curr_laps_completed;
     curr_lap_dist_point_=curr_coverage;
-
-    // TODO make it smarter
-    for(int i=0;i<(int)WheelPosition::Count;i++)
-    {
-      WheelPosition pos=(WheelPosition)i;
-      tyres_.at(pos).update(dt);
-    }
   }
 
   void Vehicle::updateRender(Renderer* renderer)
@@ -286,12 +276,12 @@ namespace boink
 
   btScalar Vehicle::getTyreHealth(WheelPosition pos) const
   {
-    return tyres_.at(pos).getHealth();
+    return vehicle_->getWheelInfo((int)pos).m_tyreInfo.m_health;
   }
 
-  Tyre::Type Vehicle::getTyreType(WheelPosition pos) const
+  WheelInfo::TyreType Vehicle::getTyreType(WheelPosition pos) const
   {
-    return tyres_.at(pos).getType();
+    return vehicle_->getWheelInfo((int)pos).m_tyreInfo.m_type;
   }
 
   void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)

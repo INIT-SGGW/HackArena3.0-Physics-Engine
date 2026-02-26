@@ -18,6 +18,11 @@
 
 namespace boink
 {
+  // TODO
+  btScalar WheelInfo::TyreInfo::s_softWearRatePerMin=btScalar(0.2);
+  btScalar WheelInfo::TyreInfo::s_hardWearRatePerMin=s_softWearRatePerMin;
+  btScalar WheelInfo::TyreInfo::s_wetWearRatePerMin=s_softWearRatePerMin;
+
   WheelInfo::WheelInfo(WheelInfoConstructionInfo& ci)
   {
     m_suspensionInfo.m_restLength = ci.m_suspensionRestLength;
@@ -27,6 +32,9 @@ namespace boink
     m_suspensionInfo.m_wheelsDampingRelaxation = ci.m_wheelsDampingRelaxation;
     m_suspensionInfo.m_chassisConnectionPointCS = ci.m_chassisConnectionCS;
     m_suspensionInfo.m_maxForce = ci.m_maxSuspensionForce;
+
+    m_tyreInfo.m_health=btScalar(1.0);
+    m_tyreInfo.m_type=ci.m_tyreType;
 
     m_wheelDirectionCS = ci.m_wheelDirectionCS;
     m_wheelAxleCS = ci.m_wheelAxleCS;
