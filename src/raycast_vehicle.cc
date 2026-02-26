@@ -103,6 +103,7 @@ namespace boink
 
       getRigidBody()->applyImpulse(impulse, relpos);
     }
+    applyAerodynamics(step);
 
     updateFrictionBasedOnSurface(step);
     updateTyres(step);
@@ -139,8 +140,6 @@ namespace boink
       wheel.m_deltaRotation *= btScalar(0.99);  
 
     }
-
-    applyAerodynamics(step);
   }
 
   const btTransform& RaycastVehicle::getChassisWorldTransform() const
@@ -780,8 +779,7 @@ namespace boink
   {
     (void)step;
 
-    auto rigidbody=this->getRigidBody();
-    const btVector3& velocity=rigidbody->getLinearVelocity();
+    const btVector3& velocity=m_chassisBody->getLinearVelocity();
     const btScalar speed=velocity.length();
 
     if(speed < 0.1)
@@ -799,7 +797,8 @@ namespace boink
 
     constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5f;
 
-    btVector3 down_dir=-rigidbody->getWorldTransform().getBasis().getColumn(1);
+    btVector3 down_dir=
+      -m_chassisBody->getWorldTransform().getBasis().getColumn(1);
 
     assert(down_dir.length()<1.01&&down_dir.length()>0.99);
 
@@ -807,7 +806,19 @@ namespace boink
       0.5f*kAirLiftCoef*kFrontalArea*kAirDensity*
       speed*speed*down_dir;
 
-    rigidbody->applyCentralForce(air_drag_force+air_down_force);
+    bool isInContact=true;
+    for(int i=0;i<getNumWheels();i++)
+    {
+      if(!getWheelInfo(i).m_raycastInfo.m_isInContact)
+      {
+        isInContact=false;
+        break;
+      }
+    }
+    if(isInContact)
+      m_chassisBody->applyImpulse(step*air_down_force,{0.0,0.0,0.0});
+
+    m_chassisBody->applyImpulse(step*air_drag_force,{0.0,0.0,0.0});
   }
 
 
