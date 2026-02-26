@@ -62,6 +62,14 @@ namespace boink
     ImGui::SliderFloat(
         "Wear rate wet",&WheelInfo::TyreInfo::s_wetWearRatePerMin,0.f,0.1f);
 
+    ImGui::SliderFloat("Slip ratio temp const",
+        &WheelInfo::TyreInfo::s_slipRatioTempConstant,0.f,0.5f);
+    ImGui::SliderFloat("Wheel speed temp const",
+        &WheelInfo::TyreInfo::s_angularSpeedTempConstant,0.f,0.1f);
+
+    ImGui::SliderFloat("Wheel speed temp cooling const",
+        &WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst,0.f,0.1f);
+
     for(int i=0;i<(int)WheelPosition::Count;i++)
     {
       WheelPosition pos=(WheelPosition)i;
@@ -79,18 +87,22 @@ namespace boink
 
   void VehicleGui::drawWheel(WheelPosition pos)
   {
+    const WheelInfo& info=p_vehicle_->vehicle_->getWheelInfo((int)pos);
+
     btVector3 pos_v=p_vehicle_->getWheelWorldTransform(pos).getOrigin();
     ImGui::Text("Position: (%.2f,%.2f,%.2f) [m]",
         pos_v.getX(),pos_v.getY(),pos_v.getZ());
     ImGui::Text("Angular speed: %.2f [rad/sec]",
-        p_vehicle_->getWheelAngularSpeed(pos));
+        info.m_wheelAngularSpeed);
+    ImGui::Text("Slip ratio: %.2f",
+        info.m_slipRatio);
 
     ImGui::Text("Tyre type: %s",
-        tyreTypeToStr(p_vehicle_->getTyreType(pos)));
+        tyreTypeToStr(info.m_tyreInfo.m_type));
     ImGui::Text("Tyre health: %.2f",
-        p_vehicle_->getTyreHealth(pos));
+        info.m_tyreInfo.m_health);
     ImGui::Text("Tyre temp: %.2f [C]",
-        p_vehicle_->getTyreTempCelsius(pos));
+        info.m_tyreInfo.m_tempCelsius);
   }
 
   const char* tyreTypeToStr(WheelInfo::TyreType type)

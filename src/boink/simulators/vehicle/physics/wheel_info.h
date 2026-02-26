@@ -61,11 +61,16 @@ namespace boink
     {
       TyreType m_type;
       btScalar m_health=btScalar(1.0);
-      btScalar m_tempCelsius=btScalar(100.0); // TODO
+      btScalar m_tempCelsius=btScalar(90.0);
 
       static btScalar s_softWearRatePerMin;
       static btScalar s_hardWearRatePerMin;
       static btScalar s_wetWearRatePerMin;
+
+      static btScalar s_slipRatioTempConstant;
+      static btScalar s_angularSpeedTempConstant;
+
+      static btScalar s_angularSpeedTempCoolingConst;
     };
     TyreInfo m_tyreInfo;
 
@@ -84,6 +89,7 @@ namespace boink
 
     btScalar m_frictionSlip;
     btScalar m_rollInfluence;
+    btScalar m_slipRatio;
 
     btScalar m_engineForce;
     btScalar m_steering;

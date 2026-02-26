@@ -104,6 +104,9 @@ namespace boink
       getRigidBody()->applyImpulse(impulse, relpos);
     }
 
+    updateFrictionBasedOnSurface(step);
+    updateTyres(step);
+
     updateFriction(step);
 
     for (int i = 0; i < m_wheelInfo.size(); i++)
@@ -135,7 +138,6 @@ namespace boink
       //damping of rotation when not in contact
       wheel.m_deltaRotation *= btScalar(0.99);  
 
-      wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
     }
 
     applyAerodynamics(step);
@@ -523,8 +525,6 @@ namespace boink
   btScalar sideFrictionStiffness2 = btScalar(1.0);
   void RaycastVehicle::updateFriction(btScalar timeStep)
   {
-    updateFrictionBasedOnSurface(timeStep);
-    updateTyres(timeStep);
 
     //calculate the impulse, so that the wheels don't move sidewards
     int numWheel = getNumWheels();
@@ -816,11 +816,50 @@ namespace boink
     for(int i=0;i<this->getNumWheels();i++)
     {
       WheelInfo& wheel=getWheelInfo(i);
-      btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
 
-      wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.;
-      if(wheel.m_tyreInfo.m_health<0.f)
-        wheel.m_tyreInfo.m_health=0.f;
+      // Calcuate slip ratio
+      {
+        wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
+        btScalar wheelLinearSpeed=
+          wheel.m_wheelAngularSpeed*wheel.m_wheelsRadius;
+        btScalar vehicleSpeed=
+          m_chassisBody->getLinearVelocity().length();
+        
+        if(vehicleSpeed>0.1f)
+          wheel.m_slipRatio=1.f-wheelLinearSpeed/vehicleSpeed;
+        else
+          wheel.m_slipRatio=0.f;
+      }
+
+      // update temperature
+      {
+        btScalar& tempCel=wheel.m_tyreInfo.m_tempCelsius;
+
+        btScalar tempIncrease=0;
+        tempIncrease+=
+          wheel.m_slipRatio*WheelInfo::TyreInfo::s_slipRatioTempConstant;
+        tempIncrease+=
+          wheel.m_wheelAngularSpeed*
+          WheelInfo::TyreInfo::s_angularSpeedTempConstant;
+        
+        // TODO add wetness of ground
+        btScalar tempDecrease=0;
+        tempDecrease+=
+          wheel.m_wheelAngularSpeed*
+          WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst;
+
+        tempCel+=tempIncrease*step;
+        tempCel-=tempDecrease*step;
+      }
+
+      // update health
+      {
+        btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
+
+        wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.;
+        if(wheel.m_tyreInfo.m_health<0.f)
+          wheel.m_tyreInfo.m_health=0.f;
+      }
     }
   }
 
