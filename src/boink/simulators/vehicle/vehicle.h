@@ -76,6 +76,7 @@ namespace boink
 
     btScalar getTyreHealth(WheelPosition pos) const;
     WheelInfo::TyreType getTyreType(WheelPosition pos) const;
+    btScalar getTyreTempCelsius(WheelPosition pos) const;
 
     void setTuning(const RaycastVehicle::VehicleTuning& tuning);
     const RaycastVehicle::VehicleTuning& getTuning() const;

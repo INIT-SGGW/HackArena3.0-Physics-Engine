@@ -284,6 +284,11 @@ namespace boink
     return vehicle_->getWheelInfo((int)pos).m_tyreInfo.m_type;
   }
 
+  btScalar Vehicle::getTyreTempCelsius(WheelPosition pos) const
+  {
+    return vehicle_->getWheelInfo((int)pos).m_tyreInfo.m_tempCelsius;
+  }
+
   void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
   {
     assert(vehicle_->getNumWheels()==4);

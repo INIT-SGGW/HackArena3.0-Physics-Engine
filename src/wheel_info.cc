@@ -19,7 +19,7 @@
 namespace boink
 {
   // TODO
-  btScalar WheelInfo::TyreInfo::s_softWearRatePerMin=btScalar(0.2);
+  btScalar WheelInfo::TyreInfo::s_softWearRatePerMin=btScalar(0.05);
   btScalar WheelInfo::TyreInfo::s_hardWearRatePerMin=s_softWearRatePerMin;
   btScalar WheelInfo::TyreInfo::s_wetWearRatePerMin=s_softWearRatePerMin;
 
