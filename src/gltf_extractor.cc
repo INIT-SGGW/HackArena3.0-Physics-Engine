@@ -54,9 +54,13 @@ namespace boink
           return node.name==name;
         });
     if(it==nodes_.end())
+    {
+      std::stringstream ss;
+      ss<<"Node with name "<<name<<" was not found.";
       throw Exception(
           Exception::Type::InvalidArgumentError,
-          "Node with a given name was not found.");
+          ss.str());
+    }
 
     return *it;
   }

@@ -21,7 +21,8 @@ int main()
     "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\lowpoly_track_1_test_5.glb";
 #else
   const char* vehicle_filename="Bolid_F1.glb";
-  const char* track_filename = "lowpoly_track_1_test_5.glb";
+  //const char* track_filename = "lowpoly_track_test_2.glb";
+  const char* track_filename = "Bolid_F1.glb";
 #endif
 
   unsigned int major,minor,patch;

@@ -28,7 +28,7 @@ namespace boink
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
     this->createCenterline(extractor);
-    this->createRightline(extractor);
+    //this->createRightline(extractor);
 
     gui_=std::make_shared<TrackGui>(this);
   }
