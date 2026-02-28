@@ -74,10 +74,20 @@ class MovementSystem
           Vector3d wheel_direction = turn_rotation * model.direction;
 
           auto new_velocity = kin.velocity.norm() + acceleration * dt;
-          if (new_velocity < 0.0001)
-            kin.velocity = Vector3d::Zero();
+          if (parts.gearbox.current_gear == Gear::Reverse)
+          {
+            if (new_velocity > -0.0001)
+              kin.velocity = Vector3d::Zero();
+            else
+              kin.velocity = new_velocity * wheel_direction;
+          }
           else
-            kin.velocity = new_velocity * wheel_direction;
+          {
+            if (new_velocity < 0.0001)
+              kin.velocity = Vector3d::Zero();
+            else
+              kin.velocity = new_velocity * wheel_direction;
+          }
 
           /*std::cout << "acceleration: " << acceleration << "\n";
           std::cout << "speed: " << kin.velocity.norm() << "\n";*/

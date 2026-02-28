@@ -7,8 +7,8 @@ namespace boink
 struct Gearbox
 {
  public:
-  static constexpr float kDifferentialRatio = 4.05;
-  static constexpr float kGearRatios[9] = {-2.8, 0.0, 2.65, 2.05, 1.72, 1.50, 1.34, 1.21, 1.1};
+  static constexpr float kDifferentialRatio = 3.9;
+  static constexpr float kGearRatios[10] = {-2.8, 0.0, 4.60, 3.40, 2.70, 2.25, 1.90, 1.65, 1.45, 1.30};
 
   Gear current_gear = Gear::First;
 

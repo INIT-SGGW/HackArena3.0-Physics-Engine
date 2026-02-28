@@ -13,7 +13,8 @@ enum class Gear : uint8_t
   Fourth = 5,
   Fifth = 6,
   Sixth = 7,
-  Seventh = 8
+  Seventh = 8,
+  Eighth = 9,
 };
 
 enum class WheelIndex : uint8_t
@@ -46,6 +47,8 @@ inline std::ostream& operator<<(std::ostream& os, Gear gear)
       return os << "Sixth";
     case Gear::Seventh:
       return os << "Seventh";
+    case Gear::Eighth:
+      return os << "Eighth";
   }
   return os << "Unknown";
 }
