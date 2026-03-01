@@ -23,6 +23,11 @@ namespace boink
   btScalar WheelInfo::TyreInfo::s_hardWearRatePerMin=s_softWearRatePerMin;
   btScalar WheelInfo::TyreInfo::s_wetWearRatePerMin=s_softWearRatePerMin;
 
+  btScalar WheelInfo::TyreInfo::s_slipRatioTempConstant=btScalar(0.5);
+  btScalar WheelInfo::TyreInfo::s_angularSpeedTempConstant=btScalar(0.1);
+  
+  btScalar WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst=btScalar(0.1);
+
   WheelInfo::WheelInfo(WheelInfoConstructionInfo& ci)
   {
     m_suspensionInfo.m_restLength = ci.m_suspensionRestLength;
@@ -41,6 +46,7 @@ namespace boink
 
     m_frictionSlip = ci.m_frictionSlip;
     m_rollInfluence = btScalar(0.1);
+    m_slipRatio=btScalar(0.0);
 
     m_engineForce = btScalar(0.);
     m_steering = btScalar(0.);

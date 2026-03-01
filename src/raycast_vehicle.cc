@@ -103,6 +103,10 @@ namespace boink
 
       getRigidBody()->applyImpulse(impulse, relpos);
     }
+    applyAerodynamics(step);
+
+    updateFrictionBasedOnSurface(step);
+    updateTyres(step);
 
     updateFriction(step);
 
@@ -135,10 +139,7 @@ namespace boink
       //damping of rotation when not in contact
       wheel.m_deltaRotation *= btScalar(0.99);  
 
-      wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
     }
-
-    applyAerodynamics(step);
   }
 
   const btTransform& RaycastVehicle::getChassisWorldTransform() const
@@ -520,11 +521,9 @@ namespace boink
     return j1;
   }
 
-  btScalar sideFrictionStiffness2 = btScalar(1.0);
+  btScalar sideFrictionStiffness2 = btScalar(0.9);
   void RaycastVehicle::updateFriction(btScalar timeStep)
   {
-    updateFrictionBasedOnSurface(timeStep);
-    updateTyres(timeStep);
 
     //calculate the impulse, so that the wheels don't move sidewards
     int numWheel = getNumWheels();
@@ -638,6 +637,10 @@ namespace boink
             wheelInfo.m_wheelsSuspensionForce * 
             timeStep * 
             wheelInfo.m_frictionSlip;
+          btScalar hardCap=1500.f;
+          if(maximp>hardCap)
+            maximp=hardCap;
+
           btScalar maximpSide = maximp;
 
           btScalar maximpSquared = maximp * maximpSide;
@@ -780,8 +783,7 @@ namespace boink
   {
     (void)step;
 
-    auto rigidbody=this->getRigidBody();
-    const btVector3& velocity=rigidbody->getLinearVelocity();
+    const btVector3& velocity=m_chassisBody->getLinearVelocity();
     const btScalar speed=velocity.length();
 
     if(speed < 0.1)
@@ -799,7 +801,8 @@ namespace boink
 
     constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5f;
 
-    btVector3 down_dir=-rigidbody->getWorldTransform().getBasis().getColumn(1);
+    btVector3 down_dir=
+      -m_chassisBody->getWorldTransform().getBasis().getColumn(1);
 
     assert(down_dir.length()<1.01&&down_dir.length()>0.99);
 
@@ -807,7 +810,19 @@ namespace boink
       0.5f*kAirLiftCoef*kFrontalArea*kAirDensity*
       speed*speed*down_dir;
 
-    rigidbody->applyCentralForce(air_drag_force+air_down_force);
+    bool isInContact=true;
+    for(int i=0;i<getNumWheels();i++)
+    {
+      if(!getWheelInfo(i).m_raycastInfo.m_isInContact)
+      {
+        isInContact=false;
+        break;
+      }
+    }
+    if(isInContact)
+      m_chassisBody->applyImpulse(step*air_down_force,{0.0,0.0,0.0});
+
+    m_chassisBody->applyImpulse(step*air_drag_force,{0.0,0.0,0.0});
   }
 
 
@@ -816,11 +831,50 @@ namespace boink
     for(int i=0;i<this->getNumWheels();i++)
     {
       WheelInfo& wheel=getWheelInfo(i);
-      btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
 
-      wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.;
-      if(wheel.m_tyreInfo.m_health<0.f)
-        wheel.m_tyreInfo.m_health=0.f;
+      // Calcuate slip ratio
+      {
+        wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
+        btScalar wheelLinearSpeed=
+          wheel.m_wheelAngularSpeed*wheel.m_wheelsRadius;
+        btScalar vehicleSpeed=
+          m_chassisBody->getLinearVelocity().length();
+        
+        if(vehicleSpeed>0.1f)
+          wheel.m_slipRatio=1.f-wheelLinearSpeed/vehicleSpeed;
+        else
+          wheel.m_slipRatio=0.f;
+      }
+
+      // update temperature
+      {
+        btScalar& tempCel=wheel.m_tyreInfo.m_tempCelsius;
+
+        btScalar tempIncrease=0;
+        tempIncrease+=
+          wheel.m_slipRatio*WheelInfo::TyreInfo::s_slipRatioTempConstant;
+        tempIncrease+=
+          wheel.m_wheelAngularSpeed*
+          WheelInfo::TyreInfo::s_angularSpeedTempConstant;
+        
+        // TODO add wetness of ground
+        btScalar tempDecrease=0;
+        tempDecrease+=
+          wheel.m_wheelAngularSpeed*
+          WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst;
+
+        tempCel+=tempIncrease*step;
+        tempCel-=tempDecrease*step;
+      }
+
+      // update health
+      {
+        btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
+
+        wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.;
+        if(wheel.m_tyreInfo.m_health<0.f)
+          wheel.m_tyreInfo.m_health=0.f;
+      }
     }
   }
 

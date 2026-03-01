@@ -343,7 +343,9 @@ namespace boink
 
   void Vehicle::setBrake(btScalar brake)
   {
-    brake*=40.;
+    // TODO
+    // Make it much smarter
+    brake*=100.;
     vehicle_->setBrake(brake,(int)WheelPosition::RearLeft);
     vehicle_->setBrake(brake,(int)WheelPosition::RearRight);
     vehicle_->setBrake(brake,(int)WheelPosition::FrontLeft);
