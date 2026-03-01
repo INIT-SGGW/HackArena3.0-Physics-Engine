@@ -21,7 +21,7 @@ int main()
     "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\lowpoly_track_1_test_5.glb";
 #else
   const char* vehicle_filename="Bolid_F1.glb";
-  const char* track_filename = "lowpoly_track_1_test_5.glb";
+  const char* track_filename = "lowpoly_track_test_2.glb";
 #endif
   int simulation_steps=10;
 
@@ -39,20 +39,20 @@ int main()
     PRINT_ERROR();
     return -1;
   }
-
-  BoinkVehicleMeshHandle mesh_handle;
-  if((code=boink_create_vehicle_mesh(vehicle_filename,&mesh_handle))!=BOINK_OK)
-  {
-    PRINT_ERROR();
-    boink_terminate();
-    return -1;
-  }
   
   BoinkHandle handle=boink_create_race(track_filename);
   if(handle==NULL){
     PRINT_ERROR();
 
-    boink_destroy_vehicle_mesh(mesh_handle);
+    //boink_destroy_vehicle_mesh(mesh_handle);
+    boink_terminate();
+    return -1;
+  }
+
+  BoinkVehicleMeshHandle mesh_handle;
+  if((code=boink_create_vehicle_mesh(vehicle_filename,&mesh_handle))!=BOINK_OK)
+  {
+    PRINT_ERROR();
     boink_terminate();
     return -1;
   }

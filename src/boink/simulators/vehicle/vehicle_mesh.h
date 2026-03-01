@@ -21,7 +21,7 @@ namespace boink
     {
       std::vector<btVector3> vertices;
       std::vector<unsigned int> indices;
-      std::shared_ptr<const piksel::Mesh> piksel_mesh;
+      mutable std::shared_ptr<piksel::Mesh> piksel_mesh;
 
       btTransform transform;
     };
@@ -30,15 +30,9 @@ namespace boink
 
     const Element& getChassis() const;
     const Element& getWheel(WheelPosition wheel) const;
-    std::shared_ptr<const piksel::Mesh> getChassisPikselMesh() const
-    {
-      return chassis_.piksel_mesh;
-    }
+    std::shared_ptr<const piksel::Mesh> getChassisPikselMesh() const;
     std::shared_ptr<const piksel::Mesh> 
-      getWheelPikselMesh(WheelPosition pos) const
-    {
-      return wheels_.at(pos).piksel_mesh;
-    }
+      getWheelPikselMesh(WheelPosition pos) const;
 
     btTransform getLocalWheelTransform(WheelPosition wheel) const;
   private:
