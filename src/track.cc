@@ -179,11 +179,15 @@ namespace boink
     sample.tangent=next_center_point-center_point;
     sample.tangent.normalize();
 
+    // Create real right vector
     sample.right=right_point-center_point;
+    sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
     sample.right.normalize();
 
+    //sample.right=right_point-center_point;
+    //sample.right.normalize();
 
-    if(sample.tangent.dot(sample.right)>0.5)
+    if(sample.tangent.dot(sample.right)>1e-5)
     {
       std::stringstream ss;
       ss<<"For centerline point i=("<<i;
@@ -232,6 +236,33 @@ namespace boink
   {
     if(p_renderer==nullptr)
       return;
+
+    if(!enable_track_data_vec_draw_)
+      return;
+
+    const auto& samples=this->getTrackData();
+
+    auto offset=this->getWorldTransform().getOrigin();
+    for(const auto& sample:samples)
+    {
+      auto pos=offset+sample.position;
+      p_renderer->drawLine(
+          pos,
+          pos+sample.normal,
+          {0.5,0.5,0.0});
+      p_renderer->drawLine(
+          pos,
+          pos+sample.tangent,
+          {0.5,0.5,0.0});
+      p_renderer->drawLine(
+          pos,
+          pos+sample.right*sample.right_width,
+          {0.0,0.5,0.0});
+      p_renderer->drawLine(
+          pos,
+          pos+sample.right*-sample.left_width,
+          {0.5,0.0,0.0});
+    }
   }
 
   void Track::setWorldTransform(const btTransform& transform)
@@ -242,5 +273,8 @@ namespace boink
       btTransform new_transform=transform_*ground.getModelTransform();
       ground.setWorldTransform(new_transform);
     }
+
+    // TODO
+    // track_data world transform
   }
 }

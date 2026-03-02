@@ -76,7 +76,7 @@ namespace boink
         Line& line,
         std::string_view name);
   private:
-    static constexpr std::string_view TRACK_NAME="Sideroad";
+    static constexpr std::string_view TRACK_NAME="Asphalt";
     static constexpr std::string_view RIGHTLINE_NAME="Edgeline_right";
     static constexpr std::string_view LEFTLINE_NAME="Edgeline_left";
     static constexpr std::string_view CENTERLINE_NAME="Centerline";
@@ -99,6 +99,7 @@ namespace boink
 
     std::shared_ptr<const Weather> weather_;
 
+    bool enable_track_data_vec_draw_=false;
     std::shared_ptr<TrackGui> gui_;
   };
 }
