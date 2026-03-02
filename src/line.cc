@@ -190,6 +190,14 @@ namespace boink
     return {ith_closest_i,btSqrt(ith_closest_dist2)};
   }
 
+  void Line::reverse()
+  {
+    std::reverse(points_dist_.begin(),points_dist_.end());
+    auto last_data=points_dist_[points_dist_.size()-1];
+    points_dist_.pop_back();
+    points_dist_.insert(points_dist_.begin(),last_data);
+  }
+
   btVector3& Line::getPoint(size_t index)
   {
     return points_dist_[index].first;

@@ -10,6 +10,7 @@ void printVehicleState(const BoinkVehicleState* state);
     char* err_buf=malloc(size);\
     boink_get_last_error(err_buf,&size);\
     printf("%s\n",err_buf);\
+    free( err_buf);\
 }
 
 int main()

@@ -28,6 +28,12 @@ namespace boink
     void removeVehicle(Simulator::ID id);
     std::shared_ptr<Vehicle> getVehicle(Simulator::ID id);
     auto& getVehicles() {return vehicles_;}
+
+    // Temporary soliton
+    void setUserPtr(void* ptr)
+    {user_ptr_=ptr;}
+    void* getUserPtr() const
+    {return user_ptr_;}
   private:
     std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 
       getControllers() const;
@@ -36,5 +42,7 @@ namespace boink
     std::shared_ptr<Weather> weather_;
     std::shared_ptr<Track> track_;
     std::unordered_map<Simulator::ID,std::shared_ptr<Vehicle>> vehicles_;
+
+    void* user_ptr_=nullptr;
   };
 }

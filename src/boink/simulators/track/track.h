@@ -27,6 +27,24 @@ namespace boink
   public:
     friend class TrackGui;
   public:
+    struct SampleData
+    {
+      double coverage;
+      btVector3 position;
+
+      btVector3 tangent;
+      btVector3 normal;
+      btVector3 right;
+
+      btScalar left_width;
+      btScalar right_width;
+
+      btScalar curvature;
+      // minus downhill postivie uphill -90 to +90
+      btScalar grade;
+      btScalar bank;
+    };
+  public:
     Track(
         std::string_view filename,
         std::shared_ptr<const Weather> weather,
@@ -42,14 +60,28 @@ namespace boink
 
     const Line& getCenterline() const {return centerline_;}
     std::string_view getFilename() const { return filename_;}
+
+    const std::vector<SampleData>& getTrackData() const {return track_data_;}
+    std::vector<SampleData>& getTrackData() {return track_data_;}
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
-    void createCenterline(const GltfExtractor& extractor);
-    void createRightline(const GltfExtractor& extractor);
+    void createLines(const GltfExtractor& extractor);
+
+    void createTrackData();
+    SampleData generateSampleTrackData(size_t i) const;
+  private:
+    static void createLine(
+        const GltfExtractor& extractor,
+        Line& line,
+        std::string_view name);
   private:
     static constexpr std::string_view TRACK_NAME="Sideroad";
+    static constexpr std::string_view RIGHTLINE_NAME="Edgeline_right";
+    static constexpr std::string_view LEFTLINE_NAME="Edgeline_left";
     static constexpr std::string_view CENTERLINE_NAME="Centerline";
+
+    const btVector3 s_kUp={0.0,1.0,0.0};
   private:
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
@@ -58,6 +90,10 @@ namespace boink
 
     Line centerline_;
     Line rightline_;
+    Line leftline_;
+
+    std::vector<SampleData> track_data_;
+
     btTransform transform_=btTransform::getIdentity();
     std::string_view filename_;
 
