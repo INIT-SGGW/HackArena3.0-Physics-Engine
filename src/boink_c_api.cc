@@ -293,15 +293,15 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       out_track_data);
 
-  if(sizeof(BoinkTrackData)!=sizeof(boink::Track::SampleData))
-  {
-    set_last_error(
-        __func__,
-        returnCodeStr(BOINK_ERR_INTERNAL),
-        "BoinkTrackData structure differs from boink::Track::SampleData");
+  //if(sizeof(BoinkTrackData)!=sizeof(boink::Track::SampleData))
+  //{
+  //  set_last_error(
+  //      __func__,
+  //      returnCodeStr(BOINK_ERR_INTERNAL),
+  //      "BoinkTrackData structure differs from boink::Track::SampleData");
 
-    return BOINK_ERR_INTERNAL;
-  }
+  //  return BOINK_ERR_INTERNAL;
+  //}
 
   auto& track_data=p_race->getTrack()->getTrackData();
 
@@ -336,16 +336,13 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
     p_race->setUserPtr(samples);
   }
 
-  BoinkTrackData* new_track_data=new BoinkTrackData();
-  new_track_data->map_id=p_race->getTrack()->getFilename().data();
-  new_track_data->version=0;
-  new_track_data->lap_length_m=p_race->getTrack()->getCenterline().getLength();
-  new_track_data->centerline_samples=
+  out_track_data->map_id=p_race->getTrack()->getFilename().data();
+  out_track_data->version=0;
+  out_track_data->lap_length_m=p_race->getTrack()->getCenterline().getLength();
+  out_track_data->centerline_samples=
     reinterpret_cast<BoinkCenterlineSample*>(p_race->getUserPtr());
-  new_track_data->centerline_sample_count=
+  out_track_data->centerline_sample_count=
     p_race->getTrack()->getTrackData().size();
-
-  out_track_data=new_track_data;
 
   return BOINK_OK;
 }

@@ -1,8 +1,16 @@
 #include "boink/boink_c_api.h"
 
 #include <stdio.h>
+#include <float.h>
+#include <math.h>
 
 void printVehicleState(const BoinkVehicleState* state);
+void printTrackData(const BoinkTrackData* data);
+void printCenterlineSample(const BoinkCenterlineSample* sample,int num);
+size_t findClosestIndex(
+    const BoinkVec3* pos, 
+    const BoinkCenterlineSample* samples,
+    size_t samples_count);
 #define PRINT_ERROR()\
 {\
     unsigned int size;\
@@ -121,6 +129,15 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
+
+  BoinkTrackData data;
+  if((code=boink_get_track_data(handle,&data))!=BOINK_OK)
+  {
+      PRINT_ERROR();
+      goto clear;
+  }
+  printTrackData(&data);
+
   Real prev=boink_get_time_debug();
   while(!boink_should_close_debug())
   {
@@ -156,8 +173,17 @@ int main()
       PRINT_ERROR();
       goto clear;
     }
+
+    size_t i_closeset=findClosestIndex(
+        &state.chassis_position,
+        data.centerline_samples,
+        data.centerline_sample_count);
+
+    printCenterlineSample(&data.centerline_samples[i_closeset],0);
+
     boink_update_debug();
   }
+
 
   code=0;
   
@@ -167,6 +193,36 @@ clear:
   boink_terminate();
   return code;
 }
+
+size_t findClosestIndex(
+    const BoinkVec3* pos, 
+    const BoinkCenterlineSample* samples,
+    size_t samples_count)
+{
+  float smallest_length=FLT_MAX;
+  size_t closest_i=0;
+  for(size_t i=0;i<samples_count;i++)
+  {
+    BoinkVec3 subs;
+    subs.x=(pos->x-samples[i].position.x);
+    subs.y=(pos->y-samples[i].position.y);
+    subs.z=(pos->z-samples[i].position.z);
+
+    Real length2=subs.x*subs.x+subs.y*subs.y+subs.z*subs.z;
+    Real length=sqrtf(length2);
+
+    if(length<smallest_length)
+    {
+      closest_i=i;
+      smallest_length=length;
+    }
+  }
+
+  return closest_i;
+}
+
+#define printStateString(x)\
+  printf(#x ": %s\n",x);
 
 #define printStateReal(x)\
   printf(#x ": %f\n",x);
@@ -185,4 +241,29 @@ void printVehicleState(const BoinkVehicleState* state)
   printStateReal(state->speed);
   printStateVec3(state->chassis_position);
   printStateQuat(state->vehicle_orientation);
+}
+
+void printTrackData(const BoinkTrackData* track_data)
+{
+  printf("TRACK_DATA\n");
+  printStateString(track_data->map_id);
+  printStateInt(track_data->version);
+  printStateReal(track_data->lap_length_m);
+  printStateInt(track_data->centerline_sample_count);
+
+  const BoinkCenterlineSample* samples=track_data->centerline_samples;
+  size_t num_samples=track_data->centerline_sample_count;
+
+  //for(size_t i=0;i<num_samples;i++)
+  //  printCenterlineSample(&samples[i],i);
+}
+
+void printCenterlineSample(const BoinkCenterlineSample* sample,int num)
+{
+  printf("Sample num=%d\n",num);
+
+  printStateReal(sample->curvature_1pm);
+  printStateReal(sample->bank_rad);
+  printStateReal(sample->grade_rad);
+  printStateReal(sample->s_m);
 }
