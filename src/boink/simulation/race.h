@@ -4,6 +4,7 @@
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/debugger/controller.h"
 #include "boink/simulators/weather.h"
+#include "boink/simulation/race_filter.h"
 
 #include <string_view>
 #include <unordered_map>
@@ -39,6 +40,12 @@ namespace boink
       getControllers() const;
     void updateGui();
   private:
+    static void bulletCustomNearCallback(
+        btBroadphasePair& pair,
+        btCollisionDispatcher& dispatcher,
+        const btDispatcherInfo& info);
+  private:
+    RaceFilter filter;
     std::shared_ptr<Weather> weather_;
     std::shared_ptr<Track> track_;
     std::unordered_map<Simulator::ID,std::shared_ptr<Vehicle>> vehicles_;

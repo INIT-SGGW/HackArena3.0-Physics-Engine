@@ -24,6 +24,8 @@ namespace boink
   {
     friend class VehicleGui;
   public:
+    static constexpr short GROUP_MASK=1<<5;
+  public:
     struct CreationInfo
     {
       std::shared_ptr<const VehicleMesh> mesh;
@@ -40,6 +42,11 @@ namespace boink
     {
       Left,
       Right
+    };
+
+    struct UserPointerData
+    {
+      bool ghost_mode=false;
     };
   public:
     Vehicle(
@@ -93,6 +100,8 @@ namespace boink
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
   private:
+    UserPointerData user_pointer_data_;
+
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
 

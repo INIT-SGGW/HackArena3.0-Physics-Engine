@@ -34,7 +34,7 @@ namespace boink
       btScalar m_distFraction;
     };
   public:
-    VehicleRaycaster(btDynamicsWorld* world);
+    VehicleRaycaster(btDynamicsWorld* world,btRigidBody* chassis);
 
     btRigidBody* castRay(
         const btVector3& from, 
@@ -42,5 +42,6 @@ namespace boink
         VehicleRaycasterResult& result);
   private:
     btDynamicsWorld* m_dynamicsWorld=nullptr;
+    btRigidBody* m_chassis=nullptr;
   };
 }

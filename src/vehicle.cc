@@ -1,5 +1,6 @@
 #include "boink/simulators/vehicle/vehicle.h"
 
+#include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
@@ -26,7 +27,6 @@ namespace boink
       mesh_(create_info.mesh),
       world_(world),
       motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
-      raycaster_(new VehicleRaycaster(world_.get())),
       track_(track),
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
@@ -37,7 +37,9 @@ namespace boink
     collision_shape_=createCollisonShape(
         mesh_->getChassis().vertices,
         center_of_mass_);
-    rigidbody_=createRigidbody(create_info.mass);
+    rigidbody_=this->createRigidbody(create_info.mass);
+
+    raycaster_=std::make_unique<VehicleRaycaster>(world_.get(),rigidbody_.get());
 
     // I dont know why but everybody does this.
     rigidbody_->setActivationState(DISABLE_DEACTIVATION);
@@ -414,7 +416,12 @@ namespace boink
 
     std::unique_ptr<btRigidBody> body (new btRigidBody(rb_info));
 
-    world_->addRigidBody(body.get());
+    world_->addRigidBody(
+        body.get(),
+        GROUP_MASK,
+        btBroadphaseProxy::AllFilter);
+
+    body->setUserPointer(&user_pointer_data_);
 
     return body;
   }

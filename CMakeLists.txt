@@ -110,6 +110,7 @@ target_sources(boink
     src/vehicle_raycaster.cc
     src/raycast_vehicle.cc
     src/wheel_info.cc
+    src/race_filter.cc
 )
 
 target_include_directories(boink

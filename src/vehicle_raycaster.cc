@@ -17,10 +17,12 @@
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
+#include "boink/simulators/vehicle/physics/ray_result_callback.h"
+
 namespace boink
 {
-  VehicleRaycaster::VehicleRaycaster(btDynamicsWorld* world)
-    : m_dynamicsWorld(world)
+  VehicleRaycaster::VehicleRaycaster(btDynamicsWorld* world,btRigidBody* chassis)
+    : m_dynamicsWorld(world),m_chassis(chassis)
   {
   }
 
@@ -29,13 +31,18 @@ namespace boink
         const btVector3& to, 
         VehicleRaycasterResult& result)
   {
-    btCollisionWorld::ClosestRayResultCallback rayCallback(from, to);
+    Vehicle::UserPointerData* user_data=
+      reinterpret_cast<Vehicle::UserPointerData*>(m_chassis->getUserPointer());
+    btAssert(user_data!=nullptr);
+
+    RayResultCallback rayCallback(from, to,user_data->ghost_mode);
     m_dynamicsWorld->rayTest(from, to, rayCallback);
 
     if (rayCallback.hasHit())
     {
       const btRigidBody* body = 
         btRigidBody::upcast(rayCallback.m_collisionObject);
+
       if (body && body->hasContactResponse())
       {
         result.m_hitPointInWorld = rayCallback.m_hitPointWorld;
