@@ -15,7 +15,7 @@ namespace boink
 
     bool hasChanged() const
     {
-      float epsilon=1e-5;
+      float epsilon=1e-5f;
       float diff=prev_-current_;
 
       if(diff<0.f)

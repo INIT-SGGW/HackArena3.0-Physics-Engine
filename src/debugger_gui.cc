@@ -36,6 +36,6 @@ namespace boink
     if(controller_ids[selected].second==camera_option)
       *selected_controller=-1;
     else
-      *selected_controller=controller_ids[selected].first;
+      *selected_controller=(int)controller_ids[selected].first;
   }
 }

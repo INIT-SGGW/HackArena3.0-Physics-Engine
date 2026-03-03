@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <cassert>
 
 namespace boink
 {
@@ -157,7 +158,7 @@ namespace boink
     assert(points_dist_.size()>ith);
 
     std::vector<size_t> closest_is;
-    btScalar ith_closest_dist2;
+    btScalar ith_closest_dist2=0;
     size_t ith_closest_i;
     for(size_t i=0;i<ith;i++)
     {

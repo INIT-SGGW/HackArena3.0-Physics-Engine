@@ -29,7 +29,7 @@ namespace boink
   public:
     struct SampleData
     {
-      double coverage;
+      btScalar coverage;
       btVector3 position;
 
       btVector3 tangent;

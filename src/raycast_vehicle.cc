@@ -871,7 +871,7 @@ namespace boink
       {
         btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
 
-        wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.;
+        wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.f;
         if(wheel.m_tyreInfo.m_health<0.f)
           wheel.m_tyreInfo.m_health=0.f;
       }

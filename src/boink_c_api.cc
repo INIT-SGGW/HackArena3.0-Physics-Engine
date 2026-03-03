@@ -119,7 +119,7 @@ int boink_get_engine_profile(char* out_buf, unsigned int* in_out_len)
 #else
   const char* profile_name="debug";
 #endif
-  unsigned int required_size=strlen(profile_name)+1;
+  unsigned int required_size=(unsigned int)strlen(profile_name)+1;
 
   if(!out_buf || *in_out_len<required_size)
   {
@@ -139,7 +139,7 @@ int boink_get_last_error(char* out_buf, unsigned int* in_out_len)
       in_out_len);
 
   const char* error_desc=g_last_error.c_str();
-  unsigned int required_size=g_last_error.length()+1;
+  unsigned int required_size= (unsigned int)g_last_error.length()+1;
 
   if(!out_buf || *in_out_len<required_size)
   {
@@ -168,7 +168,7 @@ void set_last_error(const char* function, const char* return_code_string,const c
 
 int boink_init(bool debug_drawer_enable)
 {
-  if(sizeof(btScalar)!=sizeof(Real))
+  if constexpr(sizeof(btScalar)!=sizeof(Real))
   {
     set_last_error(
         __func__,
@@ -341,7 +341,7 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   out_track_data->lap_length_m=p_race->getTrack()->getCenterline().getLength();
   out_track_data->centerline_samples=
     reinterpret_cast<BoinkCenterlineSample*>(p_race->getUserPtr());
-  out_track_data->centerline_sample_count=
+  out_track_data->centerline_sample_count= (unsigned int)
     p_race->getTrack()->getTrackData().size();
 
   return BOINK_OK;
