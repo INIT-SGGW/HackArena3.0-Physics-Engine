@@ -179,7 +179,7 @@ int main()
         data.centerline_samples,
         data.centerline_sample_count);
 
-    printCenterlineSample(&data.centerline_samples[i_closeset],0);
+    //printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
     boink_update_debug();
   }
