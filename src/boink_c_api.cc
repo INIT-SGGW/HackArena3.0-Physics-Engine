@@ -119,7 +119,7 @@ int boink_get_engine_profile(char* out_buf, unsigned int* in_out_len)
 #else
   const char* profile_name="debug";
 #endif
-  unsigned int required_size=strlen(profile_name)+1;
+  unsigned int required_size=(unsigned int)strlen(profile_name)+1;
 
   if(!out_buf || *in_out_len<required_size)
   {
@@ -139,7 +139,7 @@ int boink_get_last_error(char* out_buf, unsigned int* in_out_len)
       in_out_len);
 
   const char* error_desc=g_last_error.c_str();
-  unsigned int required_size=g_last_error.length()+1;
+  unsigned int required_size= (unsigned int)g_last_error.length()+1;
 
   if(!out_buf || *in_out_len<required_size)
   {
@@ -168,6 +168,16 @@ void set_last_error(const char* function, const char* return_code_string,const c
 
 int boink_init(bool debug_drawer_enable)
 {
+  if constexpr(sizeof(btScalar)!=sizeof(Real))
+  {
+    set_last_error(
+        __func__,
+        returnCodeStr(BOINK_ERR_INTERNAL),
+        "btScalar is not the same type as Real");
+
+    return BOINK_ERR_INTERNAL;
+  }
+
   if(debug_drawer_enable)
   {
     HANDLE_EXCEPTIONS(
@@ -176,6 +186,7 @@ int boink_init(bool debug_drawer_enable)
         {0.f,0.f,1.f},
         {0.f,0.f,0.f}))
   }
+
   return BOINK_OK;
 }
 
@@ -234,7 +245,10 @@ BoinkHandle boink_create_race(const char* track_glb_filename)
 void boink_destroy_race(BoinkHandle handle)
 {
   if(handle!=nullptr)
+  {
+    delete[] (BoinkCenterlineSample*)((boink::Race*) handle)->getUserPtr();
     delete (boink::Race*) handle;
+  }
 }
 
 int boink_create_vehicle_mesh(
@@ -268,6 +282,68 @@ int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
       out_dur);
 
   *out_dur=p_sim->getSimulationDuration();
+  return BOINK_OK;
+}
+
+int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_track_data);
+
+  //if(sizeof(BoinkTrackData)!=sizeof(boink::Track::SampleData))
+  //{
+  //  set_last_error(
+  //      __func__,
+  //      returnCodeStr(BOINK_ERR_INTERNAL),
+  //      "BoinkTrackData structure differs from boink::Track::SampleData");
+
+  //  return BOINK_ERR_INTERNAL;
+  //}
+
+  auto& track_data=p_race->getTrack()->getTrackData();
+
+  if(p_race->getUserPtr()==nullptr)
+  {
+    BoinkCenterlineSample* samples=new BoinkCenterlineSample[track_data.size()];
+    for(size_t i=0;i<track_data.size();i++)
+    {
+      samples[i].bank_rad=track_data[i].bank;
+      samples[i].curvature_1pm=track_data[i].curvature;
+      samples[i].grade_rad=track_data[i].grade;
+      samples[i].left_width_m=track_data[i].left_width;
+      samples[i].right_width_m=track_data[i].right_width;
+      samples[i].s_m=track_data[i].coverage;
+
+      samples[i].normal.x=track_data[i].normal.getX();
+      samples[i].normal.y=track_data[i].normal.getY();
+      samples[i].normal.z=track_data[i].normal.getZ();
+
+      samples[i].position.x=track_data[i].position.getX();
+      samples[i].position.y=track_data[i].position.getY();
+      samples[i].position.z=track_data[i].position.getZ();
+
+      samples[i].right.x=track_data[i].right.getX();
+      samples[i].right.y=track_data[i].right.getY();
+      samples[i].right.z=track_data[i].right.getZ();
+
+      samples[i].tangent.x=track_data[i].tangent.getX();
+      samples[i].tangent.y=track_data[i].tangent.getY();
+      samples[i].tangent.z=track_data[i].tangent.getZ();
+    }
+    p_race->setUserPtr(samples);
+  }
+
+  out_track_data->map_id=p_race->getTrack()->getFilename().data();
+  out_track_data->version=0;
+  out_track_data->lap_length_m=p_race->getTrack()->getCenterline().getLength();
+  out_track_data->centerline_samples=
+    reinterpret_cast<BoinkCenterlineSample*>(p_race->getUserPtr());
+  out_track_data->centerline_sample_count= (unsigned int)
+    p_race->getTrack()->getTrackData().size();
+
   return BOINK_OK;
 }
 

@@ -18,7 +18,7 @@ int main()
   const char* vehicle_filename=
     "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
   const char* track_filename = 
-    "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\lowpoly_track_1_test_5.glb";
+    "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\lowpoly_track_test_2.glb";
 #else
   const char* vehicle_filename="Bolid_F1.glb";
   const char* track_filename = "lowpoly_track_test_2.glb";

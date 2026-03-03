@@ -115,7 +115,7 @@ namespace boink
     btAssert(ith>=1);
 
     std::vector<bool> used(vec.size(),false);
-    size_t i_closest;
+    size_t i_closest = 0;
     for(size_t i=0;i<ith;i++)
     {
       btScalar i_length2=BT_LARGE_FLOAT;

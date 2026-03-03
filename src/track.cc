@@ -2,14 +2,15 @@
 
 #include <BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h>
 #include <LinearMath/btDefaultMotionState.h>
+#include <LinearMath/btScalar.h>
 #include <LinearMath/btTransform.h>
 
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
 #include "boink/gui/track_gui.h"
-#include "boink/utility.h"
 
 #include <memory>
+#include <sstream>
 #include <vector>
 
 namespace boink
@@ -27,9 +28,9 @@ namespace boink
 
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
-    this->createCenterline(extractor);
-    //this->createRightline(extractor);
+    this->createLines(extractor);
 
+    this->createTrackData();
     gui_=std::make_shared<TrackGui>(this);
   }
 
@@ -57,6 +58,10 @@ namespace boink
 
     for(const auto& node : nodes)
     {
+#ifndef NDEBUG
+      if(node.name!=TRACK_NAME)
+        continue;
+#endif
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
         continue;
 
@@ -74,20 +79,43 @@ namespace boink
     }
   }
 
-  void Track::createCenterline(const GltfExtractor& extractor)
+  void Track::createLines(const GltfExtractor& extractor)
   {
-    auto& line_node=extractor.getNode(CENTERLINE_NAME);
+    Track::createLine(extractor,centerline_,CENTERLINE_NAME);
+    Track::createLine(extractor,rightline_,RIGHTLINE_NAME);
+    Track::createLine(extractor,leftline_,LEFTLINE_NAME);
+
+    // Check if centerline should be reveresed
+
+    auto center_point=centerline_.getPoint(0);
+    auto next_center_point=centerline_.getPoint(1);
+
+    auto dir=next_center_point-center_point;
+
+    auto right_point=rightline_.getPoint( rightline_.getClosestIndex(center_point).first);
+    auto right=right_point-center_point;
+
+    auto normal=right.cross(dir);
+
+    if(normal.dot(s_kUp)<0)
+      centerline_.reverse();
+  }
+
+  void Track::createLine(
+      const GltfExtractor& extractor, Line& line, std::string_view name)
+  {
+    auto& line_node=extractor.getNode(name);
     if(line_node.type!=TINYGLTF_MODE_LINE)
       throw Exception(
           Exception::Type::UnsupportedFormatError,
-          "Centerline mesh unsupported mode. Use lines mode for centerline mesh.");
+          "Line mesh unsupported mode. Use lines mode for line mesh.");
 
     auto& line_vertices=line_node.vertices;
     auto& line_indices=line_node.indices;
     if(line_vertices.size()==0 || line_indices.size()==0)
       throw Exception(
           Exception::Type::InvalidArgumentError,
-          "Centerline mesh is empty.");
+          "Line mesh is empty.");
 
     std::vector<btVector3> points;
     points.reserve(line_indices.size());
@@ -99,68 +127,103 @@ namespace boink
     points.push_back(
         line_vertices[line_indices[line_indices.size()-1]]);
     
-    centerline_=Line(std::move(points));
+    line=Line(std::move(points));
   }
 
-  void Track::createRightline(const GltfExtractor& extractor)
+  void Track::createTrackData()
   {
-    const auto& node=extractor.getNode(TRACK_NAME);
-    const btVector3 up_dir={0.f,1.f,0.f};
-    std::vector<btVector3> points;
-    points.reserve(centerline_.getPointsSize());
-    
-    btVector3 first_point=centerline_.getPoint(0);
-    btVector3 second_point=centerline_.getPoint(0+1);
-    btVector3 track_dir=second_point-first_point;
-    track_dir.normalize();
+    track_data_.reserve(centerline_.getPointsSize());
 
-    // We look for the closet point to centerline ith point which is not
-    // colinear to track_dir
-    btVector3 not_colinear=track_dir;
-    for(
-        size_t j=1;
-        areColinear(not_colinear,track_dir,1e-2);
-        j++)
+    btAssert(centerline_.getPointsSize()>2);
+    btAssert(rightline_.getPointsSize()>2);
+    btAssert(leftline_.getPointsSize()>2);
+
+    for(size_t i=0;i<centerline_.getPointsSize()-1;i++)
+      track_data_.push_back(this->generateSampleTrackData(i));
+
+    // For last element
+    track_data_.push_back(
+        this->generateSampleTrackData(centerline_.getPointsSize()-1));
+
+    // Calc curvature jebana
+    for(size_t i=0;i<track_data_.size();i++)
     {
-      size_t index=getIthClosestIndex(node.vertices,first_point,j);
-      not_colinear=node.vertices[index]-first_point;
+      size_t prev=(i-1+track_data_.size())%track_data_.size();
+      size_t next=(i+1)%track_data_.size();
+
+      const auto& sample_prev=track_data_[prev];
+      const auto& sample_next=track_data_[next];
+      btVector3 dT=sample_next.tangent-sample_prev.tangent;
+      btScalar ds=sample_next.coverage-sample_prev.coverage;
+
+      btVector3 dTds=dT/ds;
+
+      track_data_[i].curvature=dTds.dot(track_data_[i].right);
+    }
+  }
+
+  Track::SampleData Track::generateSampleTrackData(size_t i) const
+  {
+    SampleData sample;
+    size_t centerline_size=centerline_.getPointsSize();
+    size_t next=(i+1)%centerline_size;
+
+    const auto& [center_point,dist]=centerline_.getPointAndDist(i);
+    btVector3 right_point=
+      rightline_.getPoint(rightline_.getClosestIndex(center_point).first);
+    btVector3 left_point=
+      leftline_.getPoint(leftline_.getClosestIndex(center_point).first);
+
+    sample.position=center_point;
+    sample.coverage=dist;
+
+    const auto& next_center_point=centerline_.getPoint(next);
+    sample.tangent=next_center_point-center_point;
+    sample.tangent.normalize();
+
+    // Create real right vector
+    sample.right=right_point-center_point;
+    sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
+    sample.right.normalize();
+
+    //sample.right=right_point-center_point;
+    //sample.right.normalize();
+
+    if(sample.tangent.dot(sample.right)>1e-5)
+    {
+      std::stringstream ss;
+      ss<<"For centerline point i=("<<i;
+      ss<<") the dot product of tangent and right vectors is greater than epsilon";
+      throw Exception(
+          Exception::Type::InternalError,
+          ss.str());
     }
 
-    // Now create orthonormal base
-    // we know that not_colinear will be in plane of track
-    btScalar in_track_dir=not_colinear.dot(track_dir);
-    
-    btVector3 right_dir=not_colinear-track_dir*in_track_dir;
-    right_dir.normalize();
+    sample.normal=sample.right.cross(sample.tangent);
+    sample.normal.normalize();
 
-    // IMPORTANT
-    // up_dir is not normal to track plane
-    
-    // check if it is right or left
-    if(right_dir.cross(track_dir).dot(up_dir)<0.f)
-      right_dir*=-1.f;
+    if(sample.normal.dot(s_kUp)<0.0)
+    {
+      std::stringstream ss;
+      ss<<"For centerline point i=("<<i;
+      ss<<") the dot product of normal and up vectors is negative";
+      throw Exception(
+          Exception::Type::InternalError,
+          ss.str());
+    }
 
-    btVector3 normal_dir=right_dir.cross(track_dir);
-    normal_dir.normalize();
-    btAssert(normal_dir.dot(up_dir)>0.f);
+    sample.right_width=btVector3(center_point-right_point).length();
+    sample.left_width=btVector3(center_point-left_point).length();
 
-    ///// Orthonormal base
-    /// track_dir
-    /// right_dir
-    /// normal_dir
+    sample.grade=btAsin(sample.tangent.dot(s_kUp));
 
-    // TODO
-    // We have orhonormal basis the only thing left is
-    // to move center line by right_dir * sth
-    // and check to ceratin limit lets say 100 meters
-    // which shift gave the most hits
-    // or we simply load left line and right line and
-    // then get one closest point which dot product
-    // with track_dir is positve and closest one which dot
-    // is negative we interpolate and then measure dist
-    // to this line and we have right width
-    // left symetrically
+    btVector3 proj_up=s_kUp-s_kUp.dot(sample.tangent)*sample.tangent;
+    btScalar cos_angle=proj_up.dot(sample.normal);
+    btScalar sin_angle=proj_up.dot(sample.right);
 
+    sample.bank=btAtan2(sin_angle,cos_angle);
+
+    return sample;
   }
 
   void Track::update(btScalar dt)
@@ -175,6 +238,33 @@ namespace boink
   {
     if(p_renderer==nullptr)
       return;
+
+    if(!enable_track_data_vec_draw_)
+      return;
+
+    const auto& samples=this->getTrackData();
+
+    auto offset=this->getWorldTransform().getOrigin();
+    for(const auto& sample:samples)
+    {
+      auto pos=offset+sample.position;
+      p_renderer->drawLine(
+          pos,
+          pos+sample.normal,
+          {0.5,0.5,0.0});
+      p_renderer->drawLine(
+          pos,
+          pos+sample.tangent,
+          {0.5,0.5,0.0});
+      p_renderer->drawLine(
+          pos,
+          pos+sample.right*sample.right_width,
+          {0.0,0.5,0.0});
+      p_renderer->drawLine(
+          pos,
+          pos+sample.right*-sample.left_width,
+          {0.5,0.0,0.0});
+    }
   }
 
   void Track::setWorldTransform(const btTransform& transform)
@@ -185,5 +275,8 @@ namespace boink
       btTransform new_transform=transform_*ground.getModelTransform();
       ground.setWorldTransform(new_transform);
     }
+
+    // TODO
+    // track_data world transform
   }
 }

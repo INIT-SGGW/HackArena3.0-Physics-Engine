@@ -19,9 +19,17 @@ namespace boink
     btScalar getCoverage(const btVector3& point) const;
     const auto& getPointsAndDist() const{return points_dist_;}
 
+    void reverse();
+
     std::pair<size_t,btScalar> getClosestIndex(const btVector3& point) const;
     std::pair<size_t,btScalar> getIthClosestIndex(
         const btVector3& point, size_t ith) const;
+
+    std::pair<btVector3,btScalar>& getPointAndDist(size_t index)
+    {return points_dist_[index];}
+
+    const std::pair<btVector3,btScalar>& getPointAndDist(size_t index) const
+    {return points_dist_[index];}
 
     btVector3& getPoint(size_t index);
     const btVector3& getPoint(size_t index) const;

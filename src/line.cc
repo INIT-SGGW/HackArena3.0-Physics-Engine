@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <cassert>
 
 namespace boink
 {
@@ -157,7 +158,7 @@ namespace boink
     assert(points_dist_.size()>ith);
 
     std::vector<size_t> closest_is;
-    btScalar ith_closest_dist2;
+    btScalar ith_closest_dist2=0;
     size_t ith_closest_i;
     for(size_t i=0;i<ith;i++)
     {
@@ -188,6 +189,25 @@ namespace boink
     }
 
     return {ith_closest_i,btSqrt(ith_closest_dist2)};
+  }
+
+  void Line::reverse()
+  {
+    std::reverse(points_dist_.begin(),points_dist_.end());
+    auto last_data=points_dist_[points_dist_.size()-1];
+    points_dist_.pop_back();
+    points_dist_.insert(points_dist_.begin(),last_data);
+
+    // and know we neeed to update distance :(
+    btScalar lenght=0.0f;
+    btVector3 prev=points_dist_[0].first;
+    for(size_t i=0;i<points_dist_.size();i++)
+    {
+      lenght+=(points_dist_[i].first-prev).length();
+      points_dist_[i].second=lenght;
+
+      prev=points_dist_[i].first;
+    }
   }
 
   btVector3& Line::getPoint(size_t index)
