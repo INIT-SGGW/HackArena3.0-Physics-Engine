@@ -113,7 +113,7 @@ int main()
   BoinkVec3 vehicle_pos;
   vehicle_pos.x=0.;
   vehicle_pos.y=13.;
-  vehicle_pos.z=7.;
+  vehicle_pos.z=3.;
   if((code=boink_set_vehicle_position(handle,id0,&vehicle_pos))!=BOINK_OK)
   {
     PRINT_ERROR();

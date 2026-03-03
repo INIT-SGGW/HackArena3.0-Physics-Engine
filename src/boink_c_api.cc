@@ -246,7 +246,7 @@ void boink_destroy_race(BoinkHandle handle)
 {
   if(handle!=nullptr)
   {
-    delete (BoinkCenterlineSample*)((boink::Race*) handle)->getUserPtr();
+    delete[] (BoinkCenterlineSample*)((boink::Race*) handle)->getUserPtr();
     delete (boink::Race*) handle;
   }
 }
