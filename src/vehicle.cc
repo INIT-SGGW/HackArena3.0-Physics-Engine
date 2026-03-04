@@ -13,6 +13,7 @@
 #include "boink/gui/vehicle_gui.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/utility.h"
+#include "boink/who_contact_callback.h"
 
 #include <memory>
 #include <cassert>
@@ -171,6 +172,8 @@ namespace boink
 
     laps_completed_=curr_laps_completed;
     curr_lap_dist_point_=curr_coverage;
+
+    this->updateGhostSim(dt);
   }
 
   void Vehicle::updateRender(Renderer* renderer)
@@ -355,6 +358,49 @@ namespace boink
     vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
   }
 
+  void Vehicle::enableGhostSim(GhostModeSettings ghost_settings)
+  {
+    is_ghost_sim_on_=true;
+    ghost_mode_settings_=ghost_settings;
+  }
+
+  void Vehicle::disableGhostSim()
+  {
+    is_ghost_sim_on_=false;
+
+    ghost_info_.enabled=false;
+    is_inside_vehicle=false;
+    request_ghost_mode=false;
+  }
+
+
+  void Vehicle::updateGhostSim(btScalar dt)
+  {
+    (void)dt;
+    if(!is_ghost_sim_on_)
+      return;
+
+    if(request_ghost_mode && ghost_info_.enabled==false)
+    {
+      // TODO
+      // Enter ghost mode
+      ghost_info_.enabled=true;
+    }
+
+    if(!request_ghost_mode && ghost_info_.enabled==true)
+    {
+      // TODO
+      // Exit ghost mode
+      WhoContactCallback who_callback(vehicle_->getRigidBody());
+      world_->contactTest(vehicle_->getRigidBody(),who_callback);
+
+      if(who_callback.getHits().size()==0)
+        ghost_info_.enabled=false;
+    }
+
+
+  }
+
   void Vehicle::correctCOM()
   {
     btVector3 front_left_cs=
@@ -425,11 +471,6 @@ namespace boink
     body->setUserPointer(&user_data_);
 
     return body;
-  }
-
-  void Vehicle::updateGhostMode(btScalar dt)
-  {
-    (void)dt;
   }
 
 }

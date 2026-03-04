@@ -15,7 +15,7 @@
 #include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/bullet_user_data.h"
-//#include "boink/simulators/vehicle/ghost_mode_settings.h"
+#include "boink/simulators/vehicle/ghost_mode_settings.h"
 
 #include <memory>
 
@@ -49,8 +49,6 @@ namespace boink
     struct GhostModeInfo
     {
       bool enabled=false;
-      bool is_inside_vehicle=false;
-      bool request_ghost_mode =false;
     };
     struct UserData : public BulletUserData
     {
@@ -106,7 +104,8 @@ namespace boink
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
 
-    void enableGhostMode(GhostModeInfo ghost_info);
+    void enableGhostSim(GhostModeSettings ghost_setttings);
+    void disableGhostSim();
     bool isInGhostMode() const {return ghost_info_.enabled;}
   private:
     void correctCOM();
@@ -116,9 +115,13 @@ namespace boink
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
 
-    void updateGhostMode(btScalar dt);
+    void updateGhostSim(btScalar dt);
   private:
     GhostModeInfo ghost_info_;
+    GhostModeSettings ghost_mode_settings_;
+    bool is_ghost_sim_on_=true; // TODO make it to false
+    bool is_inside_vehicle=false;
+    bool request_ghost_mode =false;
 
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;

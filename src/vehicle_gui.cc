@@ -23,7 +23,7 @@ namespace boink
 
     ImGui::Checkbox("Mesh enabled",&mesh_enabled);
     ImGui::Checkbox("Collider enabled",&collider_enabled);
-    ImGui::Checkbox("Ghost mode",&p_vehicle_->user_data_.ghost_info->enabled);
+    ImGui::Checkbox("Ghost mode",&p_vehicle_->request_ghost_mode);
 
     ImGui::SliderFloat(
         "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
