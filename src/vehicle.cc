@@ -14,6 +14,7 @@
 #include "boink/gui/vehicle_gui.h"
 #include "boink/utility.h"
 #include "boink/who_contact_callback.h"
+#include "boink/collision_group.h"
 
 #include <memory>
 #include <cassert>
@@ -48,7 +49,7 @@ namespace boink
 
     // Because cars might move fast we wanna avoid
     // cliping them or just going over a wall
-    rigidbody_->setCcdMotionThreshold(1.0);
+    rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
     vehicle_=std::unique_ptr<RaycastVehicle>(
@@ -373,6 +374,10 @@ namespace boink
     request_ghost_mode=false;
   }
 
+  void createCar()
+  {
+
+  }
 
   void Vehicle::updateGhostSim(btScalar dt)
   {
@@ -385,6 +390,16 @@ namespace boink
       // TODO
       // Enter ghost mode
       ghost_info_.enabled=true;
+
+      world_->removeAction(vehicle_.get());
+      world_->removeRigidBody(rigidbody_.get());
+
+      world_->addRigidBody(
+          rigidbody_.get(),
+          CollisionGroup::Vehicle,
+          CollisionGroup::Static);
+
+      world_->addAction(vehicle_.get());
     }
 
     if(!request_ghost_mode && ghost_info_.enabled==true)
@@ -395,9 +410,20 @@ namespace boink
       world_->contactTest(vehicle_->getRigidBody(),who_callback);
 
       if(who_callback.getHits().size()==0)
+      {
         ghost_info_.enabled=false;
-    }
 
+        world_->removeAction(vehicle_.get());
+        world_->removeRigidBody(rigidbody_.get());
+
+        world_->addRigidBody(
+            rigidbody_.get(),
+            CollisionGroup::Vehicle,
+            CollisionGroup::Vehicle | CollisionGroup::Static);
+        
+        world_->addAction(vehicle_.get());
+      }
+    }
 
   }
 
@@ -465,12 +491,11 @@ namespace boink
 
     world_->addRigidBody(
         body.get(),
-        GROUP_MASK,
-        btBroadphaseProxy::AllFilter);
+        CollisionGroup::Vehicle,
+        CollisionGroup::Vehicle | CollisionGroup::Static);
 
     body->setUserPointer(&user_data_);
 
     return body;
   }
-
 }

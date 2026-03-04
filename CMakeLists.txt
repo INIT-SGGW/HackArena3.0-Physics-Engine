@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 0.6.0)
+project(BoinkEngine VERSION 0.7.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -110,7 +110,6 @@ target_sources(boink
     src/vehicle_raycaster.cc
     src/raycast_vehicle.cc
     src/wheel_info.cc
-    src/race_filter.cc
 )
 
 target_include_directories(boink

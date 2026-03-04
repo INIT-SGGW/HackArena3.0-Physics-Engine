@@ -5,6 +5,7 @@
 
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/vehicle.h"
+#include "boink/collision_group.h"
 
 namespace boink
 {
@@ -24,7 +25,7 @@ namespace boink
       const btRigidBody* body = btRigidBody::upcast(obj);
 
       if(m_isGhosted&&
-          obj->getBroadphaseHandle()->m_collisionFilterGroup==Vehicle::GROUP_MASK)
+          obj->getBroadphaseHandle()->m_collisionFilterGroup==CollisionGroup::Vehicle)
         return m_closestHitFraction;
 
       if (body)

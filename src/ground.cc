@@ -4,6 +4,7 @@
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
 
 #include "boink/exception.h"
+#include "boink/collision_group.h"
 
 #include <memory>
 
@@ -52,7 +53,10 @@ namespace boink
 
     rigidbody_->setUserPointer((void*)&user_data_);
 
-		world_->addRigidBody(rigidbody_.get());
+		world_->addRigidBody(
+        rigidbody_.get(),
+        CollisionGroup::Static,
+        CollisionGroup::Static | CollisionGroup::Vehicle);
   }
 
   Ground::~Ground() noexcept

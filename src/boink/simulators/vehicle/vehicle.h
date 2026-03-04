@@ -26,8 +26,6 @@ namespace boink
   {
     friend class VehicleGui;
   public:
-    static constexpr short GROUP_MASK=1<<5;
-  public:
     struct CreationInfo
     {
       std::shared_ptr<const VehicleMesh> mesh;

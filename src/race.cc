@@ -22,8 +22,6 @@ namespace boink
     this->addSimulator(track_);
     this->addSimulator(weather_);
 
-    this->getDynamicsWorld()->getBroadphase()->
-      getOverlappingPairCache()->setOverlapFilterCallback(&filter);
   }
 
   Race::~Race()
