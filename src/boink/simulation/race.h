@@ -20,6 +20,11 @@ namespace boink
         std::string_view track_filename,
         Debugger* p_dbg=nullptr);
     ~Race() ;
+    int update(
+        btScalar dt,
+        int max_sub_steps=10,
+        btScalar fixed_delta_time=1.f/120.f,
+        btScalar max_delta_time=0.1) override;
     void updateDebug() override;
 
     std::shared_ptr<Track> getTrack();
@@ -29,6 +34,7 @@ namespace boink
     void removeVehicle(Simulator::ID id);
     std::shared_ptr<Vehicle> getVehicle(Simulator::ID id);
     auto& getVehicles() {return vehicles_;}
+
 
     // Temporary soliton
     void setUserPtr(void* ptr)

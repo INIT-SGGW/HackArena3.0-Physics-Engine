@@ -16,12 +16,12 @@ namespace boink
     if((proxy0->m_collisionFilterGroup & Vehicle::GROUP_MASK)&&
         (proxy1->m_collisionFilterGroup & Vehicle::GROUP_MASK))
     {
-      Vehicle::UserPointerData* data0=
-        reinterpret_cast<Vehicle::UserPointerData*>(obj0->getUserPointer());
-      Vehicle::UserPointerData* data1=
-        reinterpret_cast<Vehicle::UserPointerData*>(obj1->getUserPointer());
+      Vehicle::UserData* data0=
+        reinterpret_cast<Vehicle::UserData*>(obj0->getUserPointer());
+      Vehicle::UserData* data1=
+        reinterpret_cast<Vehicle::UserData*>(obj1->getUserPointer());
 
-      if((data0 && data0->ghost_mode) || (data1 &&data1->ghost_mode))
+      if((data0 && data0->ghost_info->enabled) || (data1 &&data1->ghost_info->enabled))
       {
         return false;
       }

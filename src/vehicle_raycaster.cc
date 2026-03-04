@@ -31,11 +31,11 @@ namespace boink
         const btVector3& to, 
         VehicleRaycasterResult& result)
   {
-    Vehicle::UserPointerData* user_data=
-      reinterpret_cast<Vehicle::UserPointerData*>(m_chassis->getUserPointer());
+    Vehicle::UserData* user_data=
+      reinterpret_cast<Vehicle::UserData*>(m_chassis->getUserPointer());
     btAssert(user_data!=nullptr);
 
-    RayResultCallback rayCallback(from, to,user_data->ghost_mode);
+    RayResultCallback rayCallback(from, to,user_data->ghost_info->enabled);
     m_dynamicsWorld->rayTest(from, to, rayCallback);
 
     if (rayCallback.hasHit())

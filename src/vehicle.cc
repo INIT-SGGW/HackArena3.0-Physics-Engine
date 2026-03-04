@@ -31,6 +31,7 @@ namespace boink
       center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
+      user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
     this->correctCOM();
@@ -421,9 +422,14 @@ namespace boink
         GROUP_MASK,
         btBroadphaseProxy::AllFilter);
 
-    body->setUserPointer(&user_pointer_data_);
+    body->setUserPointer(&user_data_);
 
     return body;
+  }
+
+  void Vehicle::updateGhostMode(btScalar dt)
+  {
+    (void)dt;
   }
 
 }

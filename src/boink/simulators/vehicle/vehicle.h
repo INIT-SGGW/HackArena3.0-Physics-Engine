@@ -14,6 +14,8 @@
 #include "boink/simulators/vehicle/vehicle_mesh.h"
 #include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/bullet_user_data.h"
+//#include "boink/simulators/vehicle/ghost_mode_settings.h"
 
 #include <memory>
 
@@ -44,9 +46,20 @@ namespace boink
       Right
     };
 
-    struct UserPointerData
+    struct GhostModeInfo
     {
-      bool ghost_mode=false;
+      bool enabled=false;
+      bool is_inside_vehicle=false;
+      bool request_ghost_mode =false;
+    };
+    struct UserData : public BulletUserData
+    {
+      UserData(GhostModeInfo* ghost_info)
+        :BulletUserData(Type::Vehicle),
+        ghost_info(ghost_info)
+      {}
+
+      GhostModeInfo* ghost_info;
     };
   public:
     Vehicle(
@@ -92,6 +105,9 @@ namespace boink
     void setSteering(btScalar value, TurnDirection dir);
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
+
+    void enableGhostMode(GhostModeInfo ghost_info);
+    bool isInGhostMode() const {return ghost_info_.enabled;}
   private:
     void correctCOM();
     std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -99,8 +115,10 @@ namespace boink
         const btVector3& center_of_mass);
     std::unique_ptr<btRigidBody> createRigidbody(
         btScalar mass);
+
+    void updateGhostMode(btScalar dt);
   private:
-    UserPointerData user_pointer_data_;
+    GhostModeInfo ghost_info_;
 
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
@@ -120,6 +138,7 @@ namespace boink
     int laps_completed_=0;
     btScalar curr_lap_dist_point_=0;
 
+    UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;
   };
 }

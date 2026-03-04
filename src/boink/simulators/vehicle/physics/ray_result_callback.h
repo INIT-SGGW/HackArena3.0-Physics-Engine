@@ -3,6 +3,7 @@
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
+#include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/vehicle.h"
 
 namespace boink
@@ -28,14 +29,21 @@ namespace boink
 
       if (body)
       {
-        Vehicle::UserPointerData* user_data = 
-            reinterpret_cast<Vehicle::UserPointerData*>(body->getUserPointer());
+        BulletUserData* user_data=
+            reinterpret_cast<BulletUserData*>(body->getUserPointer());
 
-        if (user_data && user_data->ghost_mode)
+        if(user_data)
         {
-          // Return 1.0 (or current m_closestHitFraction) to tell Bullet:
-          // "Ignore this hit, and keep searching the rest of the ray."
-          return m_closestHitFraction; 
+          Vehicle::UserData* vehicle_data = 
+              reinterpret_cast<Vehicle::UserData*>(user_data);
+
+          if (vehicle_data->getType()==BulletUserData::Type::Vehicle &&
+              vehicle_data->ghost_info->enabled)
+          {
+            // Return 1.0 (or current m_closestHitFraction) to tell Bullet:
+            // "Ignore this hit, and keep searching the rest of the ray."
+            return m_closestHitFraction; 
+          }
         }
       }
 

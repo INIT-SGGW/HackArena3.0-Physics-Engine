@@ -115,6 +115,17 @@ namespace boink
     return controllers;
   }
 
+  int Race::update(
+      btScalar dt,
+      int max_sub_steps,
+      btScalar fixed_delta_time,
+      btScalar max_delta_time)
+  {
+    int steps=Simulation::update(dt,max_sub_steps,fixed_delta_time,max_delta_time);
+
+    return steps;
+  }
+
   void Race::updateDebug()
   {
     Simulation::updateDebug();
