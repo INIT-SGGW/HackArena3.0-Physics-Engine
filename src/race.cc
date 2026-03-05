@@ -46,9 +46,7 @@ namespace boink
         std::make_shared<Vehicle>(ci,track_,this->getDynamicsWorld());
     Simulator::ID vehicle_id=this->addSimulator(vehicle);
 
-    // TODO
-    // DELETE id check
-    if(ghost_enabled_&&vehicle_id!=3)
+    if(ghost_enabled_)
       vehicle->enableGhostSim(ghost_settings_);
 
     vehicles_.emplace(vehicle_id,vehicle);

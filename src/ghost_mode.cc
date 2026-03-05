@@ -35,16 +35,11 @@ namespace boink
 
   void GhostMode::update(btScalar dt)
   {
-    btScalar speed2=vehicle_->getRigidBody()->getLinearVelocity().length2();
-    btScalar min_exist_speed2=
-      settings_.min_exist_speed*settings_.min_exist_speed;
-    btScalar max_enter_speed2=
-      settings_.max_enter_speed*settings_.max_enter_speed;
+    btScalar speed=vehicle_->getRigidBody()->getLinearVelocity().length();
 
-    if(speed2<=max_enter_speed2 || 
+    if(speed<=settings_.max_enter_speed || 
         *laps_completed_<=(int)settings_.enabled_until_completed_laps)
     {
-      // mam byc tutaj w ghost mode a to znaczy ze moge restowac timer exit
       exit_timer_.reset();
       overlap_timer_.reset();
 
@@ -56,7 +51,7 @@ namespace boink
         this->enterGhostMode();
     }
 
-    if(speed2>=min_exist_speed2)
+    if(speed>=settings_.min_exist_speed)
     {
       enter_timer_.reset();
       overlap_timer_.reset();
@@ -79,7 +74,7 @@ namespace boink
       }
     }
 
-    if(speed2>max_enter_speed2 && speed2<min_exist_speed2)
+    if(speed>settings_.max_enter_speed && speed<settings_.min_exist_speed)
     {
       enter_timer_.reset();
       exit_timer_.reset();
