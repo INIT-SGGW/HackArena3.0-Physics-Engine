@@ -59,8 +59,8 @@ namespace boink
     for(const auto& node : nodes)
     {
 #ifndef NDEBUG
-      if(node.name!=TRACK_NAME)
-        continue;
+      //if(node.name!=TRACK_NAME)
+      //  continue;
 #endif
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
         continue;

@@ -38,7 +38,7 @@ namespace boink
     btScalar speed=vehicle_->getRigidBody()->getLinearVelocity().length();
 
     if(speed<=settings_.max_enter_speed || 
-        *laps_completed_<=(int)settings_.enabled_until_completed_laps)
+        *laps_completed_<(int)settings_.enabled_until_completed_laps)
     {
       exit_timer_.reset();
       overlap_timer_.reset();
@@ -54,7 +54,6 @@ namespace boink
     if(speed>=settings_.min_exist_speed)
     {
       enter_timer_.reset();
-      overlap_timer_.reset();
 
       if(!is_in_ghost_mode_)
         return;
@@ -70,7 +69,6 @@ namespace boink
           if(overlap_timer_.hasFinised())
             this->exitGhostMode();
         }
-        this->exitGhostMode();
       }
     }
 
