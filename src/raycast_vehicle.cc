@@ -24,6 +24,7 @@
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
 #include <BulletDynamics/ConstraintSolver/btContactConstraint.h>
 
+#include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/track/ground.h"
@@ -897,12 +898,18 @@ namespace boink
 
       if(!p_ground->getUserPointer())
         continue;
-      
-      // Here it might be unsave
-      Ground::SurfaceInfo& surface_info=
-        *(Ground::SurfaceInfo*)(p_ground->getUserPointer());
 
-      wheel.m_rollInfluence=surface_info.rolling_resistance;
+      // Here it might be unsave
+      BulletUserData* user_data=
+        (BulletUserData*)(p_ground->getUserPointer());
+
+      if(user_data->getType()!=BulletUserData::Type::Ground)
+        continue;
+
+      Ground::SurfaceInfo* surface_info=
+        (Ground::SurfaceInfo*)(user_data);
+
+      wheel.m_rollInfluence=surface_info->rolling_resistance;
     }
   }
 

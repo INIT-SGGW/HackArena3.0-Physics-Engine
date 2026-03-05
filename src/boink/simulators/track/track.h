@@ -95,7 +95,7 @@ namespace boink
     std::vector<SampleData> track_data_;
 
     btTransform transform_=btTransform::getIdentity();
-    std::string_view filename_;
+    std::string filename_;
 
     std::shared_ptr<const Weather> weather_;
 

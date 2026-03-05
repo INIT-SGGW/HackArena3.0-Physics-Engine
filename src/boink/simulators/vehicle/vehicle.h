@@ -14,6 +14,9 @@
 #include "boink/simulators/vehicle/vehicle_mesh.h"
 #include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/bullet_user_data.h"
+#include "boink/simulators/vehicle/ghost_mode_settings.h"
+#include "boink/simulators/vehicle/ghost_mode.h"
 
 #include <memory>
 
@@ -40,6 +43,20 @@ namespace boink
     {
       Left,
       Right
+    };
+
+    struct GhostModeInfo
+    {
+      bool enabled=false;
+    };
+    struct UserData : public BulletUserData
+    {
+      UserData(GhostModeInfo* ghost_info)
+        :BulletUserData(Type::Vehicle),
+        ghost_info(ghost_info)
+      {}
+
+      GhostModeInfo* ghost_info;
     };
   public:
     Vehicle(
@@ -85,16 +102,24 @@ namespace boink
     void setSteering(btScalar value, TurnDirection dir);
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
+
+    void enableGhostSim(const GhostModeSettings& ghost_setttings);
+    void disableGhostSim();
+    bool isInGhostMode() const {return ghost_info_.enabled;}
   private:
-    void correctCOM();
-    std::unique_ptr<btCompoundShape> createCollisonShape(
+    static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
+    static std::unique_ptr<btCompoundShape> createCollisonShape(
         const std::vector<btVector3>& vertices,
         const btVector3& center_of_mass);
-    std::unique_ptr<btRigidBody> createRigidbody(
+    static std::unique_ptr<btRigidBody> createRigidbody(
+        btCompoundShape* col_shape,
+        btMotionState* motion_state,
         btScalar mass);
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
+
+    btVector3 center_of_mass_;
 
     std::unique_ptr<btCompoundShape> collision_shape_;
     std::unique_ptr<btMotionState> motion_state_;
@@ -104,13 +129,16 @@ namespace boink
 
     std::shared_ptr<const Track> track_;
 
-    btVector3 center_of_mass_;
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
+    
+    int laps_completed_;
+    btScalar curr_lap_dist_point_;
 
-    int laps_completed_=0;
-    btScalar curr_lap_dist_point_=0;
+    GhostModeInfo ghost_info_;
+    GhostMode ghost_sim_;
 
+    UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;
   };
 }

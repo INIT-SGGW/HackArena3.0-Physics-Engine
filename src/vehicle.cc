@@ -1,5 +1,6 @@
 #include "boink/simulators/vehicle/vehicle.h"
 
+#include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
@@ -12,6 +13,8 @@
 #include "boink/gui/vehicle_gui.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/utility.h"
+//#include "boink/who_contact_callback.h"
+#include "boink/collision_group.h"
 
 #include <memory>
 #include <cassert>
@@ -25,31 +28,40 @@ namespace boink
     :
       mesh_(create_info.mesh),
       world_(world),
-      motion_state_(new btDefaultMotionState(mesh_->getChassis().transform)),
-      raycaster_(new VehicleRaycaster(world_.get())),
+      center_of_mass_(
+          correctCOM(create_info.center_of_mass,mesh_.get())),
+      collision_shape_(
+          createCollisonShape(mesh_->getChassis().vertices,center_of_mass_)),
+      motion_state_(
+          new btDefaultMotionState(mesh_->getChassis().transform)),
+      rigidbody_(
+          createRigidbody(collision_shape_.get(),motion_state_.get(),create_info.mass)),
+      raycaster_(
+        std::make_unique<VehicleRaycaster>(world_.get(),rigidbody_.get())),
+      vehicle_(new RaycastVehicle(rigidbody_.get(), raycaster_.get())),
       track_(track),
-      center_of_mass_(create_info.center_of_mass),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
+      laps_completed_(0),
+      curr_lap_dist_point_(0.f),
+      ghost_sim_(world_.get(),vehicle_.get(),&laps_completed_),
+      user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
-    this->correctCOM();
-    collision_shape_=createCollisonShape(
-        mesh_->getChassis().vertices,
-        center_of_mass_);
-    rigidbody_=createRigidbody(create_info.mass);
+    world_->addRigidBody(
+        rigidbody_.get(),
+        CollisionGroup::Vehicle,
+        CollisionGroup::Vehicle | CollisionGroup::Static);
 
+    rigidbody_->setUserPointer(&user_data_);
+    //
     // I dont know why but everybody does this.
     rigidbody_->setActivationState(DISABLE_DEACTIVATION);
 
     // Because cars might move fast we wanna avoid
     // cliping them or just going over a wall
-    rigidbody_->setCcdMotionThreshold(1.0);
+    rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
-
-    vehicle_=std::unique_ptr<RaycastVehicle>(
-        new RaycastVehicle(rigidbody_.get(), raycaster_.get())
-    );
 
     vehicle_->setCoordinateSystem(
         0, // right (X)
@@ -168,6 +180,9 @@ namespace boink
 
     laps_completed_=curr_laps_completed;
     curr_lap_dist_point_=curr_coverage;
+
+    ghost_sim_.update(dt);
+    ghost_info_.enabled=ghost_sim_.isInGhostMode();
   }
 
   void Vehicle::updateRender(Renderer* renderer)
@@ -352,23 +367,85 @@ namespace boink
     vehicle_->setBrake(brake,(int)WheelPosition::FrontRight);
   }
 
-  void Vehicle::correctCOM()
+  void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
+  {
+    ghost_sim_.enable(ghost_settings);
+  }
+
+  void Vehicle::disableGhostSim()
+  {
+    ghost_sim_.disable();
+    ghost_info_.enabled=false;
+  }
+
+  //void Vehicle::updateGhostSim(btScalar dt)
+  //{
+  //  (void)dt;
+  //  if(!is_ghost_sim_on_)
+  //    return;
+
+  //  if(request_ghost_mode && ghost_info_.enabled==false)
+  //  {
+  //    // TODO
+  //    // Enter ghost mode
+  //    ghost_info_.enabled=true;
+
+  //    world_->removeAction(vehicle_.get());
+  //    world_->removeRigidBody(rigidbody_.get());
+
+  //    world_->addRigidBody(
+  //        rigidbody_.get(),
+  //        CollisionGroup::Vehicle,
+  //        CollisionGroup::Static);
+
+  //    world_->addAction(vehicle_.get());
+  //  }
+
+  //  if(!request_ghost_mode && ghost_info_.enabled==true)
+  //  {
+  //    // TODO
+  //    // Exit ghost mode
+  //    WhoContactCallback who_callback(vehicle_->getRigidBody());
+  //    world_->contactTest(vehicle_->getRigidBody(),who_callback);
+
+  //    if(who_callback.getHits().size()==0)
+  //    {
+  //      ghost_info_.enabled=false;
+
+  //      world_->removeAction(vehicle_.get());
+  //      world_->removeRigidBody(rigidbody_.get());
+
+  //      world_->addRigidBody(
+  //          rigidbody_.get(),
+  //          CollisionGroup::Vehicle,
+  //          CollisionGroup::Vehicle | CollisionGroup::Static);
+  //      
+  //      world_->addAction(vehicle_.get());
+  //    }
+  //  }
+
+  //}
+
+  btVector3 Vehicle::correctCOM(const btVector3& com,const VehicleMesh* mesh)
   {
     btVector3 front_left_cs=
-      mesh_->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin();
+      mesh->getLocalWheelTransform(WheelPosition::FrontLeft).getOrigin();
     btVector3 front_right_cs=
-      mesh_->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin();
+      mesh->getLocalWheelTransform(WheelPosition::FrontRight).getOrigin();
     btVector3 rear_left_cs=
-      mesh_->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin();
+      mesh->getLocalWheelTransform(WheelPosition::RearLeft).getOrigin();
     btVector3 rear_right_cs=
-      mesh_->getLocalWheelTransform(WheelPosition::RearRight).getOrigin();
+      mesh->getLocalWheelTransform(WheelPosition::RearRight).getOrigin();
     btVector3 mid_front=front_left_cs+(front_right_cs-front_left_cs)/2.f;
     btVector3 mid_rear=rear_left_cs+(rear_right_cs-rear_left_cs)/2.f;
 
     btVector3 mid_point=mid_rear+(mid_front-mid_rear)/2.f;
     mid_point.setY(0.f);
 
-    center_of_mass_+=mid_point;
+    btVector3 new_com=com;
+    new_com+=mid_point;
+
+    return new_com;
   }
 
   std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(
@@ -402,21 +479,21 @@ namespace boink
   }
 
   std::unique_ptr<btRigidBody> Vehicle::createRigidbody(
+      btCompoundShape* col_shape,
+      btMotionState* motion_state,
       btScalar mass)
   {
     assert(mass!=0.f);
 
     btVector3 local_inertia(0, 0, 0);
-    collision_shape_->calculateLocalInertia(mass, local_inertia);
+    col_shape->calculateLocalInertia(mass, local_inertia);
 
     btRigidBody::btRigidBodyConstructionInfo rb_info
-      (mass, motion_state_.get(), collision_shape_.get(), local_inertia);
+      (mass, motion_state, col_shape, local_inertia);
 
     std::unique_ptr<btRigidBody> body (new btRigidBody(rb_info));
 
-    world_->addRigidBody(body.get());
 
     return body;
   }
-
 }

@@ -62,14 +62,14 @@ namespace boink
     return dynamics_world_->getGravity().y();
   }
 
-  void Simulation::update(
+  int Simulation::update(
       btScalar dt,
       int max_sub_steps,
       btScalar fixed_delta_time,
       btScalar max_delta_time)
   {
     if(freeze_)
-      return;
+      return 0;
 
     // With large delta time simulation behaves oddly.
     dt=btMin(dt,max_delta_time);
@@ -83,6 +83,8 @@ namespace boink
       auto& simulator=simulators_.at(id);
       simulator->update(simulation_step);
     }
+
+    return steps;
   }
 
   void Simulation::updateDebug()

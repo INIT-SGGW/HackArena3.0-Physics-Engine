@@ -4,6 +4,7 @@
 #include "boink/exception.h"
 #include "boink/simulation/race.h"
 #include "boink/simulation/simulation.h"
+#include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/vehicle_mesh.h"
@@ -590,7 +591,6 @@ int boink_set_weather(BoinkHandle handle, const BoinkWeather* weather)
       handle);
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       weather);
-  (void)p_race;
 
   Real transition_duration=30.f;
   
@@ -598,6 +598,38 @@ int boink_set_weather(BoinkHandle handle, const BoinkWeather* weather)
   weather_sim->setTemperatureCelcius(weather->temperature_c,transition_duration);
   weather_sim->setCloudiness(weather->cloudiness,transition_duration);
   weather_sim->setRainIndensity(weather->rain_intensity,transition_duration);
+
+  return BOINK_OK;
+}
+
+int boink_set_ghost_mode_settings(
+    BoinkHandle handle, const BoinkGhostModeSettings* settings)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      settings);
+
+  boink::GhostModeSettings boink_settings;
+  boink_settings.enabled_until_completed_laps=settings->until_completed_laps;
+  boink_settings.enter_delay=settings->enter_delay_ms/1000.f;
+  boink_settings.exit_delay=settings->exit_delay_ms/1000.f;
+  boink_settings.exit_delay_when_overlap=settings->vehicle_overlap_exit_delay_ms/1000.f;
+  boink_settings.max_enter_speed=settings->enter_speed_max_mps;
+  boink_settings.min_exist_speed=settings->exit_speed_min_mps;
+
+  p_race->enableGhostMode(boink_settings);
+  return BOINK_OK;
+}
+
+int boink_disable_ghost_mode(BoinkHandle handle)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+
+  p_race->disableGhostMode();
 
   return BOINK_OK;
 }

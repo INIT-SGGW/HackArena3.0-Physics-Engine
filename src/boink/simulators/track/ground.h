@@ -8,6 +8,8 @@
 #include <LinearMath/btVector3.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 
+#include "boink/bullet_user_data.h"
+
 #include <memory>
 #include <vector>
 #include <cassert>
@@ -25,6 +27,16 @@ namespace boink
       Gravel
     };
     struct SurfaceInfo;
+
+    struct UserData : public BulletUserData
+    {
+      UserData(const SurfaceInfo* p_surface_info)
+        :BulletUserData(Type::Ground),
+        p_surface_info(p_surface_info)
+      {}
+
+      const SurfaceInfo* p_surface_info;
+    };
   public:
     Ground(
         const std::vector<btVector3>& vertices, 
@@ -58,6 +70,7 @@ namespace boink
 
     const SurfaceInfo* p_surface_info_;
     const btTransform model_transform_;
+    UserData user_data_;
   public:
     static inline const char* toString(Type type)
     {
