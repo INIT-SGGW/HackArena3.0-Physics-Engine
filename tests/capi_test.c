@@ -65,6 +65,19 @@ int main()
     boink_terminate();
     return -1;
   }
+  BoinkGhostModeSettings settings;
+  settings.enter_delay_ms=5000.f;
+  settings.exit_delay_ms=10000.f;
+  settings.enter_speed_max_mps=5.f;
+  settings.exit_speed_min_mps=20.f;
+  settings.until_completed_laps=1;
+  settings.vehicle_overlap_exit_delay_ms=1000.f;
+
+  if((code=boink_set_ghost_mode_settings(handle,&settings))!=BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
 
   BoinkVehicleModel model;
   model.center_of_mass.x=0.;

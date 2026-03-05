@@ -4,6 +4,7 @@
 #include "boink/simulators/track/track.h"
 #include "boink/gui/race_gui.h"
 #include "boink/debugger/vehicle_controller.h"
+#include "boink/simulators/vehicle/ghost_mode_settings.h"
 
 #include <sstream>
 
@@ -21,7 +22,6 @@ namespace boink
   {
     this->addSimulator(track_);
     this->addSimulator(weather_);
-
   }
 
   Race::~Race()
@@ -45,6 +45,11 @@ namespace boink
     auto vehicle=
         std::make_shared<Vehicle>(ci,track_,this->getDynamicsWorld());
     Simulator::ID vehicle_id=this->addSimulator(vehicle);
+
+    // TODO
+    // DELETE id check
+    if(ghost_enabled_&&vehicle_id!=3)
+      vehicle->enableGhostSim(ghost_settings_);
 
     vehicles_.emplace(vehicle_id,vehicle);
 
@@ -95,6 +100,22 @@ namespace boink
     }
 
     return vehicles_.at(id);
+  }
+
+  void Race::enableGhostMode(GhostModeSettings ghost_settings)
+  {
+    ghost_settings_=std::move(ghost_settings);
+    ghost_enabled_=true;
+
+    for(auto& [_,vehicle]:vehicles_)
+      vehicle->enableGhostSim(ghost_settings_);
+  }
+
+  void Race::disableGhostMode()
+  {
+    ghost_enabled_=false;
+    for(auto& [_,vehicle]:vehicles_)
+      vehicle->disableGhostSim();
   }
 
   std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 

@@ -5,6 +5,7 @@
 #include <BulletDynamics/Vehicle/btRaycastVehicle.h>
 
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/gui/ghost_gui.h"
 
 namespace boink
 {
@@ -22,5 +23,7 @@ namespace boink
     bool collider_enabled=true;
   private:
     Vehicle* p_vehicle_=nullptr;
+
+    GhostGui ghost_gui_;
   };
 }

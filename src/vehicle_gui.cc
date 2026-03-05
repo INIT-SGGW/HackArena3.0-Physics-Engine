@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "boink/gui/ghost_gui.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
@@ -9,7 +10,7 @@
 namespace boink
 {
   VehicleGui::VehicleGui(Vehicle* p_vehicle)
-    :p_vehicle_(p_vehicle)
+    :p_vehicle_(p_vehicle),ghost_gui_(&p_vehicle_->ghost_sim_)
   {}
 
   static const char* tyreTypeToStr(WheelInfo::TyreType type);
@@ -23,7 +24,8 @@ namespace boink
 
     ImGui::Checkbox("Mesh enabled",&mesh_enabled);
     ImGui::Checkbox("Collider enabled",&collider_enabled);
-    ImGui::Checkbox("Ghost mode",&p_vehicle_->request_ghost_mode);
+    ImGui::Text("In ghost mode: %s",
+        p_vehicle_->ghost_info_.enabled?"true":"false");
 
     ImGui::SliderFloat(
         "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
@@ -56,6 +58,9 @@ namespace boink
     btVector3 center_of_mass_cs=p_vehicle_->getCenterOfMassCS();
     ImGui::Text("COM in CS: (%.2f,%.2f,%.2f) [m]",
         center_of_mass_cs[0],center_of_mass_cs[1],center_of_mass_cs[2]);
+
+    if(ImGui::CollapsingHeader(ghost_gui_.getTitle().data()))
+      ghost_gui_.draw();
 
     ImGui::SliderFloat(
         "Wear rate soft",&WheelInfo::TyreInfo::s_softWearRatePerMin,0.f,0.1f);

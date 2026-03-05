@@ -110,6 +110,8 @@ target_sources(boink
     src/vehicle_raycaster.cc
     src/raycast_vehicle.cc
     src/wheel_info.cc
+    src/ghost_mode.cc
+    src/ghost_gui.cc
 )
 
 target_include_directories(boink

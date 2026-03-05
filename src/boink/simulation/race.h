@@ -1,6 +1,7 @@
 #pragma once
 
 #include "boink/simulation/simulation.h"
+#include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/debugger/controller.h"
 #include "boink/simulators/weather.h"
@@ -34,6 +35,8 @@ namespace boink
     std::shared_ptr<Vehicle> getVehicle(Simulator::ID id);
     auto& getVehicles() {return vehicles_;}
 
+    void enableGhostMode(GhostModeSettings ghost_settings);
+    void disableGhostMode();
 
     // Temporary soliton
     void setUserPtr(void* ptr)
@@ -53,6 +56,9 @@ namespace boink
     std::shared_ptr<Weather> weather_;
     std::shared_ptr<Track> track_;
     std::unordered_map<Simulator::ID,std::shared_ptr<Vehicle>> vehicles_;
+
+    bool ghost_enabled_=false;
+    GhostModeSettings ghost_settings_;
 
     void* user_ptr_=nullptr;
   };
