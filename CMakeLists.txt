@@ -40,7 +40,7 @@ find_package(piksel CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC piksel::piksel)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  if (MSVC)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
     if(USE_ASAN_WIN)
     target_compile_options(boink PUBLIC /fsanitize=address)
@@ -54,7 +54,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(USE_ASAN_WIN)
     target_link_options(boink PUBLIC /fsanitize=address)
     endif() 
-  else()
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
     
     target_compile_options( boink PRIVATE
