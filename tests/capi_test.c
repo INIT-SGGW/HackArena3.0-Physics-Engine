@@ -63,7 +63,7 @@ int main()
   model.max_steer_angle = 90;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.4;
-  model.wheel_radius = 0.36;
+  model.wheel_radius = 0.33;
 
   uint64_t id0;
   if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
@@ -71,12 +71,12 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  uint64_t id1;
+  /*uint64_t id1;
   if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
-  }
+  }*/
 
   if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
   {

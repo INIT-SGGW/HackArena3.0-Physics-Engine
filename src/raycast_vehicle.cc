@@ -26,6 +26,7 @@
 #include "boink/simulators/track/ground.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
+#include "boink/simulators/vehicle/wheel_position.h"
 
 #define ROLLING_INFLUENCE_FIX
 
@@ -71,14 +72,14 @@ void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar ste
   //
   // simulate suspension
   //
-  for (int i = 0; i < m_wheelInfo.size(); i++) rayCast(m_wheelInfo[i]);
+  for (int i = 0; i < m_wheelsInfo.size(); i++) rayCast(m_wheelsInfo[i]);
 
   updateSuspension(step);
 
-  for (int i = 0; i < m_wheelInfo.size(); i++)
+  for (int i = 0; i < m_wheelsInfo.size(); i++)
   {
     // apply suspension force
-    WheelInfo& wheel = m_wheelInfo[i];
+    WheelInfo& wheel = m_wheelsInfo[i];
 
     btScalar suspensionForce = wheel.m_wheelsSuspensionForce;
     if (suspensionForce > wheel.m_suspensionInfo.m_maxForce) suspensionForce = wheel.m_suspensionInfo.m_maxForce;
@@ -91,35 +92,36 @@ void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar ste
 
   updateFriction(step);
 
-  for (int i = 0; i < m_wheelInfo.size(); i++)
+  for (int i = 0; i < m_wheelsInfo.size(); i++)
   {
-    WheelInfo& wheel = m_wheelInfo[i];
+    WheelInfo& wheel = m_wheelsInfo[i];
     btVector3 relpos = wheel.m_raycastInfo.m_hardPointWS - getRigidBody()->getCenterOfMassPosition();
     btVector3 vel = getRigidBody()->getVelocityInLocalPoint(relpos);
 
-    if (wheel.m_raycastInfo.m_isInContact)
-    {
-      const btTransform& chassisWorldTransform = getChassisWorldTransform();
+    // THIS IS POTENNTIALY ONLY FOR VISUAL PURPOSES AND IT IS NOT NEEDED FOR US
+    // if (wheel.m_raycastInfo.m_isInContact)
+    //{
+    //  const btTransform& chassisWorldTransform = getChassisWorldTransform();
 
-      btVector3 fwd(chassisWorldTransform.getBasis()[0][m_indexForwardAxis],
-                    chassisWorldTransform.getBasis()[1][m_indexForwardAxis],
-                    chassisWorldTransform.getBasis()[2][m_indexForwardAxis]);
+    //  btVector3 fwd(chassisWorldTransform.getBasis()[0][m_indexForwardAxis],
+    //                chassisWorldTransform.getBasis()[1][m_indexForwardAxis],
+    //                chassisWorldTransform.getBasis()[2][m_indexForwardAxis]);
 
-      btScalar proj = fwd.dot(wheel.m_raycastInfo.m_contactNormalWS);
-      fwd -= wheel.m_raycastInfo.m_contactNormalWS * proj;
+    //  btScalar proj = fwd.dot(wheel.m_raycastInfo.m_contactNormalWS);
+    //  fwd -= wheel.m_raycastInfo.m_contactNormalWS * proj;
 
-      btScalar proj2 = fwd.dot(vel);
+    //  btScalar proj2 = fwd.dot(vel);
 
-      wheel.m_deltaRotation = (proj2 * step) / (wheel.m_wheelsRadius);
-      wheel.m_rotation += wheel.m_deltaRotation;
-    }
-    else
-      wheel.m_rotation += wheel.m_deltaRotation;
+    //  wheel.m_deltaRotation = (proj2 * step) / (wheel.m_wheelsRadius);
+    //  wheel.m_rotation += wheel.m_deltaRotation;
+    //}
+    // else
+    //  wheel.m_rotation += wheel.m_deltaRotation;
 
-    // damping of rotation when not in contact
-    wheel.m_deltaRotation *= btScalar(0.99);
+    //// damping of rotation when not in contact
+    // wheel.m_deltaRotation *= btScalar(0.99);
 
-    wheel.m_wheelAngularSpeed = wheel.m_deltaRotation / step;
+    // wheel.m_angSpeed = wheel.m_deltaRotation / step;
   }
 
   applyAerodynamics(step);
@@ -141,13 +143,13 @@ const btTransform& RaycastVehicle::getWheelTransformWS(int wheelIndex) const
 {
   btAssert(wheelIndex < getNumWheels());
 
-  const WheelInfo& wheel = m_wheelInfo[wheelIndex];
+  const WheelInfo& wheel = m_wheelsInfo[wheelIndex];
   return wheel.m_worldTransform;
 }
 
 void RaycastVehicle::updateWheelTransform(int wheelIndex, bool interpolatedTransform)
 {
-  WheelInfo& wheel = m_wheelInfo[wheelIndex];
+  WheelInfo& wheel = m_wheelsInfo[wheelIndex];
   updateWheelTransformsWS(wheel, interpolatedTransform);
   btVector3 up = -wheel.m_raycastInfo.m_wheelDirectionWS;
   const btVector3& right = wheel.m_raycastInfo.m_wheelAxleWS;
@@ -217,9 +219,9 @@ WheelInfo& RaycastVehicle::addWheel(const btVector3& connectionPointCS, const bt
 
   ci.m_tyreType = tyreType;
 
-  m_wheelInfo.push_back(WheelInfo(ci));
+  m_wheelsInfo.push_back(WheelInfo(ci));
 
-  WheelInfo& wheel = m_wheelInfo[getNumWheels() - 1];
+  WheelInfo& wheel = m_wheelsInfo[getNumWheels() - 1];
 
   updateWheelTransformsWS(wheel, false);
   updateWheelTransform(getNumWheels() - 1, false);
@@ -230,14 +232,14 @@ const WheelInfo& RaycastVehicle::getWheelInfo(int index) const
 {
   btAssert((index >= 0) && (index < getNumWheels()));
 
-  return m_wheelInfo[index];
+  return m_wheelsInfo[index];
 }
 
 WheelInfo& RaycastVehicle::getWheelInfo(int index)
 {
   btAssert((index >= 0) && (index < getNumWheels()));
 
-  return m_wheelInfo[index];
+  return m_wheelsInfo[index];
 }
 
 btScalar RaycastVehicle::getSteeringValue(int wheel) const { return getWheelInfo(wheel).m_steering; }
@@ -250,13 +252,14 @@ void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
   wheelInfo.m_steering = steering;
 }
 
-void RaycastVehicle::applyEngineForce(btScalar force, int wheel)
-{
-  btAssert(wheel >= 0 && wheel < getNumWheels());
-
-  WheelInfo& wheelInfo = getWheelInfo(wheel);
-  wheelInfo.m_engineForce = force;
-}
+// TO DELETE
+// void RaycastVehicle::applyEngineForce(btScalar force, int wheel)
+//{
+//  btAssert(wheel >= 0 && wheel < getNumWheels());
+//
+//  WheelInfo& wheelInfo = getWheelInfo(wheel);
+//  wheelInfo.m_engineForce = force;
+//}
 
 void RaycastVehicle::setBrake(btScalar brake, int wheelIndex)
 {
@@ -348,9 +351,9 @@ btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
 
 void RaycastVehicle::resetSuspension()
 {
-  for (int i = 0; i < m_wheelInfo.size(); i++)
+  for (int i = 0; i < m_wheelsInfo.size(); i++)
   {
-    WheelInfo& wheel = m_wheelInfo[i];
+    WheelInfo& wheel = m_wheelsInfo[i];
     wheel.m_raycastInfo.m_suspensionLength = wheel.getSuspensionRestLength();
     wheel.m_suspensionRelativeVelocity = btScalar(0.0);
 
@@ -368,7 +371,7 @@ void RaycastVehicle::updateSuspension(btScalar deltaTime)
 
   for (int w_it = 0; w_it < getNumWheels(); w_it++)
   {
-    WheelInfo& wheel_info = m_wheelInfo[w_it];
+    WheelInfo& wheel_info = m_wheelsInfo[w_it];
 
     if (wheel_info.m_raycastInfo.m_isInContact)
     {
@@ -477,7 +480,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   // collapse all those loops into one!
   for (int i = 0; i < getNumWheels(); i++)
   {
-    WheelInfo& wheelInfo = m_wheelInfo[i];
+    WheelInfo& wheelInfo = m_wheelsInfo[i];
     class btRigidBody* groundObject = (class btRigidBody*)wheelInfo.m_raycastInfo.m_groundObject;
     if (groundObject) numWheelsOnGround++;
     m_sideImpulse[i] = btScalar(0.);
@@ -486,7 +489,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
   for (int i = 0; i < getNumWheels(); i++)
   {
-    WheelInfo& wheelInfo = m_wheelInfo[i];
+    WheelInfo& wheelInfo = m_wheelsInfo[i];
 
     class btRigidBody* groundObject = (class btRigidBody*)wheelInfo.m_raycastInfo.m_groundObject;
 
@@ -519,13 +522,88 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
   bool sliding = false;
   {
+    auto total_drive_torque = updateDriveParts(timeStep);
     for (int wheel = 0; wheel < getNumWheels(); wheel++)
     {
-      WheelInfo& wheelInfo = m_wheelInfo[wheel];
+      WheelInfo& wheelInfo = m_wheelsInfo[wheel];
       class btRigidBody* groundObject = (class btRigidBody*)wheelInfo.m_raycastInfo.m_groundObject;
 
       btScalar rollingFriction = 0.f;
-      if (groundObject)
+      // TODO: differential here should seperate in right proportions drive torque to left and right wheel, for now is
+      // always equal
+      if (!wheelInfo.m_bIsFrontWheel)
+      {
+        auto drive_torque = total_drive_torque / 2;
+        auto traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelsRadius;
+        auto total_torque = drive_torque + traction_torque;
+
+        auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelsRadius * wheelInfo.kWheelMassDistCoeff;
+        auto engine_inertia_part =
+            m_engine.inertia *
+            btPow(m_gearbox.GetCurrentRatio() * m_gearbox.kDifferentialRatio * kTransmissionEfficiency, 2);
+
+        auto wheel_angular_acceleration = total_torque / (wheel_inertia + engine_inertia_part);
+        auto wheel_speed_diff = wheel_angular_acceleration * timeStep;
+
+        if (m_gearbox.current_gear != Gear::Reverse)
+        {
+          if ((wheelInfo.m_angSpeed + wheel_speed_diff) < 0)
+            wheelInfo.m_angSpeed = 0;
+          else
+            wheelInfo.m_angSpeed += wheel_speed_diff;
+        }
+        else
+        {
+          if ((wheelInfo.m_angSpeed + wheel_speed_diff) > 0)
+            wheelInfo.m_angSpeed = 0;
+          else
+            wheelInfo.m_angSpeed += wheel_speed_diff;
+        }
+
+        // calculating slip ratio and traction force
+        auto slip_ratio = 0.0f;
+        auto speed = getWheelLongSpeed(wheelInfo);
+
+        if (speed == 0 && m_throttle == 0)
+          wheelInfo.m_traction_force = 0.0f;
+        else
+        {
+          if (speed == 0)
+          {
+            if (m_gearbox.current_gear == Gear::Reverse)
+              slip_ratio = -0.0001f;
+            else
+              slip_ratio = 0.0001f;
+          }
+          else if (btFabs(speed) < 2.9 && m_throttle == 0)
+          {
+            // this is a protection against speed approachig zero and then slip
+            // ratio approaching infinity what causing numerical instability (
+            // TODO: and not working too well xD)
+            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelsRadius - speed) / 2.9;
+          }
+          else
+          {
+            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelsRadius - speed) / btFabs(speed);
+          }
+
+          if (slip_ratio < 0)
+            wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * -kSlipRatioToGrip.GetValue(-slip_ratio);
+          else
+            wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * kSlipRatioToGrip.GetValue(slip_ratio);
+
+          rollingFriction = wheelInfo.m_traction_force * timeStep;
+
+          std::cout << "drive_torque:  " << drive_torque << "\t";
+          std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
+          std::cout << "total_torque: " << total_torque << "\t";
+          std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
+          std::cout << "long_speed: " << speed << "\t";
+          std::cout << "slip_ratio: " << slip_ratio << "\t";
+          std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
+        }
+      }
+      else if (groundObject)  // bullet mechanic for front wheels (temporary)
       {
         if (wheelInfo.m_engineForce != 0.f)
           rollingFriction = wheelInfo.m_engineForce * timeStep;
@@ -543,11 +621,11 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       // switch between active rolling (throttle), braking and non-active rolling friction (no throttle/break)
 
       m_forwardImpulse[wheel] = btScalar(0.);
-      m_wheelInfo[wheel].m_skidInfo = btScalar(1.);
+      m_wheelsInfo[wheel].m_skidInfo = btScalar(1.);
 
       if (groundObject)
       {
-        m_wheelInfo[wheel].m_skidInfo = btScalar(1.);
+        m_wheelsInfo[wheel].m_skidInfo = btScalar(1.);
 
         btScalar maximp = wheelInfo.m_wheelsSuspensionForce * timeStep * wheelInfo.m_frictionSlip;
         btScalar maximpSide = maximp;
@@ -567,10 +645,22 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
           sliding = true;
 
           btScalar factor = maximp / btSqrt(impulseSquared);
-          m_wheelInfo[wheel].m_skidInfo *= factor;
+          m_wheelsInfo[wheel].m_skidInfo *= factor;
         }
       }
     }
+
+    // feedback to engine
+    auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
+                          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
+                         2;
+    auto new_rpm =
+        avg_ang_speed * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * (60.0f / (2.0f * 3.14159f));
+    if (new_rpm > 15000.0f)  // rev limiter
+      m_engine.is_revLimiter_active = true;
+    else if (m_engine.is_revLimiter_active && new_rpm < 14600.0f)
+      m_engine.is_revLimiter_active = false;
+    m_engine.SetNewRPM(new_rpm);
   }
 
   if (sliding)
@@ -579,10 +669,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     {
       if (m_sideImpulse[wheel] != btScalar(0.))
       {
-        if (m_wheelInfo[wheel].m_skidInfo < btScalar(1.))
+        if (m_wheelsInfo[wheel].m_skidInfo < btScalar(1.))
         {
-          m_forwardImpulse[wheel] *= m_wheelInfo[wheel].m_skidInfo;
-          m_sideImpulse[wheel] *= m_wheelInfo[wheel].m_skidInfo;
+          m_forwardImpulse[wheel] *= m_wheelsInfo[wheel].m_skidInfo;
+          m_sideImpulse[wheel] *= m_wheelsInfo[wheel].m_skidInfo;
         }
       }
     }
@@ -592,7 +682,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   {
     for (int wheel = 0; wheel < getNumWheels(); wheel++)
     {
-      WheelInfo& wheelInfo = m_wheelInfo[wheel];
+      WheelInfo& wheelInfo = m_wheelsInfo[wheel];
 
       btVector3 rel_pos = wheelInfo.m_raycastInfo.m_contactPointWS - m_chassisBody->getCenterOfMassPosition();
 
@@ -600,7 +690,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
         m_chassisBody->applyImpulse(m_forwardWS[wheel] * (m_forwardImpulse[wheel]), rel_pos);
       if (m_sideImpulse[wheel] != btScalar(0.))
       {
-        class btRigidBody* groundObject = (class btRigidBody*)m_wheelInfo[wheel].m_raycastInfo.m_groundObject;
+        class btRigidBody* groundObject = (class btRigidBody*)m_wheelsInfo[wheel].m_raycastInfo.m_groundObject;
         btVector3 rel_pos2 = wheelInfo.m_raycastInfo.m_contactPointWS - groundObject->getCenterOfMassPosition();
 
         btVector3 sideImp = m_axle[wheel] * m_sideImpulse[wheel];
@@ -619,6 +709,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       }
     }
   }
+
+  std::cout << "gear:  " << m_gearbox.current_gear << "\t";
+  std::cout << "rpm:  " << m_engine.rpm << "\t";
+  std::cout << "old_speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
 }
 
 btVector3 RaycastVehicle::getForwardVector() const
@@ -742,4 +836,89 @@ btScalar RaycastVehicle::getTyreWearRatePerMin(WheelInfo::TyreType type)
       return WheelInfo::TyreInfo::s_softWearRatePerMin;
   }
 }
+
+btScalar RaycastVehicle::updateDriveParts(btScalar step)
+{
+  (void)step;
+  auto current_gear = static_cast<uint8_t>(m_gearbox.current_gear);
+  if (m_gear_up)
+  {
+    auto new_rpms = -1.f;
+
+    if (current_gear == static_cast<uint8_t>(Gear::Neutral))
+    {
+      auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
+                            m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
+                           2;
+      new_rpms = avg_ang_speed * m_gearbox.kGearRatios[current_gear + 1] * Gearbox::kDifferentialRatio *
+                 (60.0f / (2.0f * 3.14159f));
+    }
+    else if (current_gear == static_cast<uint8_t>(Gear::Reverse))
+    {
+      if (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed == 0 &&
+          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed == 0)
+        m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);
+    }
+    else if (current_gear != (std::size(m_gearbox.kGearRatios) - 1))
+    {
+      new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear + 1] / m_gearbox.GetCurrentRatio());
+    }
+
+    if (new_rpms >= 0)
+    {
+      m_engine.SetNewRPM(new_rpms);
+      m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);
+    }
+    m_gear_up = false;
+  }
+
+  if (m_gear_down)
+  {
+    if (current_gear == static_cast<uint8_t>(Gear::Neutral))
+    {
+      if (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed == 0 &&
+          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed == 0)
+        m_gearbox.current_gear = static_cast<Gear>(current_gear - 1);
+    }
+    else if (current_gear != 0)
+    {
+      auto new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear - 1] / m_gearbox.GetCurrentRatio());
+      if (new_rpms < 15000)
+      {
+        m_engine.SetNewRPM(new_rpms);
+        m_gearbox.current_gear = static_cast<Gear>(current_gear - 1);
+      }
+    }
+    m_gear_down = false;
+  }
+
+  auto drive_torque = 0.0f;
+  if (m_throttle == 0)
+  {
+    drive_torque = -70 * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * kTransmissionEfficiency;
+  }
+  else if (!m_engine.is_revLimiter_active)
+  {
+    drive_torque = m_engine.GetMaxTorque() * m_throttle * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio *
+                   kTransmissionEfficiency;
+  }
+  return drive_torque;
+}
+
+btScalar RaycastVehicle::getWheelLongSpeed(WheelInfo& wheel) const
+{
+  auto chasis = getRigidBody();
+  btTransform wheel_trans = wheel.m_worldTransform;
+  auto forward_dir = wheel_trans.getBasis().getColumn(m_indexForwardAxis);
+
+  auto contact_point = wheel.m_raycastInfo.m_contactPointWS;
+  btVector3 rel_pos = contact_point - chasis->getCenterOfMassPosition();
+  auto vel_at_contact = chasis->getVelocityInLocalPoint(rel_pos);
+
+  // here should be consideration of movement of ground if it is not static object (more realistic if one car will
+  // speeding on another)
+
+  return vel_at_contact.dot(forward_dir);
+}
+
 }  // namespace boink
