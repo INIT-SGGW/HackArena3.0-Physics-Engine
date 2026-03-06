@@ -53,6 +53,7 @@ namespace boink
         CollisionGroup::Vehicle,
         CollisionGroup::Vehicle | CollisionGroup::Static);
 
+    rigidbody_->setRestitution(0);
     rigidbody_->setUserPointer(&user_data_);
     //
     // I dont know why but everybody does this.
@@ -377,54 +378,6 @@ namespace boink
     ghost_sim_.disable();
     ghost_info_.enabled=false;
   }
-
-  //void Vehicle::updateGhostSim(btScalar dt)
-  //{
-  //  (void)dt;
-  //  if(!is_ghost_sim_on_)
-  //    return;
-
-  //  if(request_ghost_mode && ghost_info_.enabled==false)
-  //  {
-  //    // TODO
-  //    // Enter ghost mode
-  //    ghost_info_.enabled=true;
-
-  //    world_->removeAction(vehicle_.get());
-  //    world_->removeRigidBody(rigidbody_.get());
-
-  //    world_->addRigidBody(
-  //        rigidbody_.get(),
-  //        CollisionGroup::Vehicle,
-  //        CollisionGroup::Static);
-
-  //    world_->addAction(vehicle_.get());
-  //  }
-
-  //  if(!request_ghost_mode && ghost_info_.enabled==true)
-  //  {
-  //    // TODO
-  //    // Exit ghost mode
-  //    WhoContactCallback who_callback(vehicle_->getRigidBody());
-  //    world_->contactTest(vehicle_->getRigidBody(),who_callback);
-
-  //    if(who_callback.getHits().size()==0)
-  //    {
-  //      ghost_info_.enabled=false;
-
-  //      world_->removeAction(vehicle_.get());
-  //      world_->removeRigidBody(rigidbody_.get());
-
-  //      world_->addRigidBody(
-  //          rigidbody_.get(),
-  //          CollisionGroup::Vehicle,
-  //          CollisionGroup::Vehicle | CollisionGroup::Static);
-  //      
-  //      world_->addAction(vehicle_.get());
-  //    }
-  //  }
-
-  //}
 
   btVector3 Vehicle::correctCOM(const btVector3& com,const VehicleMesh* mesh)
   {

@@ -152,6 +152,8 @@ int main()
   printTrackData(&data);
 
   Real prev=boink_get_time_debug();
+  bool runOnce=false;
+  bool runOnce2=false;
   while(!boink_should_close_debug())
   {
     Real now=boink_get_time_debug();
@@ -163,6 +165,7 @@ int main()
       PRINT_ERROR();
       goto clear;
     }
+
 
     BoinkWeather weather_state;
     weather_state.cloudiness=0.5f;
@@ -178,6 +181,26 @@ int main()
         PRINT_ERROR();
         goto clear;
       }
+    }
+
+    if(!runOnce && dur>10.)
+    {
+      if((code=boink_disable_ghost_mode(handle))!=BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      runOnce=true;
+    }
+
+    if(!runOnce2 && dur>20.)
+    {
+      if((code=boink_set_ghost_mode_settings(handle,&settings))!=BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      runOnce2=true;
     }
 
     struct BoinkVehicleState state;

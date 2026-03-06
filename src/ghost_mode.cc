@@ -11,7 +11,6 @@ namespace boink
       const int* laps_completed)
     :world_(world),vehicle_(vehicle),laps_completed_(laps_completed)
   {
-    this->reset();
   }
 
   void GhostMode::enable(GhostModeSettings settings)
@@ -23,18 +22,21 @@ namespace boink
     enter_timer_.reset(settings_.enter_delay);
     exit_timer_.reset(settings_.exit_delay);
     overlap_timer_.reset(settings.exit_delay_when_overlap);
-    this->reset();
   }
 
   void GhostMode::disable()
   {
     is_sim_enabled_=false;
 
-    this->reset();
+    if(is_in_ghost_mode_)
+      this->exitGhostMode();
   }
 
   void GhostMode::update(btScalar dt)
   {
+    if(!is_sim_enabled_)
+      return;
+
     btScalar speed=vehicle_->getRigidBody()->getLinearVelocity().length();
 
     if(speed<=settings_.max_enter_speed || 
@@ -114,10 +116,5 @@ namespace boink
     // TODO
     // i belive hit is also when chasiss touch ground or walls
     return who_callback.getHits().size()!=0;
-  }
-
-  void GhostMode::reset()
-  {
-    is_in_ghost_mode_=false;
   }
 }

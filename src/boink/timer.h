@@ -27,6 +27,7 @@ namespace boink
 
     void reset(btScalar target_duration)
     {
+      this->reset();
       target_=target_duration;
     }
 

@@ -28,7 +28,6 @@ namespace boink
 
     bool isInGhostMode() const {return is_in_ghost_mode_;}
   private:
-    void reset();
     void enterGhostMode();
     void exitGhostMode();
 
