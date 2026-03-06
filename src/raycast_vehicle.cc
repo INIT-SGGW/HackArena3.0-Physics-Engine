@@ -56,7 +56,7 @@ namespace boink
     m_steeringValue = btScalar(0.);
   }
 
-  void RaycastVehicle::updateAction(
+ void RaycastVehicle::updateAction(
       btCollisionWorld* collisionWorld, btScalar step)
   {
     (void)collisionWorld;
@@ -78,6 +78,8 @@ namespace boink
 
     if (forwardW.dot(getRigidBody()->getLinearVelocity()) < btScalar(0.))
       m_currentVehicleSpeedKmHour *= btScalar(-1.);
+
+    applyAerodynamics(step);
 
     //
     // simulate suspension
@@ -104,10 +106,9 @@ namespace boink
 
       getRigidBody()->applyImpulse(impulse, relpos);
     }
-    applyAerodynamics(step);
 
-    updateFrictionBasedOnSurface(step);
-    updateTyres(step);
+    //updateFrictionBasedOnSurface(step);
+    //updateTyres(step);
 
     updateFriction(step);
 
@@ -785,20 +786,23 @@ namespace boink
     (void)step;
 
     const btVector3& velocity=m_chassisBody->getLinearVelocity();
-    const btScalar speed=velocity.length();
+    const btScalar speed2=velocity.length2();
 
-    if(speed < 0.1)
+    if(speed2 < 0.1)
       return;
 
-    btVector3 vel_dir=velocity/speed;
+    btVector3 vel_dir=velocity;
+    vel_dir.normalize();
 
     constexpr btScalar kAirDensity=1.225f;
     constexpr btScalar kAirDragCoef= 1.f;
     constexpr btScalar kFrontalArea= 1.4f;
 
+    constexpr btScalar kCommonCoef=0.5f*kFrontalArea*kAirDensity;
+
     btVector3 air_drag_force= 
-      -0.5f*kAirDragCoef*kFrontalArea*kAirDensity*
-      speed*speed*vel_dir;
+      -kAirDragCoef*kCommonCoef*
+      speed2*vel_dir;
 
     constexpr btScalar kAirLiftCoef=kAirDragCoef*2.5f;
 
@@ -808,22 +812,13 @@ namespace boink
     assert(down_dir.length()<1.01&&down_dir.length()>0.99);
 
     btVector3 air_down_force=
-      0.5f*kAirLiftCoef*kFrontalArea*kAirDensity*
-      speed*speed*down_dir;
+      kAirLiftCoef*kCommonCoef*
+      speed2*down_dir;
 
-    bool isInContact=true;
-    for(int i=0;i<getNumWheels();i++)
-    {
-      if(!getWheelInfo(i).m_raycastInfo.m_isInContact)
-      {
-        isInContact=false;
-        break;
-      }
-    }
-    if(isInContact)
-      m_chassisBody->applyImpulse(step*air_down_force,{0.0,0.0,0.0});
-
-    m_chassisBody->applyImpulse(step*air_drag_force,{0.0,0.0,0.0});
+    // I dont know why but when i use applyCenteralForce
+    // it behaves incorrect on debug build
+    m_chassisBody->applyImpulse(step*air_down_force,{0.,0.,0.});
+    m_chassisBody->applyImpulse(step*air_drag_force,{0.,0.,0.});
   }
 
 

@@ -22,7 +22,7 @@ namespace boink
     ~Race() ;
     int update(
         btScalar dt,
-        int max_sub_steps=10,
+        int max_sub_steps=15,
         btScalar fixed_delta_time=1.f/120.f,
         btScalar max_delta_time=0.1) override;
     void updateDebug() override;

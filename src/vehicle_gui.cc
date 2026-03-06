@@ -30,7 +30,7 @@ namespace boink
     ImGui::SliderFloat(
         "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
     ImGui::SliderFloat(
-        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,50000.f);
+        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,100000.f);
     ImGui::SliderFloat(
         "Max suspension travel",&tunning->m_maxSuspensionTravelCm,0.f,20.f);
     ImGui::SliderFloat(
