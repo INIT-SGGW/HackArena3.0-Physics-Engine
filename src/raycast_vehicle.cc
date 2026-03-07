@@ -467,6 +467,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   updateFrictionBasedOnSurface(timeStep);
   updateTyres(timeStep);
 
+  // std::cout << "vel_X:  " << getRigidBody()->getLinearVelocity().getX() << "\t";
+  // std::cout << "vel_Y:  " << getRigidBody()->getLinearVelocity().getY() << "\t";
+  // std::cout << "vel_Z:  " << getRigidBody()->getLinearVelocity().getZ() << "\t";
+
   // calculate the impulse, so that the wheels don't move sidewards
   int numWheel = getNumWheels();
   if (!numWheel) return;
@@ -601,6 +605,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
           std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
           std::cout << "long_speed: " << speed << "\t";
           std::cout << "slip_ratio: " << slip_ratio << "\t";
+          std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
           std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
         }
       }
@@ -962,8 +967,26 @@ btScalar RaycastVehicle::updateDriveParts(btScalar step)
 btScalar RaycastVehicle::getWheelLongSpeed(WheelInfo& wheel) const
 {
   auto chasis = getRigidBody();
-  btTransform wheel_trans = wheel.m_worldTransform;
-  auto forward_dir = wheel_trans.getBasis().getColumn(m_indexForwardAxis);
+
+  btVector3 contactNormal;
+  if (wheel.m_raycastInfo.m_isInContact)
+  {
+    contactNormal = wheel.m_raycastInfo.m_contactNormalWS;
+  }
+  else
+  {
+    // Teraz jak jest w powietrzu to bierze wektor "w góre" samochodu ale w przysz³oœci to w ogóle long_dir nie jest
+    // potrzebne ¿eby liczyæ jak ko³o jest w powietrzu
+    contactNormal = m_chassisBody->getWorldTransform().getBasis().getColumn(1);  // Oœ Y auta
+  }
+  btVector3 axleDir = -wheel.m_worldTransform.getBasis().getColumn(m_indexRightAxis);
+
+  btVector3 forward_dir = contactNormal.cross(axleDir);
+  forward_dir = forward_dir.normalize();
+
+  // std::cout << "dir_X:  " << forward_dir.getX() << "\t";
+  // std::cout << "dir_Y:  " << forward_dir.getY() << "\t";
+  // std::cout << "dir_Z:  " << forward_dir.getZ() << "\t";
 
   auto contact_point = wheel.m_raycastInfo.m_contactPointWS;
   btVector3 rel_pos = contact_point - chasis->getCenterOfMassPosition();
