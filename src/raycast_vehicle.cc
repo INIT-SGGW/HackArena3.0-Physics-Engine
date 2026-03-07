@@ -539,10 +539,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       if (!wheelInfo.m_bIsFrontWheel)
       {
         auto drive_torque = total_drive_torque / 2;
-        auto traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelsRadius;
+        auto traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelSimRadius;
         auto total_torque = drive_torque + traction_torque;
 
-        auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelsRadius * wheelInfo.kWheelMassDistCoeff;
+        auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
         auto engine_inertia_part =
             m_engine.inertia *
             btPow(m_gearbox.GetCurrentRatio() * m_gearbox.kDifferentialRatio * kTransmissionEfficiency, 2);
@@ -585,11 +585,11 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
             // this is a protection against speed approachig zero and then slip
             // ratio approaching infinity what causing numerical instability (
             // TODO: and not working too well xD)
-            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelsRadius - speed) / 2.9;
+            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / 2.9;
           }
           else
           {
-            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelsRadius - speed) / btFabs(speed);
+            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / btFabs(speed);
           }
 
           if (slip_ratio < 0)

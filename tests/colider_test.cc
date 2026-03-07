@@ -49,7 +49,7 @@ int main()
 
   Simulation::ObjectID car_id0 = sim.addVehicle({.mesh = vehicle_mesh0,
                                                  .mass = 800.,
-                                                 .wheel_radius = 0.33,
+                                                 .wheel_radius = 0.36,
                                                  .suspension_rest_length = 1.02,
                                                  .max_steer_angle = 1.5,
                                                  .center_of_mass = {0., -0.4, 0.},
@@ -61,7 +61,7 @@ int main()
 
   Simulation::ObjectID car_id1 = sim.addVehicle({.mesh = vehicle_mesh1,
                                                  .mass = 800.,
-                                                 .wheel_radius = 0.33,
+                                                 .wheel_radius = 0.36,
                                                  .suspension_rest_length = 0.32,
                                                  .max_steer_angle = 1.5,
                                                  .center_of_mass = {0., -0.4, 0.},

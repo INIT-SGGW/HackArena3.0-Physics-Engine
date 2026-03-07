@@ -22,7 +22,7 @@ int main()
 {
 #ifdef WIN32
   const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\lowpoly_track_test_2.glb";
+  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\lowpoly_track_test_2.glb";
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   const char* track_filename = "lowpoly_track_1_test_5.glb";
@@ -82,7 +82,7 @@ int main()
   model.max_steer_angle = 90;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.4;
-  model.wheel_radius = 0.33;
+  model.wheel_radius = 0.36;
 
   uint64_t id0;
   if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)

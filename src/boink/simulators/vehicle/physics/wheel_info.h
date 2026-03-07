@@ -61,7 +61,7 @@ struct WheelInfo
   {
     TyreType m_type;
     btScalar m_health = btScalar(1.0);
-    btScalar m_tempCelsius=btScalar(90.0);
+    btScalar m_tempCelsius = btScalar(90.0);
 
     static btScalar s_softWearRatePerMin;
     static btScalar s_hardWearRatePerMin;
@@ -81,7 +81,8 @@ struct WheelInfo
   btVector3 m_wheelAxleCS;       // const or modified by steering
   btTransform m_worldTransform;
 
-  btScalar m_wheelsRadius;  // const
+  btScalar m_wheelsRadius;    // const
+  btScalar m_wheelSimRadius;  // const used in drive parts simulation
   btScalar m_rotation;
   btScalar m_deltaRotation;
   btScalar m_angSpeed;
