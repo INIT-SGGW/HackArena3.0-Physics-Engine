@@ -4,6 +4,7 @@
 #include "boink/simulators/track/track.h"
 #include "boink/gui/race_gui.h"
 #include "boink/debugger/vehicle_controller.h"
+#include "boink/simulators/vehicle/ghost_mode_settings.h"
 
 #include <sstream>
 
@@ -44,6 +45,9 @@ namespace boink
     auto vehicle=
         std::make_shared<Vehicle>(ci,track_,this->getDynamicsWorld());
     Simulator::ID vehicle_id=this->addSimulator(vehicle);
+
+    if(ghost_enabled_)
+      vehicle->enableGhostSim(ghost_settings_);
 
     vehicles_.emplace(vehicle_id,vehicle);
 
@@ -96,6 +100,22 @@ namespace boink
     return vehicles_.at(id);
   }
 
+  void Race::enableGhostMode(GhostModeSettings ghost_settings)
+  {
+    ghost_settings_=std::move(ghost_settings);
+    ghost_enabled_=true;
+
+    for(auto& [_,vehicle]:vehicles_)
+      vehicle->enableGhostSim(ghost_settings_);
+  }
+
+  void Race::disableGhostMode()
+  {
+    ghost_enabled_=false;
+    for(auto& [_,vehicle]:vehicles_)
+      vehicle->disableGhostSim();
+  }
+
   std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 
     Race::getControllers() const 
   {
@@ -110,6 +130,17 @@ namespace boink
     }
 
     return controllers;
+  }
+
+  int Race::update(
+      btScalar dt,
+      int max_sub_steps,
+      btScalar fixed_delta_time,
+      btScalar max_delta_time)
+  {
+    int steps=Simulation::update(dt,max_sub_steps,fixed_delta_time,max_delta_time);
+
+    return steps;
   }
 
   void Race::updateDebug()

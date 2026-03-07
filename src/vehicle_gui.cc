@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "boink/gui/ghost_gui.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
@@ -9,7 +10,7 @@
 namespace boink
 {
   VehicleGui::VehicleGui(Vehicle* p_vehicle)
-    :p_vehicle_(p_vehicle)
+    :p_vehicle_(p_vehicle),ghost_gui_(&p_vehicle_->ghost_sim_)
   {}
 
   static const char* tyreTypeToStr(WheelInfo::TyreType type);
@@ -23,10 +24,13 @@ namespace boink
 
     ImGui::Checkbox("Mesh enabled",&mesh_enabled);
     ImGui::Checkbox("Collider enabled",&collider_enabled);
+    ImGui::Text("In ghost mode: %s",
+        p_vehicle_->ghost_info_.enabled?"true":"false");
+
     ImGui::SliderFloat(
         "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
     ImGui::SliderFloat(
-        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,50000.f);
+        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,100000.f);
     ImGui::SliderFloat(
         "Max suspension travel",&tunning->m_maxSuspensionTravelCm,0.f,20.f);
     ImGui::SliderFloat(
@@ -55,12 +59,23 @@ namespace boink
     ImGui::Text("COM in CS: (%.2f,%.2f,%.2f) [m]",
         center_of_mass_cs[0],center_of_mass_cs[1],center_of_mass_cs[2]);
 
+    if(ImGui::CollapsingHeader(ghost_gui_.getTitle().data()))
+      ghost_gui_.draw();
+
     ImGui::SliderFloat(
         "Wear rate soft",&WheelInfo::TyreInfo::s_softWearRatePerMin,0.f,0.1f);
     ImGui::SliderFloat(
         "Wear rate hard",&WheelInfo::TyreInfo::s_hardWearRatePerMin,0.f,0.1f);
     ImGui::SliderFloat(
         "Wear rate wet",&WheelInfo::TyreInfo::s_wetWearRatePerMin,0.f,0.1f);
+
+    ImGui::SliderFloat("Slip ratio temp const",
+        &WheelInfo::TyreInfo::s_slipRatioTempConstant,0.f,0.5f);
+    ImGui::SliderFloat("Wheel speed temp const",
+        &WheelInfo::TyreInfo::s_angularSpeedTempConstant,0.f,0.1f);
+
+    ImGui::SliderFloat("Wheel speed temp cooling const",
+        &WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst,0.f,0.1f);
 
     for(int i=0;i<(int)WheelPosition::Count;i++)
     {
@@ -79,18 +94,22 @@ namespace boink
 
   void VehicleGui::drawWheel(WheelPosition pos)
   {
+    const WheelInfo& info=p_vehicle_->vehicle_->getWheelInfo((int)pos);
+
     btVector3 pos_v=p_vehicle_->getWheelWorldTransform(pos).getOrigin();
     ImGui::Text("Position: (%.2f,%.2f,%.2f) [m]",
         pos_v.getX(),pos_v.getY(),pos_v.getZ());
     ImGui::Text("Angular speed: %.2f [rad/sec]",
-        p_vehicle_->getWheelAngularSpeed(pos));
+        info.m_wheelAngularSpeed);
+    ImGui::Text("Slip ratio: %.2f",
+        info.m_slipRatio);
 
     ImGui::Text("Tyre type: %s",
-        tyreTypeToStr(p_vehicle_->getTyreType(pos)));
+        tyreTypeToStr(info.m_tyreInfo.m_type));
     ImGui::Text("Tyre health: %.2f",
-        p_vehicle_->getTyreHealth(pos));
+        info.m_tyreInfo.m_health);
     ImGui::Text("Tyre temp: %.2f [C]",
-        p_vehicle_->getTyreTempCelsius(pos));
+        info.m_tyreInfo.m_tempCelsius);
   }
 
   const char* tyreTypeToStr(WheelInfo::TyreType type)

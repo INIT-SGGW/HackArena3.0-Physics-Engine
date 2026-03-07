@@ -114,59 +114,90 @@ btScalar Line::getCoverage(const btVector3& point) const {
   return our_vec.dot(dir) + points_dist_[first_i].second;
 }
 
-std::pair<size_t, btScalar> Line::getClosestIndex(
-    const btVector3& point) const {
-  size_t closest_i = 0;
-  btScalar closest_dist2 = (points_dist_[closest_i].first - point).length2();
-  for (size_t i = 1; i < points_dist_.size(); i++) {
-    btScalar curr_len2 = (points_dist_[i].first - point).length2();
-    if (curr_len2 < closest_dist2) {
-      closest_dist2 = curr_len2;
-      closest_i = i;
+std::pair<size_t,btScalar> Line::getClosestIndex(
+      const btVector3& point) const
+  {
+    size_t closest_i=0;
+    btScalar closest_dist2=(points_dist_[closest_i].first-point).length2();
+    for(size_t i=1;i<points_dist_.size();i++)
+    {
+      btScalar curr_len2=(points_dist_[i].first-point).length2();
+      if(curr_len2<closest_dist2)
+      {
+        closest_dist2=curr_len2;
+        closest_i=i;
+      }
+    }
+
+    return {closest_i,btSqrt(closest_dist2)};
+  }
+
+  std::pair<size_t,btScalar> Line::getIthClosestIndex(
+      const btVector3& point, size_t ith) const
+  {
+    assert(points_dist_.size()>ith);
+
+    std::vector<size_t> closest_is;
+    btScalar ith_closest_dist2=0;
+    size_t ith_closest_i;
+    for(size_t i=0;i<ith;i++)
+    {
+      ith_closest_i=0;
+      while(std::find(closest_is.begin(),closest_is.end(),ith_closest_i)
+          !=closest_is.end())
+      {
+        ith_closest_i++;
+        assert(ith_closest_i<points_dist_.size());
+      }
+      ith_closest_dist2=(this->getPoint(ith_closest_i)-point).length2();
+      
+      for(size_t j=0;j<points_dist_.size();j++)
+      {
+        if(std::find(closest_is.begin(),closest_is.end(),j)!=closest_is.end())
+        {
+          continue;
+        }
+
+        btScalar curr_len2=(this->getPoint(j)-point).length2();
+        if(curr_len2<ith_closest_dist2)
+        {
+          ith_closest_dist2=curr_len2;
+          ith_closest_i=j;
+        }
+      }
+      closest_is.push_back(ith_closest_i);
+    }
+
+    return {ith_closest_i,btSqrt(ith_closest_dist2)};
+  }
+
+  void Line::reverse()
+  {
+    std::reverse(points_dist_.begin(),points_dist_.end());
+    auto last_data=points_dist_[points_dist_.size()-1];
+    points_dist_.pop_back();
+    points_dist_.insert(points_dist_.begin(),last_data);
+
+    // and know we neeed to update distance :(
+    btScalar lenght=0.0f;
+    btVector3 prev=points_dist_[0].first;
+    for(size_t i=0;i<points_dist_.size();i++)
+    {
+      lenght+=(points_dist_[i].first-prev).length();
+      points_dist_[i].second=lenght;
+
+      prev=points_dist_[i].first;
     }
   }
 
-  return {closest_i, btSqrt(closest_dist2)};
-}
-
-std::pair<size_t, btScalar> Line::getIthClosestIndex(const btVector3& point,
-                                                     size_t ith) const {
-  assert(points_dist_.size() > ith);
-
-  std::vector<size_t> closest_is;
-  btScalar ith_closest_dist2;
-  size_t ith_closest_i;
-  for (size_t i = 0; i < ith; i++) {
-    ith_closest_i = 0;
-    while (std::find(closest_is.begin(), closest_is.end(), ith_closest_i) !=
-           closest_is.end()) {
-      ith_closest_i++;
-      assert(ith_closest_i < points_dist_.size());
-    }
-    ith_closest_dist2 = (this->getPoint(ith_closest_i) - point).length2();
-
-    for (size_t j = 0; j < points_dist_.size(); j++) {
-      if (std::find(closest_is.begin(), closest_is.end(), j) !=
-          closest_is.end()) {
-        continue;
-      }
-
-      btScalar curr_len2 = (this->getPoint(j) - point).length2();
-      if (curr_len2 < ith_closest_dist2) {
-        ith_closest_dist2 = curr_len2;
-        ith_closest_i = j;
-      }
-    }
-    closest_is.push_back(ith_closest_i);
+  btVector3& Line::getPoint(size_t index)
+  {
+    return points_dist_[index].first;
   }
 
-  return {ith_closest_i, btSqrt(ith_closest_dist2)};
-}
-
-btVector3& Line::getPoint(size_t index) { return points_dist_[index].first; }
-
-const btVector3& Line::getPoint(size_t index) const {
-  return points_dist_.at(index).first;
-}
+  const btVector3& Line::getPoint(size_t index) const
+  {
+    return points_dist_.at(index).first;
+  }
 
 }  // namespace boink

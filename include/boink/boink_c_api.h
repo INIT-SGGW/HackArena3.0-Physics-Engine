@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 6
+#define BOINK_C_API_VERSION_MINOR 8
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -344,6 +344,36 @@ typedef struct BoinkWeather {
    */
   Real rain_intensity;
 } BoinkWeather;
+
+/**
+ * Represents ghost mode settings applied globally to the race simulation.
+ */
+typedef struct BoinkGhostModeSettings {
+  /**
+   * Maximum speed threshold to enter ghost mode in meters per second.
+   */
+  Real enter_speed_max_mps;
+  /**
+   * Minimum speed threshold to exit ghost mode in meters per second.
+   */
+  Real exit_speed_min_mps;
+  /**
+   * Required time above enter threshold before ghost mode is enabled.
+   */
+  unsigned int enter_delay_ms;
+  /**
+   * Required time below exit threshold before ghost mode is disabled.
+   */
+  unsigned int exit_delay_ms;
+  /**
+   * Ghost mode remains enabled until this many laps are completed.
+   */
+  unsigned int until_completed_laps;
+  /**
+   * Required time after overlap ends before ghost mode may be disabled.
+   */
+  unsigned int vehicle_overlap_exit_delay_ms;
+} BoinkGhostModeSettings;
 
 #ifdef __cplusplus
 extern "C" {
@@ -692,6 +722,33 @@ BOINK_API int boink_read_vehicle_state(BoinkHandle h,
  * - Another error code for other failures.
  */
 BOINK_API int boink_set_weather(BoinkHandle h, const struct BoinkWeather *weather);
+
+/**
+ * Sets global ghost mode settings used by the simulation engine.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `settings` - non-null pointer to ghost mode settings.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `settings` is null.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_ghost_mode_settings(BoinkHandle h,
+                                         const struct BoinkGhostModeSettings *settings);
+
+/**
+ * Disables ghost mode for the race.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_disable_ghost_mode(BoinkHandle h);
 
 #ifdef __cplusplus
 }  // extern "C"

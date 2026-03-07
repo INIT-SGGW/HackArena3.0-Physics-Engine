@@ -20,26 +20,42 @@ namespace boink
     for( const auto& pair:s_wheel_names_)
     {
       const auto& node=extractor.getNode(pair.first);
-      auto pik_mesh=createPikselMesh(node.vertices,node.indices);
       Element element={
         std::move(node.vertices),
         std::move(node.indices),
-        pik_mesh,
+        nullptr,
         std::move(node.transform)};
       wheels_.insert(
           {pair.second,std::move(element)});
     }
 
     const auto& node=extractor.getNode(CHASSIS_NAME);
-
-    auto pik_mesh=createPikselMesh(node.vertices,node.indices);
     chassis_={
         std::move(node.vertices),
         std::move(node.indices),
-        pik_mesh,
+        nullptr,
         std::move(node.transform)};
   }
 
+  std::shared_ptr<const piksel::Mesh> 
+    VehicleMesh::getChassisPikselMesh() const 
+  {
+    if(!chassis_.piksel_mesh)
+      chassis_.piksel_mesh=
+        createPikselMesh(chassis_.vertices,chassis_.indices);
+
+    return chassis_.piksel_mesh;
+  }
+
+  std::shared_ptr<const piksel::Mesh> 
+   VehicleMesh:: getWheelPikselMesh(WheelPosition pos) const
+  {
+    auto& wheel=wheels_.at(pos);
+    if(!wheel.piksel_mesh)
+      wheel.piksel_mesh=createPikselMesh(wheel.vertices,wheel.indices);
+
+    return wheel.piksel_mesh;
+  }
 
   const VehicleMesh::Element& VehicleMesh::getChassis() const
   {
@@ -70,7 +86,6 @@ namespace boink
         {
           return piksel::Mesh::Vertex{bt2glm(vec)};
         });
-    
     
     return std::make_shared<piksel::Mesh>(piksel_vertices,indices);
   }

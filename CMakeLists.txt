@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 0.5.3)
+project(BoinkEngine VERSION 0.8.2)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,7 +40,7 @@ find_package(piksel CONFIG REQUIRED)
 target_link_libraries(boink PUBLIC piksel::piksel)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  if (MSVC)
+  if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
     if(USE_ASAN_WIN)
     target_compile_options(boink PUBLIC /fsanitize=address)
@@ -54,7 +54,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     if(USE_ASAN_WIN)
     target_link_options(boink PUBLIC /fsanitize=address)
     endif() 
-  else()
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(STATUS "Enabling Address/Undefined Sanitizer for GCC/Clang Debug build.")
     
     target_compile_options( boink PRIVATE
@@ -110,6 +110,8 @@ target_sources(boink
     src/vehicle_raycaster.cc
     src/raycast_vehicle.cc
     src/wheel_info.cc
+    src/ghost_mode.cc
+    src/ghost_gui.cc
 )
 
 target_include_directories(boink

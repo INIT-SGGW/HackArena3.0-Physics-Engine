@@ -4,6 +4,7 @@
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
 
 #include "boink/exception.h"
+#include "boink/collision_group.h"
 
 #include <memory>
 
@@ -19,7 +20,8 @@ namespace boink
       mesh_(new btTriangleMesh()),
       world_(world),
       p_surface_info_(p_surface_info),
-      model_transform_(transform)
+      model_transform_(transform),
+      user_data_(p_surface_info_)
   {
     motion_state_=std::unique_ptr<btDefaultMotionState>(
         new btDefaultMotionState(transform));
@@ -46,11 +48,15 @@ namespace boink
 		btRigidBody::btRigidBodyConstructionInfo rb_info
       (mass, motion_state_.get(), collision_shape_.get(), local_inertia);
 
+    rb_info.m_friction=1.0f;
     rigidbody_=std::unique_ptr<btRigidBody>(new btRigidBody(rb_info));
 
-    rigidbody_->setUserPointer((void*)p_surface_info_);
+    rigidbody_->setUserPointer((void*)&user_data_);
 
-		world_->addRigidBody(rigidbody_.get());
+		world_->addRigidBody(
+        rigidbody_.get(),
+        CollisionGroup::Static,
+        CollisionGroup::Static | CollisionGroup::Vehicle);
   }
 
   Ground::~Ground() noexcept

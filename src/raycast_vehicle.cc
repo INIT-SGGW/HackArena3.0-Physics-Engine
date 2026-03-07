@@ -23,6 +23,7 @@
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btVector3.h>
 
+#include "boink/bullet_user_data.h"
 #include "boink/simulators/track/ground.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
@@ -68,6 +69,8 @@ void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar ste
                      chassisTrans.getBasis()[2][m_indexForwardAxis]);
 
   if (forwardW.dot(getRigidBody()->getLinearVelocity()) < btScalar(0.)) m_currentVehicleSpeedKmHour *= btScalar(-1.);
+
+  applyAerodynamics(step);
 
   //
   // simulate suspension
@@ -123,8 +126,6 @@ void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar ste
 
     // wheel.m_angSpeed = wheel.m_deltaRotation / step;
   }
-
-  applyAerodynamics(step);
 }
 
 const btTransform& RaycastVehicle::getChassisWorldTransform() const
@@ -460,7 +461,7 @@ btScalar calcRollingFriction(WheelContactPoint& contactPoint, int numWheelsOnGro
   return j1;
 }
 
-btScalar sideFrictionStiffness2 = btScalar(1.0);
+btScalar sideFrictionStiffness2 = btScalar(0.9);
 void RaycastVehicle::updateFriction(btScalar timeStep)
 {
   updateFrictionBasedOnSurface(timeStep);
@@ -760,29 +761,34 @@ void RaycastVehicle::applyAerodynamics(btScalar step)
 {
   (void)step;
 
-  auto rigidbody = this->getRigidBody();
-  const btVector3& velocity = rigidbody->getLinearVelocity();
-  const btScalar speed = velocity.length();
+  const btVector3& velocity = m_chassisBody->getLinearVelocity();
+  const btScalar speed2 = velocity.length2();
 
-  if (speed < 0.1) return;
+  if (speed2 < 0.1) return;
 
-  btVector3 vel_dir = velocity / speed;
+  btVector3 vel_dir = velocity;
+  vel_dir.normalize();
 
   constexpr btScalar kAirDensity = 1.225f;
   constexpr btScalar kAirDragCoef = 1.f;
   constexpr btScalar kFrontalArea = 1.4f;
 
-  btVector3 air_drag_force = -0.5f * kAirDragCoef * kFrontalArea * kAirDensity * speed * speed * vel_dir;
+  constexpr btScalar kCommonCoef = 0.5f * kFrontalArea * kAirDensity;
+
+  btVector3 air_drag_force = -kAirDragCoef * kCommonCoef * speed2 * vel_dir;
 
   constexpr btScalar kAirLiftCoef = kAirDragCoef * 2.5f;
 
-  btVector3 down_dir = -rigidbody->getWorldTransform().getBasis().getColumn(1);
+  btVector3 down_dir = -m_chassisBody->getWorldTransform().getBasis().getColumn(1);
 
   assert(down_dir.length() < 1.01 && down_dir.length() > 0.99);
 
-  btVector3 air_down_force = 0.5f * kAirLiftCoef * kFrontalArea * kAirDensity * speed * speed * down_dir;
+  btVector3 air_down_force = kAirLiftCoef * kCommonCoef * speed2 * down_dir;
 
-  rigidbody->applyCentralForce(air_drag_force + air_down_force);
+  // I dont know why but when i use applyCenteralForce
+  // it behaves incorrect on debug build
+  m_chassisBody->applyImpulse(step * air_down_force, {0., 0., 0.});
+  m_chassisBody->applyImpulse(step * air_drag_force, {0., 0., 0.});
 }
 
 void RaycastVehicle::updateTyres(btScalar step)
@@ -794,6 +800,50 @@ void RaycastVehicle::updateTyres(btScalar step)
 
     wheel.m_tyreInfo.m_health -= wearRatePerMin * step / 60.;
     if (wheel.m_tyreInfo.m_health < 0.f) wheel.m_tyreInfo.m_health = 0.f;
+
+    //// Calcuate slip ratio
+    //{
+    //  wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
+    //  btScalar wheelLinearSpeed=
+    //    wheel.m_wheelAngularSpeed*wheel.m_wheelsRadius;
+    //  btScalar vehicleSpeed=
+    //    m_chassisBody->getLinearVelocity().length();
+
+    //  if(vehicleSpeed>0.1f)
+    //    wheel.m_slipRatio=1.f-wheelLinearSpeed/vehicleSpeed;
+    //  else
+    //    wheel.m_slipRatio=0.f;
+    //}
+
+    //// update temperature
+    //{
+    //  btScalar& tempCel=wheel.m_tyreInfo.m_tempCelsius;
+
+    //  btScalar tempIncrease=0;
+    //  tempIncrease+=
+    //    wheel.m_slipRatio*WheelInfo::TyreInfo::s_slipRatioTempConstant;
+    //  tempIncrease+=
+    //    wheel.m_wheelAngularSpeed*
+    //    WheelInfo::TyreInfo::s_angularSpeedTempConstant;
+
+    //  // TODO add wetness of ground
+    //  btScalar tempDecrease=0;
+    //  tempDecrease+=
+    //    wheel.m_wheelAngularSpeed*
+    //    WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst;
+
+    //  tempCel+=tempIncrease*step;
+    //  tempCel-=tempDecrease*step;
+    //}
+
+    //// update health
+    //{
+    //  btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
+
+    //  wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.f;
+    //  if(wheel.m_tyreInfo.m_health<0.f)
+    //    wheel.m_tyreInfo.m_health=0.f;
+    //}
   }
 }
 
@@ -815,9 +865,13 @@ void RaycastVehicle::updateFrictionBasedOnSurface(btScalar step)
     if (!p_ground->getUserPointer()) continue;
 
     // Here it might be unsave
-    Ground::SurfaceInfo& surface_info = *(Ground::SurfaceInfo*)(p_ground->getUserPointer());
+    BulletUserData* user_data = (BulletUserData*)(p_ground->getUserPointer());
 
-    wheel.m_rollInfluence = surface_info.rolling_resistance;
+    if (user_data->getType() != BulletUserData::Type::Ground) continue;
+
+    Ground::SurfaceInfo* surface_info = (Ground::SurfaceInfo*)(user_data);
+
+    wheel.m_rollInfluence = surface_info->rolling_resistance;
   }
 }
 

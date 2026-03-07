@@ -25,6 +25,9 @@ namespace boink
     ImGui::Text("Position: (%.2f,%.2f,%.2f)",
         pos.getX(),pos.getY(),pos.getZ());
 
+    ImGui::Checkbox("Enable track data vectors draw",
+        &p_track_->enable_track_data_vec_draw_);
+
     for(auto& p:surface_guis_)
     {
       ImGui::PushID((int)p.first);
