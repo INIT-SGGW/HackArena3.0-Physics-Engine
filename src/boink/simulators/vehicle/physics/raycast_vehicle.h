@@ -91,6 +91,18 @@ class RaycastVehicle : public btActionInterface
   btScalar updateDriveParts(btScalar deltaTime);
 
   /// <summary>
+  /// Sets gear up.
+  /// </summary>
+  /// <returns>Whether gear was really upped.</returns>
+  bool setGearUp();
+
+  /// <summary>
+  /// Sets gear down.
+  /// </summary>
+  /// <returns>Whether gear was really downed.</returns>
+  bool setGearDown();
+
+  /// <summary>
   /// Zwraca globaln¹ szybkoœæ ko³a w kierunku, w którym ko³o jest zwrócone.
   /// </summary>
   btScalar getWheelLongSpeed(WheelInfo& wheel) const;
@@ -104,6 +116,8 @@ class RaycastVehicle : public btActionInterface
 
   btVector3 getForwardVector() const;
 
+  btScalar getEngineRPM() const;
+  int getCurrentGear() const;
   btScalar getCurrentSpeedKmHour() const { return m_currentVehicleSpeedKmHour; }
 
   void setPitchControl(btScalar pitch) { m_pitchControl = pitch; }
@@ -117,8 +131,6 @@ class RaycastVehicle : public btActionInterface
   int getUserConstraintId() const { return m_userConstraintId; }
 
   btScalar m_throttle;
-  bool m_gear_up = false;
-  bool m_gear_down = false;
 
  private:
   void applyAerodynamics(btScalar step);

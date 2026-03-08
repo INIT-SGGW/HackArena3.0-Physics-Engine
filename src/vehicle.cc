@@ -1,3 +1,4 @@
+// clang-format off
 #include "boink/simulators/vehicle/vehicle.h"
 
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
@@ -212,6 +213,10 @@ const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) cons
   return vehicle_->getWheelTransformWS((int)wheel_pos);
 }
 
+btScalar Vehicle::getEngineRPM() const { return vehicle_->getEngineRPM(); }
+
+int Vehicle::getCurrentGear() const { return vehicle_->getCurrentGear(); }
+
 btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
 {
   return vehicle_->getWheelInfo((int)wheel_pos).m_angSpeed;
@@ -290,9 +295,9 @@ void Vehicle::setBrake(btScalar brake)
   vehicle_->setBrake(brake, (int)WheelPosition::FrontRight);
 }
 
-void Vehicle::setGearDown() { vehicle_->m_gear_down = true; }
+bool Vehicle::setGearDown() { return vehicle_->setGearDown(); }
 
-void Vehicle::setGearUp() { vehicle_->m_gear_up = true; }
+bool Vehicle::setGearUp() { return vehicle_->setGearUp(); }
 
 void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
 {

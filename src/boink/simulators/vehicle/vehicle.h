@@ -1,3 +1,4 @@
+// clang-format off
 #pragma once
 
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
@@ -84,6 +85,8 @@ class Vehicle : public Simulator
     btTransform getChassisWorldTransform() const;
 
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
+    btScalar getEngineRPM() const;
+    int getCurrentGear() const;
     btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
@@ -102,8 +105,18 @@ class Vehicle : public Simulator
     void setSteering(btScalar value, TurnDirection dir);
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
-    void setGearUp();
-    void setGearDown();
+
+    /// <summary>
+    /// Sets gear up.
+    /// </summary>
+    /// <returns>Whether gear was really upped.</returns>
+    bool setGearUp();
+
+    /// <summary>
+    /// Sets gear down.
+    /// </summary>
+    /// <returns>Whether gear was really downed.</returns>
+    bool setGearDown();
 
     void enableGhostSim(const GhostModeSettings& ghost_setttings);
     void disableGhostSim();

@@ -22,7 +22,7 @@ int main()
 {
 #ifdef WIN32
   const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\lowpoly_track_test_2.glb";
+  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor.glb";
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   const char* track_filename = "lowpoly_track_1_test_5.glb";
@@ -131,8 +131,11 @@ int main()
   controls.brake = 0.0;
   controls.steer = 0.0;
   controls.throttle = 1.;
+  controls.gear_shift = BOINK_GEAR_SHIFT_NONE;
 
-  if ((code = boink_set_controls(handle, id0, &controls)) != BOINK_OK)
+  BoinkAcceptedControls acc_controls;
+
+  if ((code = boink_set_controls(handle, id0, &controls, &acc_controls)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;

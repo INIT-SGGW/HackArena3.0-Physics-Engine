@@ -243,6 +243,10 @@ WheelInfo& RaycastVehicle::getWheelInfo(int index)
   return m_wheelsInfo[index];
 }
 
+btScalar RaycastVehicle::getEngineRPM() const { return m_engine.rpm; }
+
+int RaycastVehicle::getCurrentGear() const { return static_cast<int>(m_gearbox.current_gear); }
+
 btScalar RaycastVehicle::getSteeringValue(int wheel) const { return getWheelInfo(wheel).m_steering; }
 
 void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
@@ -464,8 +468,8 @@ btScalar calcRollingFriction(WheelContactPoint& contactPoint, int numWheelsOnGro
 btScalar sideFrictionStiffness2 = btScalar(0.9);
 void RaycastVehicle::updateFriction(btScalar timeStep)
 {
-  updateFrictionBasedOnSurface(timeStep);
-  updateTyres(timeStep);
+  /*updateFrictionBasedOnSurface(timeStep);
+  updateTyres(timeStep);*/
 
   // std::cout << "vel_X:  " << getRigidBody()->getLinearVelocity().getX() << "\t";
   // std::cout << "vel_Y:  " << getRigidBody()->getLinearVelocity().getY() << "\t";
@@ -899,57 +903,6 @@ btScalar RaycastVehicle::getTyreWearRatePerMin(WheelInfo::TyreType type)
 btScalar RaycastVehicle::updateDriveParts(btScalar step)
 {
   (void)step;
-  auto current_gear = static_cast<uint8_t>(m_gearbox.current_gear);
-  if (m_gear_up)
-  {
-    auto new_rpms = -1.f;
-
-    if (current_gear == static_cast<uint8_t>(Gear::Neutral))
-    {
-      auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
-                            m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
-                           2;
-      new_rpms = avg_ang_speed * m_gearbox.kGearRatios[current_gear + 1] * Gearbox::kDifferentialRatio *
-                 (60.0f / (2.0f * 3.14159f));
-    }
-    else if (current_gear == static_cast<uint8_t>(Gear::Reverse))
-    {
-      if (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed == 0 &&
-          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed == 0)
-        m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);
-    }
-    else if (current_gear != (std::size(m_gearbox.kGearRatios) - 1))
-    {
-      new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear + 1] / m_gearbox.GetCurrentRatio());
-    }
-
-    if (new_rpms >= 0)
-    {
-      m_engine.SetNewRPM(new_rpms);
-      m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);
-    }
-    m_gear_up = false;
-  }
-
-  if (m_gear_down)
-  {
-    if (current_gear == static_cast<uint8_t>(Gear::Neutral))
-    {
-      if (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed == 0 &&
-          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed == 0)
-        m_gearbox.current_gear = static_cast<Gear>(current_gear - 1);
-    }
-    else if (current_gear != 0)
-    {
-      auto new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear - 1] / m_gearbox.GetCurrentRatio());
-      if (new_rpms < 15000)
-      {
-        m_engine.SetNewRPM(new_rpms);
-        m_gearbox.current_gear = static_cast<Gear>(current_gear - 1);
-      }
-    }
-    m_gear_down = false;
-  }
 
   auto drive_torque = 0.0f;
   if (m_throttle == 0)
@@ -962,6 +915,68 @@ btScalar RaycastVehicle::updateDriveParts(btScalar step)
                    kTransmissionEfficiency;
   }
   return drive_torque;
+}
+
+bool RaycastVehicle::setGearUp()
+{
+  auto new_rpms = -1.f;
+  auto current_gear = static_cast<uint8_t>(m_gearbox.current_gear);
+  auto is_neutral = current_gear == static_cast<uint8_t>(Gear::Neutral);
+
+  if (is_neutral)
+  {
+    auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
+                          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
+                         2;
+    new_rpms = avg_ang_speed * m_gearbox.kGearRatios[current_gear + 1] * Gearbox::kDifferentialRatio *
+               (60.0f / (2.0f * 3.14159f));
+  }
+  else if (current_gear == static_cast<uint8_t>(Gear::Reverse))
+  {
+    if (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed == 0 &&
+        m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed == 0)
+    {
+      m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);
+      return true;
+    }
+  }
+  else if (current_gear != (std::size(m_gearbox.kGearRatios) - 1))
+  {
+    new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear + 1] / m_gearbox.GetCurrentRatio());
+  }
+
+  if (new_rpms >= 3000 || is_neutral)
+  {
+    m_engine.SetNewRPM(new_rpms);
+    m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);
+    return true;
+  }
+  return false;
+}
+
+bool RaycastVehicle::setGearDown()
+{
+  auto current_gear = static_cast<uint8_t>(m_gearbox.current_gear);
+  if (current_gear == static_cast<uint8_t>(Gear::Neutral))
+  {
+    if (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed == 0 &&
+        m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed == 0)
+    {
+      m_gearbox.current_gear = static_cast<Gear>(current_gear - 1);
+      return true;
+    }
+  }
+  else if (current_gear != 0)
+  {
+    auto new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear - 1] / m_gearbox.GetCurrentRatio());
+    if (new_rpms < 15000)
+    {
+      m_engine.SetNewRPM(new_rpms);
+      m_gearbox.current_gear = static_cast<Gear>(current_gear - 1);
+      return true;
+    }
+  }
+  return false;
 }
 
 btScalar RaycastVehicle::getWheelLongSpeed(WheelInfo& wheel) const
