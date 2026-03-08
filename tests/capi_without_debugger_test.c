@@ -1,3 +1,4 @@
+// clang-format off
 #include <stdio.h>
 
 #include "boink/boink_c_api.h"
@@ -15,6 +16,8 @@ void printVehicleState(const BoinkVehicleState* state);
 int main()
 {
 #ifdef WIN32
+  /*const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
+  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor.glb";*/
   const char* vehicle_filename = "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
   const char* track_filename = "C:\\Users\\igoru\\Source\\Repos\\HackArena3.0-Physics-Engine\\lowpoly_track_test_2.glb";
 #else
@@ -96,8 +99,11 @@ int main()
   controls.brake = 0.0;
   controls.steer = 0.0;
   controls.throttle = 1.;
+  controls.gear_shift = BOINK_GEAR_SHIFT_NONE;
 
-  if ((code = boink_set_controls(handle, id0, &controls)) != BOINK_OK)
+  BoinkAcceptedControls acc_controls;
+
+  if ((code = boink_set_controls(handle, id0, &controls, &acc_controls)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
