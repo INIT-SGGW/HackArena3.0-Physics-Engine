@@ -639,9 +639,17 @@ int boink_set_ghost_mode_settings(
   boink_settings.exit_delay=settings->exit_delay_ms/1000.f;
   boink_settings.exit_delay_when_overlap=settings->vehicle_overlap_exit_delay_ms/1000.f;
   boink_settings.max_enter_speed=settings->enter_speed_max_mps;
-  boink_settings.min_exist_speed=settings->exit_speed_min_mps;
+  boink_settings.min_exit_speed=settings->exit_speed_min_mps;
 
-  p_race->enableGhostMode(boink_settings);
+  if(boink_settings.min_exit_speed<boink_settings.max_enter_speed)
+  {
+    RETURN_STATUS_INVALID_ARG(
+        settings.min_exit_speed,
+        "cannot be lower than settings.max_enter_speed");
+  }
+
+  HANDLE_EXCEPTIONS(
+    p_race->enableGhostMode(boink_settings));
   return BOINK_OK;
 }
 

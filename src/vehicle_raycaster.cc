@@ -36,6 +36,9 @@ namespace boink
     btAssert(user_data!=nullptr);
 
     RayResultCallback rayCallback(from, to,user_data->ghost_info->enabled);
+    rayCallback.m_collisionFilterGroup=CollisionGroup::Vehicle;
+    rayCallback.m_collisionFilterMask=CollisionGroup::All;
+    
     m_dynamicsWorld->rayTest(from, to, rayCallback);
 
     if (rayCallback.hasHit())

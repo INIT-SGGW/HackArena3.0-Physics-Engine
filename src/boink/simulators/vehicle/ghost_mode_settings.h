@@ -10,7 +10,7 @@ namespace boink
     btScalar max_enter_speed=0.f;
 
     btScalar exit_delay=0.f;
-    btScalar min_exist_speed=0.f;
+    btScalar min_exit_speed=0.f;
 
     unsigned int enabled_until_completed_laps=0;
 

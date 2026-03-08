@@ -1,7 +1,10 @@
 #include "boink/simulators/vehicle/ghost_mode.h"
 
+#include <LinearMath/btScalar.h>
+
 #include "boink/collision_group.h"
 #include "boink/who_contact_callback.h"
+#include "boink/exception.h"
 
 namespace boink
 {
@@ -15,6 +18,11 @@ namespace boink
 
   void GhostMode::enable(GhostModeSettings settings)
   {
+    if(settings.min_exit_speed<settings.max_enter_speed)
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          "Min exit speed cannot be lower than max enter speed");
+
     is_sim_enabled_=true;
     is_in_ghost_mode_=false;
     settings_=std::move(settings);
@@ -53,7 +61,7 @@ namespace boink
         this->enterGhostMode();
     }
 
-    if(speed>=settings_.min_exist_speed)
+    if(speed>=settings_.min_exit_speed)
     {
       enter_timer_.reset();
 
@@ -74,7 +82,7 @@ namespace boink
       }
     }
 
-    if(speed>settings_.max_enter_speed && speed<settings_.min_exist_speed)
+    if(speed>settings_.max_enter_speed && speed<settings_.min_exit_speed)
     {
       enter_timer_.reset();
       exit_timer_.reset();

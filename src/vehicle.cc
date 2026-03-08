@@ -14,7 +14,6 @@
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/utility.h"
-//#include "boink/who_contact_callback.h"
 #include "boink/collision_group.h"
 
 namespace boink
@@ -178,7 +177,27 @@ void Vehicle::updateRender(Renderer* renderer)
   {
     rigidbody_->setCollisionFlags(rigidbody_->getCollisionFlags() & ~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
   }
+
   vehicle_->enableDraw(gui_->collider_enabled);
+
+  btVector3 forward_axle = btVector3(
+      rigidbody_->getWorldTransform().getBasis()[0][2],
+      rigidbody_->getWorldTransform().getBasis()[1][2],
+      rigidbody_->getWorldTransform().getBasis()[2][2]);
+  btVector3 up_axle = btVector3(
+      rigidbody_->getWorldTransform().getBasis()[0][1],
+      rigidbody_->getWorldTransform().getBasis()[1][1],
+      rigidbody_->getWorldTransform().getBasis()[2][1]);
+
+  btVector3 COM=rigidbody_->getWorldTransform().getOrigin();
+  renderer->drawLine(
+      COM,
+      COM+ forward_axle,
+      {1,1,1});
+  renderer->drawLine(
+      COM,
+      COM+ up_axle,
+      {1,1,1});
 }
 
 std::shared_ptr<piksel::GuiObject> Vehicle::getGui() { return gui_; }
