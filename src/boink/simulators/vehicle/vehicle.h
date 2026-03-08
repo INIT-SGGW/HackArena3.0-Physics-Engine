@@ -1,3 +1,4 @@
+// clang-format off
 #pragma once
 
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
@@ -8,24 +9,24 @@
 #include <LinearMath/btDefaultMotionState.h>
 #include <LinearMath/btMotionState.h>
 
+#include <memory>
+
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/track.h"
+#include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle_mesh.h"
-#include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/ghost_mode.h"
 
-#include <memory>
-
 namespace boink
 {
-  class VehicleGui;
-  class Vehicle : public Simulator
-  {
-    friend class VehicleGui;
+class VehicleGui;
+class Vehicle : public Simulator
+{
+  friend class VehicleGui;
   public:
     struct CreationInfo
     {
@@ -87,6 +88,8 @@ namespace boink
     btTransform getChassisWorldTransform() const;
 
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
+    btScalar getEngineRPM() const;
+    int getCurrentGear() const;
     btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
@@ -105,6 +108,18 @@ namespace boink
     void setSteering(btScalar value, TurnDirection dir);
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
+
+    /// <summary>
+    /// Sets gear up.
+    /// </summary>
+    /// <returns>Whether gear was really upped.</returns>
+    bool setGearUp();
+
+    /// <summary>
+    /// Sets gear down.
+    /// </summary>
+    /// <returns>Whether gear was really downed.</returns>
+    bool setGearDown();
 
     void enableGhostSim(const GhostModeSettings& ghost_setttings);
     void disableGhostSim();
@@ -143,5 +158,5 @@ namespace boink
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;
-  };
-}
+};
+}  // namespace boink
