@@ -109,21 +109,21 @@ int main()
     goto clear;
   }
 
-  BoinkVec3 track_pos;
-  track_pos.x = 5.;
-  track_pos.y = 0.;
-  track_pos.z = 0.;
-  if ((code = boink_set_track_position(handle, &track_pos)) != BOINK_OK)
+  BoinkVec3 vehicle_pos;
+  vehicle_pos.x = 0.;
+  vehicle_pos.y = 13.;
+  vehicle_pos.z = 0.;
+  if ((code = boink_set_vehicle_position(handle, id0, &vehicle_pos)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
   }
-
-  BoinkVec3 vehicle_pos;
-  vehicle_pos.x = 0.;
-  vehicle_pos.y = 13.;
-  vehicle_pos.z = 3.;
-  if ((code = boink_set_vehicle_position(handle, id0, &vehicle_pos)) != BOINK_OK)
+  BoinkQuaternion vehicle_rot;
+  vehicle_rot.x = 0.;
+  vehicle_rot.y = 0.7;
+  vehicle_rot.z = 0.;
+  vehicle_rot.w = 0.7;
+  if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
@@ -159,7 +159,8 @@ int main()
     Real dt = now - prev;
     prev = now;
 
-    if ((code = boink_step_race(handle, dt)) != BOINK_OK)
+    Real sim_time;
+    if ((code = boink_step_race(handle, dt,&sim_time)) != BOINK_OK)
     {
       PRINT_ERROR();
       goto clear;

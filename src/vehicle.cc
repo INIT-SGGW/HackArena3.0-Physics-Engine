@@ -200,9 +200,15 @@ void Vehicle::updateRender(Renderer* renderer)
       {1,1,1});
 }
 
-std::shared_ptr<piksel::GuiObject> Vehicle::getGui() { return gui_; }
+std::shared_ptr<piksel::GuiObject> Vehicle::getGui() 
+{ 
+  return gui_; 
+}
 
-void Vehicle::setPosition(const btVector3& position) { rigidbody_->getWorldTransform().setOrigin(position); }
+void Vehicle::setWorldTransform(const btTransform& transform) 
+{ 
+  rigidbody_->setWorldTransform(transform);
+}
 
 btTransform Vehicle::getWorldTransform() const
 {

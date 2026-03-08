@@ -79,7 +79,7 @@ class Vehicle : public Simulator
     void updateRender(Renderer* renderer) override;
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
-    void setPosition(const btVector3& position);
+    void setWorldTransform(const btTransform& transform);
 
     int getLapsCompleted() const {return laps_completed_;}
     btScalar getCurrentLapDistanceCovered() const {return curr_lap_dist_point_;}

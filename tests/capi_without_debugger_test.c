@@ -76,16 +76,6 @@ int main()
     goto clear;
   }
 
-  BoinkVec3 track_pos;
-  track_pos.x = 5.;
-  track_pos.y = 0.;
-  track_pos.z = 0.;
-  if ((code = boink_set_track_position(handle, &track_pos)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-
   BoinkVec3 vehicle_pos;
   vehicle_pos.x = 0.;
   vehicle_pos.y = 13.;
@@ -114,7 +104,8 @@ int main()
     for (int j = 0; j < 10; j++)
     {
       Real dt = 0.1;
-      if ((code = boink_step_race(handle, dt)) != BOINK_OK)
+      Real sim_time;
+      if ((code = boink_step_race(handle, dt,&sim_time)) != BOINK_OK)
       {
         PRINT_ERROR();
         goto clear;
