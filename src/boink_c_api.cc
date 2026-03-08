@@ -569,11 +569,12 @@ int boink_read_vehicle_state(
 
   out_state->engine_rpm=vehicle->getEngineRPM();
   out_state->gear=vehicle->getCurrentGear() - 1;
-  for(int i=0;i<4;i++)
-  {
-    btScalar angular_speed=vehicle->getWheelAngularSpeed((boink::WheelPosition)i);
-    out_state->wheel_speeds[i]=angular_speed;
-  }
+
+  out_state->wheel_speeds[0] = vehicle->getWheelAngularSpeed(boink::WheelPosition::FrontLeft);
+  out_state->wheel_speeds[1] = vehicle->getWheelAngularSpeed(boink::WheelPosition::FrontRight);
+  out_state->wheel_speeds[2] = vehicle->getWheelAngularSpeed(boink::WheelPosition::RearLeft);
+  out_state->wheel_speeds[3] = vehicle->getWheelAngularSpeed(boink::WheelPosition::RearRight);
+  
   out_state->brake_applied=0.0;
   out_state->throttle_applied=0.0;
 

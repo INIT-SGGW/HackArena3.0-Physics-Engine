@@ -21,13 +21,11 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
 int main()
 {
 #ifdef WIN32
-  const char* vehicle_filename = 
-    "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  const char* track_filename = 
-    "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor.glb";
+  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
+  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor_BIG.glb";
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
-  //const char* track_filename = "lowpoly_track_1_test_5.glb";
+  // const char* track_filename = "lowpoly_track_1_test_5.glb";
   const char* track_filename = "Przemkowytor.glb";
 #endif
 
