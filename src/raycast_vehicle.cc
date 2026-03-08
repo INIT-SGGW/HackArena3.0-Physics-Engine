@@ -95,11 +95,11 @@ void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar ste
 
   updateFriction(step);
 
-  //for (int i = 0; i < m_wheelsInfo.size(); i++)
+  // for (int i = 0; i < m_wheelsInfo.size(); i++)
   //{
-  //  WheelInfo& wheel = m_wheelsInfo[i];
-  //  btVector3 relpos = wheel.m_raycastInfo.m_hardPointWS - getRigidBody()->getCenterOfMassPosition();
-  //  btVector3 vel = getRigidBody()->getVelocityInLocalPoint(relpos);
+  //   WheelInfo& wheel = m_wheelsInfo[i];
+  //   btVector3 relpos = wheel.m_raycastInfo.m_hardPointWS - getRigidBody()->getCenterOfMassPosition();
+  //   btVector3 vel = getRigidBody()->getVelocityInLocalPoint(relpos);
 
   //  // THIS IS POTENNTIALY ONLY FOR VISUAL PURPOSES AND IT IS NOT NEEDED FOR US
   //   if (wheel.m_raycastInfo.m_isInContact)
@@ -661,10 +661,9 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     }
 
     // feedback to engine
-    auto avg_ang_speed = 
-      (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
-      m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
-         2;
+    auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
+                          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
+                         2;
     auto new_rpm =
         avg_ang_speed * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * (60.0f / (2.0f * 3.14159f));
     if (new_rpm > 15000.0f)  // rev limiter
