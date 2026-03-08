@@ -46,7 +46,7 @@ namespace boink
         std::shared_ptr<btDiscreteDynamicsWorld> world);
 
     Ground(const Ground&)=delete;
-    Ground(Ground&&)=default;
+    Ground(Ground&&)noexcept;
 
     Ground& operator=(const Ground&)=delete;
     Ground& operator=(Ground&&)=delete;

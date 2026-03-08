@@ -56,7 +56,20 @@ namespace boink
 		world_->addRigidBody(
         rigidbody_.get(),
         CollisionGroup::Static,
-        CollisionGroup::Static | CollisionGroup::Vehicle);
+        CollisionGroup::Vehicle);
+  }
+
+  Ground::Ground(Ground&& other) noexcept
+      : mesh_(std::move(other.mesh_)),
+        collision_shape_(std::move(other.collision_shape_)),
+        motion_state_(std::move(other.motion_state_)),
+        rigidbody_(std::move(other.rigidbody_)),
+        world_(std::move(other.world_)),
+        p_surface_info_(other.p_surface_info_),
+        model_transform_(other.model_transform_),
+        user_data_(std::move(other.user_data_))
+  {
+    rigidbody_->setUserPointer((void*)&user_data_);
   }
 
   Ground::~Ground() noexcept
@@ -64,6 +77,7 @@ namespace boink
     // Must check in order for move semantics to work.
     if(world_)
       world_->removeRigidBody(rigidbody_.get());
+
   }
 
   void Ground::setWorldTransform(const btTransform& transform)

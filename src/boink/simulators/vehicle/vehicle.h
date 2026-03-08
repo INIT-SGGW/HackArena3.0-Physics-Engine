@@ -63,11 +63,14 @@ namespace boink
         const CreationInfo& create_info,
         std::shared_ptr<const Track> track,
         std::shared_ptr<btDynamicsWorld> world);
-    Vehicle(const Vehicle&)=delete;
-    Vehicle(Vehicle&&)noexcept=default;
 
+    Vehicle(const Vehicle&)=delete;
     Vehicle& operator=(const Vehicle&)=delete;
-    Vehicle& operator=(Vehicle&&)noexcept=default;
+
+    // if custom need remember
+    // to set for rigdbody user ptr new ptr to new user data
+    Vehicle(Vehicle&&)noexcept=delete;
+    Vehicle& operator=(Vehicle&&)noexcept=delete;
 
     ~Vehicle() noexcept;
 

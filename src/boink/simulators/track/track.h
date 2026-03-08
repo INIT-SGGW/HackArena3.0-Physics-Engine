@@ -50,6 +50,9 @@ namespace boink
         std::shared_ptr<const Weather> weather,
         std::shared_ptr<btDiscreteDynamicsWorld> world);
     Track(const Track&)=delete;
+    Track(Track&&)=delete;
+    Track& operator=(Track&&)=delete;
+    Track& operator=(const Track&)=delete;
 
     void update(btScalar dt) override;
     void updateRender(Renderer* p_renderer) override;

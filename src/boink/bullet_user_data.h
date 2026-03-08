@@ -6,9 +6,9 @@ namespace boink
   {
     enum class Type
     {
+      Default,
       Ground,
       Vehicle,
-      Default
     };
 
     BulletUserData()
