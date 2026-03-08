@@ -603,14 +603,14 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
           rollingFriction = wheelInfo.m_traction_force * timeStep;
 
-          std::cout << "drive_torque:  " << drive_torque << "\t";
-          std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
-          std::cout << "total_torque: " << total_torque << "\t";
-          std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
-          std::cout << "long_speed: " << speed << "\t";
-          std::cout << "slip_ratio: " << slip_ratio << "\t";
-          std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
-          std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
+          // std::cout << "drive_torque:  " << drive_torque << "\t";
+          // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
+          // std::cout << "total_torque: " << total_torque << "\t";
+          // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
+          // std::cout << "long_speed: " << speed << "\t";
+          // std::cout << "slip_ratio: " << slip_ratio << "\t";
+          // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
+          // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
         }
       }
       else if (groundObject)  // bullet mechanic for front wheels (temporary)
@@ -720,9 +720,9 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     }
   }
 
-  std::cout << "gear:  " << m_gearbox.current_gear << "\t";
+  /*std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   std::cout << "rpm:  " << m_engine.rpm << "\t";
-  std::cout << "old_speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
+  std::cout << "old_speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";*/
 }
 
 btVector3 RaycastVehicle::getForwardVector() const
@@ -990,9 +990,9 @@ btScalar RaycastVehicle::getWheelLongSpeed(WheelInfo& wheel) const
   }
   else
   {
-    // Teraz jak jest w powietrzu to bierze wektor "w góre" samochodu ale w przysz³oœci to w ogóle long_dir nie jest
-    // potrzebne ¿eby liczyæ jak ko³o jest w powietrzu
-    contactNormal = m_chassisBody->getWorldTransform().getBasis().getColumn(1);  // Oœ Y auta
+    // Teraz jak jest w powietrzu to bierze wektor "w gore" samochodu ale w przyszlosci to w ogole long_dir nie jest
+    // potrzebne zeby liczyc jak kolo jest w powietrzu
+    contactNormal = m_chassisBody->getWorldTransform().getBasis().getColumn(1);  // Os Y auta
   }
   btVector3 axleDir = -wheel.m_worldTransform.getBasis().getColumn(m_indexRightAxis);
 

@@ -81,10 +81,10 @@ class RaycastVehicle : public btActionInterface
   virtual void updateSuspension(btScalar deltaTime);
   virtual void updateFriction(btScalar timeStep);
   /// <summary>
-  /// Oblicza dzia³anie czêœci napêdowych (silnik, skrzynia) i zwraca moment obrotowy wygenerowany przez te czêœci,
-  /// który trzeba dyferencja³em rozdzieliæ na ko³a napêdowe
-  /// Wa¿ne ¿eby gdzieœ po tej funkcji zaktualizowaæ obroty silnika w zale¿noœci od prêdkoœci kó³, ¿eby w nastêpnej
-  /// klatce jak siê wywo³a ta metoda to ¿eby liczy³o dla zaktualizowanych obrotów silnika.
+  /// Oblicza dzialanie czesci napedowych (silnik, skrzynia) i zwraca moment obrotowy wygenerowany przez te czesci,
+  /// ktory trzeba dyferencjalem rozdzielic na kola napedowe
+  /// Wazne zeby gdzies po tej funkcji zaktualizowac obroty silnika w zaleznosci od predkosci kol, zeby w nastepnej
+  /// klatce jak sie wywola ta metoda to zeby liczylo dla zaktualizowanych obrotow silnika.
   /// </summary>
   /// <param name="deltaTime"></param>
   /// <returns>Wygenerowany moment obrotowy.</returns>
@@ -103,7 +103,7 @@ class RaycastVehicle : public btActionInterface
   bool setGearDown();
 
   /// <summary>
-  /// Zwraca globaln¹ szybkoœæ ko³a w kierunku, w którym ko³o jest zwrócone.
+  /// Zwraca globalna szybkosc kola w kierunku, w ktorym kolo jest zwrocone.
   /// </summary>
   btScalar getWheelLongSpeed(WheelInfo& wheel) const;
 
