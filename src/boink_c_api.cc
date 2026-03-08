@@ -349,16 +349,23 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   return BOINK_OK;
 }
 
-int boink_step_race(BoinkHandle handle, Real dt)
+int boink_step_race(BoinkHandle handle, Real dt, Real* out_simulated_dt_second)
 {
   boink::Race* p_race=(boink::Race*)handle;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_simulated_dt_second);
   if(dt<0.)
     RETURN_STATUS_INVALID_ARG(
         dt,"was lesser than 0");
 
-  p_race->update(dt);
+  int max_sub_steps=15;
+  Real fixed_delta_time=1.f/120.f;
+  Real max_delta_time=0.1f;
+  int steps=p_race->update(dt,max_sub_steps,fixed_delta_time,max_delta_time);
+  *out_simulated_dt_second=steps*fixed_delta_time;
+
   p_race->updateDebug();
   return BOINK_OK;
 }
@@ -532,24 +539,37 @@ int boink_set_vehicle_position(
     vehicle=p_race->getVehicle(vehicle_id));
   
   btVector3 pos(position->x,position->y,position->z);
-  vehicle->setPosition(pos);
+  btTransform transform;
+  transform.setIdentity();
+  transform.setOrigin(pos);
+  vehicle->setWorldTransform(transform);
 
   return BOINK_OK;
 }
 
-int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position)
+int boink_set_vehicle_orientation(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    const struct BoinkQuaternion *orientation)
 {
   boink::Race* p_race=(boink::Race*)handle;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       handle);
   IF_RETURN_STATUS_INVALID_ARG_NULL(
-      position);
+      orientation);
 
-  btVector3 pos(position->x,position->y,position->z);
-  btTransform trans;
-  trans.setIdentity();
-  trans.setOrigin(pos);
-  p_race->getTrack()->setWorldTransform(trans);
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  btQuaternion rot(
+      orientation->x,
+      orientation->y,
+      orientation->z,
+      orientation->w);
+  btTransform transform=vehicle->getWorldTransform();
+  transform.setRotation(rot);
+  vehicle->setWorldTransform(transform);
 
   return BOINK_OK;
 }
