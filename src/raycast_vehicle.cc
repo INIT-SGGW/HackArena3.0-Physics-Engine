@@ -95,37 +95,37 @@ void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar ste
 
   updateFriction(step);
 
-  for (int i = 0; i < m_wheelsInfo.size(); i++)
-  {
-    WheelInfo& wheel = m_wheelsInfo[i];
-    btVector3 relpos = wheel.m_raycastInfo.m_hardPointWS - getRigidBody()->getCenterOfMassPosition();
-    btVector3 vel = getRigidBody()->getVelocityInLocalPoint(relpos);
+  //for (int i = 0; i < m_wheelsInfo.size(); i++)
+  //{
+  //  WheelInfo& wheel = m_wheelsInfo[i];
+  //  btVector3 relpos = wheel.m_raycastInfo.m_hardPointWS - getRigidBody()->getCenterOfMassPosition();
+  //  btVector3 vel = getRigidBody()->getVelocityInLocalPoint(relpos);
 
-    // THIS IS POTENNTIALY ONLY FOR VISUAL PURPOSES AND IT IS NOT NEEDED FOR US
-    // if (wheel.m_raycastInfo.m_isInContact)
-    //{
-    //  const btTransform& chassisWorldTransform = getChassisWorldTransform();
+  //  // THIS IS POTENNTIALY ONLY FOR VISUAL PURPOSES AND IT IS NOT NEEDED FOR US
+  //   if (wheel.m_raycastInfo.m_isInContact)
+  //  {
+  //    const btTransform& chassisWorldTransform = getChassisWorldTransform();
 
-    //  btVector3 fwd(chassisWorldTransform.getBasis()[0][m_indexForwardAxis],
-    //                chassisWorldTransform.getBasis()[1][m_indexForwardAxis],
-    //                chassisWorldTransform.getBasis()[2][m_indexForwardAxis]);
+  //    btVector3 fwd(chassisWorldTransform.getBasis()[0][m_indexForwardAxis],
+  //                  chassisWorldTransform.getBasis()[1][m_indexForwardAxis],
+  //                  chassisWorldTransform.getBasis()[2][m_indexForwardAxis]);
 
-    //  btScalar proj = fwd.dot(wheel.m_raycastInfo.m_contactNormalWS);
-    //  fwd -= wheel.m_raycastInfo.m_contactNormalWS * proj;
+  //    btScalar proj = fwd.dot(wheel.m_raycastInfo.m_contactNormalWS);
+  //    fwd -= wheel.m_raycastInfo.m_contactNormalWS * proj;
 
-    //  btScalar proj2 = fwd.dot(vel);
+  //    btScalar proj2 = fwd.dot(vel);
 
-    //  wheel.m_deltaRotation = (proj2 * step) / (wheel.m_wheelsRadius);
-    //  wheel.m_rotation += wheel.m_deltaRotation;
-    //}
-    // else
-    //  wheel.m_rotation += wheel.m_deltaRotation;
+  //    wheel.m_deltaRotation = (proj2 * step) / (wheel.m_wheelsRadius);
+  //    wheel.m_rotation += wheel.m_deltaRotation;
+  //  }
+  //   else
+  //    wheel.m_rotation += wheel.m_deltaRotation;
 
-    //// damping of rotation when not in contact
-    // wheel.m_deltaRotation *= btScalar(0.99);
+  //  // damping of rotation when not in contact
+  //   wheel.m_deltaRotation *= btScalar(0.99);
 
-    // wheel.m_angSpeed = wheel.m_deltaRotation / step;
-  }
+  //   wheel.m_angSpeed = wheel.m_deltaRotation / step;
+  //}
 }
 
 const btTransform& RaycastVehicle::getChassisWorldTransform() const
@@ -661,9 +661,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     }
 
     // feedback to engine
-    auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
-                          m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
-                         2;
+    auto avg_ang_speed = 
+      (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
+      m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
+         2;
     auto new_rpm =
         avg_ang_speed * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * (60.0f / (2.0f * 3.14159f));
     if (new_rpm > 15000.0f)  // rev limiter

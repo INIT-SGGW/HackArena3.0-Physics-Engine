@@ -1,5 +1,6 @@
 #include "boink/debugger/vehicle_controller.h"
 #include "boink/utility.h"
+#include <GLFW/glfw3.h>
 
 namespace boink
 {
@@ -26,7 +27,7 @@ void VehicleController::update(piksel::Window& wnd, piksel::Camera& camera, floa
   else
     vehicle_->setSteering(0.f, Vehicle::TurnDirection::Right);
 
-  if (wnd.getKey(GLFW_KEY_Z) == piksel::Window::KeyState::Press)
+  if (wnd.getKey(GLFW_KEY_LEFT_CONTROL) == piksel::Window::KeyState::Press)
   {
     if (!is_gear_btn_pressed)
     {
@@ -35,7 +36,7 @@ void VehicleController::update(piksel::Window& wnd, piksel::Camera& camera, floa
     }
   }
 
-  if (wnd.getKey(GLFW_KEY_X) == piksel::Window::KeyState::Press)
+  if (wnd.getKey(GLFW_KEY_LEFT_SHIFT) == piksel::Window::KeyState::Press)
   {
     if (!is_gear_btn_pressed)
     {

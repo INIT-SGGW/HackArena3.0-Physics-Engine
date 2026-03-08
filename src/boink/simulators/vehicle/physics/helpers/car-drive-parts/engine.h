@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <vector>
 
 #include "boink/simulators/vehicle/physics/helpers/curve.h"
