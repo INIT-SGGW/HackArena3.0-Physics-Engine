@@ -58,10 +58,6 @@ namespace boink
 
     for(const auto& node : nodes)
     {
-#ifndef NDEBUG
-      //if(node.name!=TRACK_NAME)
-      //  continue;
-#endif
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
         continue;
 
@@ -85,20 +81,43 @@ namespace boink
     Track::createLine(extractor,rightline_,RIGHTLINE_NAME);
     Track::createLine(extractor,leftline_,LEFTLINE_NAME);
 
+    Track::createLine(extractor,pitstop_centerline_,PITSTOP_CENTERLINE_NAME);
+    Track::createLine(extractor,pitstop_rightline_,PITSTOP_RIGHTLINE_NAME);
+    Track::createLine(extractor,pitstop_leftline_,PITSTOP_LEFTLINE_NAME);
+
     // Check if centerline should be reveresed
+    {
+      auto center_point=centerline_.getPoint(0);
+      auto next_center_point=centerline_.getPoint(1);
 
-    auto center_point=centerline_.getPoint(0);
-    auto next_center_point=centerline_.getPoint(1);
+      auto dir=next_center_point-center_point;
 
-    auto dir=next_center_point-center_point;
+      auto right_point=rightline_.getPoint( 
+          rightline_.getClosestIndex(center_point).first);
+      auto right=right_point-center_point;
 
-    auto right_point=rightline_.getPoint( rightline_.getClosestIndex(center_point).first);
-    auto right=right_point-center_point;
+      auto normal=right.cross(dir);
 
-    auto normal=right.cross(dir);
+      if(normal.dot(s_kUp)<0)
+        centerline_.reverse();
+    }
 
-    if(normal.dot(s_kUp)<0)
-      centerline_.reverse();
+    //Check also for pitstop centerline
+    {
+      auto center_point=pitstop_centerline_.getPoint(0);
+      auto next_center_point=pitstop_centerline_.getPoint(1);
+
+      auto dir=next_center_point-center_point;
+
+      auto right_point=pitstop_rightline_.getPoint( 
+          pitstop_rightline_.getClosestIndex(center_point).first);
+      auto right=right_point-center_point;
+
+      auto normal=right.cross(dir);
+
+      if(normal.dot(s_kUp)<0)
+        pitstop_centerline_.reverse();
+    }
   }
 
   void Track::createLine(

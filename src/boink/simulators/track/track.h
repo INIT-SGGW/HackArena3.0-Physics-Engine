@@ -78,11 +78,19 @@ namespace boink
         const GltfExtractor& extractor,
         Line& line,
         std::string_view name);
+
   private:
-    static constexpr std::string_view TRACK_NAME="Asphalt";
-    static constexpr std::string_view RIGHTLINE_NAME="Edgeline_right";
-    static constexpr std::string_view LEFTLINE_NAME="Edgeline_left";
-    static constexpr std::string_view CENTERLINE_NAME="Centerline";
+    //static constexpr std::string_view TRACK_NAME="Asphalt";
+    static constexpr std::string_view RIGHTLINE_NAME="LINE_RIGHT";
+    static constexpr std::string_view LEFTLINE_NAME="LINE_LEFT";
+    static constexpr std::string_view CENTERLINE_NAME="LINE_CENTER";
+
+    //static constexpr std::string_view PITSTOP_RIGHTLINE_NAME=
+    //  "PITSTOP_ZONE_LINE_RIGHT";
+    //static constexpr std::string_view PITSTOP_LEFTLINE_NAME=
+    //  "PITSTOP_ZONE_LINE_LEFT";
+    //static constexpr std::string_view PITSTOP_CENTERLINE_NAME=
+    //  "PITSTOP_ZONE_LINE_CENTER";
 
     const btVector3 s_kUp={0.0,1.0,0.0};
   private:
@@ -94,6 +102,10 @@ namespace boink
     Line centerline_;
     Line rightline_;
     Line leftline_;
+
+    Line pitstop_centerline_;
+    Line pitstop_rightline_;
+    Line pitstop_leftline_;
 
     std::vector<SampleData> track_data_;
 
