@@ -545,7 +545,8 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       if (!wheelInfo.m_bIsFrontWheel)
       {
         auto drive_torque = total_drive_torque / 2;
-        auto traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelSimRadius;
+        auto traction_torque = 0.f;
+        if (groundObject) traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelSimRadius;
         auto total_torque = drive_torque + traction_torque;
 
         auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
@@ -571,49 +572,56 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
             wheelInfo.m_angSpeed += wheel_speed_diff;
         }
 
-        // calculating slip ratio and traction force
+        auto speed = 0.f;
         auto slip_ratio = 0.0f;
-        auto speed = getWheelLongSpeed(wheelInfo);
-
-        if (speed == 0 && m_throttle == 0)
-          wheelInfo.m_traction_force = 0.0f;
-        else
+        // calculating slip ratio and traction force
+        if (groundObject)
         {
-          if (speed == 0)
+          speed = getWheelLongSpeed(wheelInfo);
+          slip_ratio = 0.0f;
+
+          if (speed == 0 && m_throttle == 0)
+            wheelInfo.m_traction_force = 0.0f;
+          else
           {
-            if (m_gearbox.current_gear == Gear::Reverse)
-              slip_ratio = -0.0001f;
+            if (speed == 0)
+            {
+              if (m_gearbox.current_gear == Gear::Reverse)
+                slip_ratio = -0.0001f;
+              else
+                slip_ratio = 0.0001f;
+            }
+            else if (btFabs(speed) < 2.9 && m_throttle == 0)
+            {
+              // this is a protection against speed approachig zero and then slip
+              // ratio approaching infinity what causing numerical instability (
+              // TODO: and not working too well xD)
+              slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / 2.9;
+            }
             else
-              slip_ratio = 0.0001f;
-          }
-          else if (btFabs(speed) < 2.9 && m_throttle == 0)
-          {
-            // this is a protection against speed approachig zero and then slip
-            // ratio approaching infinity what causing numerical instability (
-            // TODO: and not working too well xD)
-            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / 2.9;
-          }
-          else
-          {
-            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / btFabs(speed);
-          }
+            {
+              slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / btFabs(speed);
+            }
 
-          if (slip_ratio < 0)
-            wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * -kSlipRatioToGrip.GetValue(-slip_ratio);
-          else
-            wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * kSlipRatioToGrip.GetValue(slip_ratio);
+            if (slip_ratio < 0)
+              wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * -kSlipRatioToGrip.GetValue(-slip_ratio);
+            else
+              wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * kSlipRatioToGrip.GetValue(slip_ratio);
 
-          rollingFriction = wheelInfo.m_traction_force * timeStep;
-
-          // std::cout << "drive_torque:  " << drive_torque << "\t";
-          // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
-          // std::cout << "total_torque: " << total_torque << "\t";
-          // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
-          // std::cout << "long_speed: " << speed << "\t";
-          // std::cout << "slip_ratio: " << slip_ratio << "\t";
-          // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
-          // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
+            rollingFriction = wheelInfo.m_traction_force * timeStep;
+          }
         }
+        else
+          wheelInfo.m_traction_force = 0.0f;
+
+        // std::cout << "drive_torque:  " << drive_torque << "\t";
+        // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
+        // std::cout << "total_torque: " << total_torque << "\t";
+        // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
+        // std::cout << "long_speed: " << speed << "\t";
+        // std::cout << "slip_ratio: " << slip_ratio << "\t";
+        // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
+        // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
       }
       else if (groundObject)  // bullet mechanic for front wheels (temporary)
       {
@@ -992,8 +1000,8 @@ btScalar RaycastVehicle::getWheelLongSpeed(WheelInfo& wheel) const
   }
   else
   {
-    // Teraz jak jest w powietrzu to bierze wektor "w gore" samochodu ale w przyszlosci to w ogole long_dir nie jest
-    // potrzebne zeby liczyc jak kolo jest w powietrzu
+    // for now this should be unreachable, because long_dir is not used if wheel is not touching ground. It stayed for
+    // possible future uses.
     contactNormal = m_chassisBody->getWorldTransform().getBasis().getColumn(1);  // Os Y auta
   }
   btVector3 axleDir = -wheel.m_worldTransform.getBasis().getColumn(m_indexRightAxis);
