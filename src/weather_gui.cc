@@ -25,7 +25,7 @@ namespace boink
     ImGui::SliderFloat("Temp rate const",&Weather::s_kTempRateConstant,0,1);
     ImGui::SliderFloat("Cloundiness rate const",&Weather::s_kCloundinessRateConstant,0,1);
     ImGui::SliderFloat("Rain add const",&Weather::s_kRainAddConstant,0,1);
-    ImGui::SliderFloat("Wetness speed",&Weather::s_kWetnessSpeedConstant,0,1);
+    ImGui::SliderFloat("Wetness speed",&Weather::s_kWetnessSpeedConstant,0,10);
     ImGui::NewLine();
 
     ImGui::SliderFloat(
