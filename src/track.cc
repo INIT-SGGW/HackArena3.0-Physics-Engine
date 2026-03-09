@@ -285,17 +285,4 @@ namespace boink
           {0.5,0.0,0.0});
     }
   }
-
-  void Track::setWorldTransform(const btTransform& transform)
-  {
-    transform_=transform;
-    for(auto& ground:grounds)
-    {
-      btTransform new_transform=transform_*ground.getModelTransform();
-      ground.setWorldTransform(new_transform);
-    }
-
-    // TODO
-    // track_data world transform
-  }
 }

@@ -1,3 +1,4 @@
+// clang-format off
 #include "boink/boink_c_api.h"
 
 #include "boink/debugger/debugger.h"
@@ -348,16 +349,23 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   return BOINK_OK;
 }
 
-int boink_step_race(BoinkHandle handle, Real dt)
+int boink_step_race(BoinkHandle handle, Real dt, Real* out_simulated_dt_second)
 {
   boink::Race* p_race=(boink::Race*)handle;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_simulated_dt_second);
   if(dt<0.)
     RETURN_STATUS_INVALID_ARG(
         dt,"was lesser than 0");
 
-  p_race->update(dt);
+  int max_sub_steps=15;
+  Real fixed_delta_time=1.f/120.f;
+  Real max_delta_time=0.1f;
+  int steps=p_race->update(dt,max_sub_steps,fixed_delta_time,max_delta_time);
+  *out_simulated_dt_second=steps*fixed_delta_time;
+
   p_race->updateDebug();
   return BOINK_OK;
 }
@@ -449,7 +457,8 @@ int boink_despawn_vehicle(BoinkHandle handle, uint64_t vehicle_id)
 int boink_set_controls(
     BoinkHandle handle, 
     uint64_t vehicle_id, 
-    const BoinkControls* controls)
+    const BoinkControls* controls,
+    BoinkAcceptedControls* out_accepted_controls)
 {
   boink::Race* p_race=(boink::Race*)handle;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
@@ -482,6 +491,13 @@ int boink_set_controls(
         "was lesser than -1 or greater than 1");
   }
 
+  if(controls->gear_shift < 0 || controls->gear_shift > 2)
+  {
+    RETURN_STATUS_INVALID_ARG(
+        controls->gear_shift,
+        "was lesser than 0 or greater than 2");
+  }
+
   vehicle->setEngineForce(controls->throttle);
   vehicle->setBrake(controls->brake);
 
@@ -491,6 +507,18 @@ int boink_set_controls(
     boink::Vehicle::TurnDirection::Left:
     boink::Vehicle::TurnDirection::Right;
   vehicle->setSteering(steer,dir);
+
+  out_accepted_controls->accepted_shift = BoinkGearShift::BOINK_GEAR_SHIFT_NONE;
+  switch (controls->gear_shift)
+  {
+    case BoinkGearShift::BOINK_GEAR_SHIFT_UPSHIFT:
+      if (vehicle->setGearUp()) out_accepted_controls->accepted_shift = BoinkGearShift::BOINK_GEAR_SHIFT_UPSHIFT;
+      break;
+    case BoinkGearShift::BOINK_GEAR_SHIFT_DOWNSHIFT:
+      if (vehicle->setGearDown()) out_accepted_controls->accepted_shift = BoinkGearShift::BOINK_GEAR_SHIFT_DOWNSHIFT;
+      break;
+    case BoinkGearShift::BOINK_GEAR_SHIFT_NONE:;
+  }
 
   return BOINK_OK;
 }
@@ -511,24 +539,37 @@ int boink_set_vehicle_position(
     vehicle=p_race->getVehicle(vehicle_id));
   
   btVector3 pos(position->x,position->y,position->z);
-  vehicle->setPosition(pos);
+  btTransform transform;
+  transform.setIdentity();
+  transform.setOrigin(pos);
+  vehicle->setWorldTransform(transform);
 
   return BOINK_OK;
 }
 
-int boink_set_track_position(BoinkHandle handle,const struct BoinkVec3* position)
+int boink_set_vehicle_orientation(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    const struct BoinkQuaternion *orientation)
 {
   boink::Race* p_race=(boink::Race*)handle;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       handle);
   IF_RETURN_STATUS_INVALID_ARG_NULL(
-      position);
+      orientation);
 
-  btVector3 pos(position->x,position->y,position->z);
-  btTransform trans;
-  trans.setIdentity();
-  trans.setOrigin(pos);
-  p_race->getTrack()->setWorldTransform(trans);
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  btQuaternion rot(
+      orientation->x,
+      orientation->y,
+      orientation->z,
+      orientation->w);
+  btTransform transform=vehicle->getWorldTransform();
+  transform.setRotation(rot);
+  vehicle->setWorldTransform(transform);
 
   return BOINK_OK;
 }
@@ -546,13 +587,14 @@ int boink_read_vehicle_state(
   HANDLE_EXCEPTIONS(
     vehicle=p_race->getVehicle(vehicle_id))
 
-  out_state->engine_rpm=0.0;
-  out_state->gear=0;
-  for(int i=0;i<4;i++)
-  {
-    btScalar angular_speed=vehicle->getWheelAngularSpeed((boink::WheelPosition)i);
-    out_state->wheel_speeds[i]=angular_speed;
-  }
+  out_state->engine_rpm=vehicle->getEngineRPM();
+  out_state->gear=vehicle->getCurrentGear() - 1;
+
+  out_state->wheel_speeds[0] = vehicle->getWheelAngularSpeed(boink::WheelPosition::FrontLeft);
+  out_state->wheel_speeds[1] = vehicle->getWheelAngularSpeed(boink::WheelPosition::FrontRight);
+  out_state->wheel_speeds[2] = vehicle->getWheelAngularSpeed(boink::WheelPosition::RearLeft);
+  out_state->wheel_speeds[3] = vehicle->getWheelAngularSpeed(boink::WheelPosition::RearRight);
+  
   out_state->brake_applied=0.0;
   out_state->throttle_applied=0.0;
 

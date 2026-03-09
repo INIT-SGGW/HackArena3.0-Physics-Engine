@@ -12,5 +12,6 @@ namespace boink
     virtual void update(piksel::Window& wnd, piksel::Camera& camera, float dt)=0;
   protected:
     Controller()=default;
+    virtual ~Controller() noexcept=default;
   };
 }

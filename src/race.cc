@@ -138,7 +138,8 @@ namespace boink
       btScalar fixed_delta_time,
       btScalar max_delta_time)
   {
-    int steps=Simulation::update(dt,max_sub_steps,fixed_delta_time,max_delta_time);
+    int steps=Simulation::update(
+        dt,max_sub_steps,fixed_delta_time,max_delta_time);
 
     return steps;
   }

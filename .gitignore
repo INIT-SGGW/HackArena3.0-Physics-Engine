@@ -19,3 +19,5 @@ docs
 
 
 build
+.clang-format
+maps

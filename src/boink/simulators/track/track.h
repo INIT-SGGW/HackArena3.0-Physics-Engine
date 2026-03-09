@@ -59,7 +59,6 @@ namespace boink
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
     const btTransform& getWorldTransform() const {return transform_;}
-    void setWorldTransform(const btTransform& position);
 
     const Line& getCenterline() const {return centerline_;}
     std::string_view getFilename() const { return filename_;}

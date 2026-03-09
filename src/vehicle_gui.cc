@@ -100,7 +100,7 @@ namespace boink
     ImGui::Text("Position: (%.2f,%.2f,%.2f) [m]",
         pos_v.getX(),pos_v.getY(),pos_v.getZ());
     ImGui::Text("Angular speed: %.2f [rad/sec]",
-        info.m_wheelAngularSpeed);
+        info.m_angSpeed);
     ImGui::Text("Slip ratio: %.2f",
         info.m_slipRatio);
 
