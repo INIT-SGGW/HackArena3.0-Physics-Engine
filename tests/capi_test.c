@@ -26,7 +26,7 @@ int main()
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
-  const char* track_filename = "Przemkowytor.glb";
+  const char* track_filename = "HorizonTrack_01.glb";
 #endif
 
   unsigned int major, minor, patch;

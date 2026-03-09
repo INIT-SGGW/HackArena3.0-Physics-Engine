@@ -24,7 +24,9 @@ namespace boink
       Asphalt,
       Grass,
       Sand,
-      Gravel
+      Gravel,
+      Wall,
+      Count
     };
     struct SurfaceInfo;
 
@@ -84,8 +86,12 @@ namespace boink
           return "sand";
         case Type::Gravel:
           return "gravel";
+        case Type::Wall:
+          return "wall";
+        case Type::Count:
+          assert(false && "Invalid Ground Type");
+          return "Unknown";
       }
-
       assert(false && "Invalid Ground Type");
       return "Unknown";
     }

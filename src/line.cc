@@ -192,6 +192,8 @@ std::pair<size_t,btScalar> Line::getClosestIndex(
 
   btVector3& Line::getPoint(size_t index)
   {
+    btAssert(index<points_dist_.size());
+
     return points_dist_[index].first;
   }
 

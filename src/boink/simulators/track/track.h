@@ -18,6 +18,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 namespace boink
 {
@@ -72,12 +73,14 @@ namespace boink
 
     void createTrackData();
     SampleData generateSampleTrackData(size_t i) const;
+
   private:
     static void createLine(
         const GltfExtractor& extractor,
         Line& line,
         std::string_view name);
 
+    static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
   private:
     //static constexpr std::string_view TRACK_NAME="Asphalt";
     static constexpr std::string_view RIGHTLINE_NAME="LINE_RIGHT";

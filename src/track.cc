@@ -9,9 +9,13 @@
 #include "boink/gltf_extractor.h"
 #include "boink/gui/track_gui.h"
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 namespace boink
 {
@@ -50,6 +54,8 @@ namespace boink
       {3.f,0.4f,wetness,Ground::Type::Gravel};
     surface_infos_[Ground::Type::Asphalt]= 
       {0.0f,0.1f,wetness,Ground::Type::Asphalt};
+    surface_infos_[Ground::Type::Wall]= 
+      {1.0f,0.1f,wetness,Ground::Type::Wall};
   }
 
   void Track::initGrounds(const GltfExtractor& extractor)
@@ -58,20 +64,31 @@ namespace boink
 
     for(const auto& node : nodes)
     {
-      if(node.type!=TINYGLTF_MODE_TRIANGLES)
-        continue;
-
       if(node.vertices.size()==0 || node.indices.size()==0)
         throw Exception(
             Exception::Type::InvalidArgumentError,
             "Ground mesh is empty.");
 
+      std::optional<Ground::Type> type=Track::resolveGroundTypeFromName(node.name);
+
+      if(!type.has_value())
+        continue;
+      std::cout<<node.name<<std::endl;
+
       // TODO
+      // Uncomment when Michal fix it
+      //if(node.type!=TINYGLTF_MODE_TRIANGLES)
+      //  throw Exception(
+      //      Exception::Type::UnsupportedFormatError,
+      //      "Node type is not TRIANGLES_MODE");
+      if(node.type!=TINYGLTF_MODE_TRIANGLES)
+        continue;
+
       grounds.emplace_back(
           node.vertices,
           node.indices,
           node.transform,
-          &surface_infos_[Ground::Type::Asphalt],world_);
+          &surface_infos_[type.value()],world_);
     }
   }
 
@@ -81,9 +98,9 @@ namespace boink
     Track::createLine(extractor,rightline_,RIGHTLINE_NAME);
     Track::createLine(extractor,leftline_,LEFTLINE_NAME);
 
-    Track::createLine(extractor,pitstop_centerline_,PITSTOP_CENTERLINE_NAME);
-    Track::createLine(extractor,pitstop_rightline_,PITSTOP_RIGHTLINE_NAME);
-    Track::createLine(extractor,pitstop_leftline_,PITSTOP_LEFTLINE_NAME);
+    //Track::createLine(extractor,pitstop_centerline_,PITSTOP_CENTERLINE_NAME);
+    //Track::createLine(extractor,pitstop_rightline_,PITSTOP_RIGHTLINE_NAME);
+    //Track::createLine(extractor,pitstop_leftline_,PITSTOP_LEFTLINE_NAME);
 
     // Check if centerline should be reveresed
     {
@@ -103,21 +120,21 @@ namespace boink
     }
 
     //Check also for pitstop centerline
-    {
-      auto center_point=pitstop_centerline_.getPoint(0);
-      auto next_center_point=pitstop_centerline_.getPoint(1);
+    //{
+    //  auto center_point=pitstop_centerline_.getPoint(0);
+    //  auto next_center_point=pitstop_centerline_.getPoint(1);
 
-      auto dir=next_center_point-center_point;
+    //  auto dir=next_center_point-center_point;
 
-      auto right_point=pitstop_rightline_.getPoint( 
-          pitstop_rightline_.getClosestIndex(center_point).first);
-      auto right=right_point-center_point;
+    //  auto right_point=pitstop_rightline_.getPoint( 
+    //      pitstop_rightline_.getClosestIndex(center_point).first);
+    //  auto right=right_point-center_point;
 
-      auto normal=right.cross(dir);
+    //  auto normal=right.cross(dir);
 
-      if(normal.dot(s_kUp)<0)
-        pitstop_centerline_.reverse();
-    }
+    //  if(normal.dot(s_kUp)<0)
+    //    pitstop_centerline_.reverse();
+    //}
   }
 
   void Track::createLine(
@@ -205,9 +222,6 @@ namespace boink
     sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
     sample.right.normalize();
 
-    //sample.right=right_point-center_point;
-    //sample.right.normalize();
-
     if(sample.tangent.dot(sample.right)>1e-5)
     {
       std::stringstream ss;
@@ -243,6 +257,29 @@ namespace boink
     sample.bank=btAtan2(sin_angle,cos_angle);
 
     return sample;
+  }
+
+  std::optional<Ground::Type> Track::resolveGroundTypeFromName(std::string name)
+  {
+    std::vector<std::string> ground_names;
+    ground_names.reserve((size_t)Ground::Type::Count);
+    for(int i=0;i<(int)Ground::Type::Count;i++)
+      ground_names.emplace_back(Ground::toString((Ground::Type)i));
+
+    std::transform(name.begin(),name.end(),name.begin(),
+        [](auto c)
+        {
+          return std::tolower(c);
+        });
+
+    for(size_t i=0;i<ground_names.size();i++)
+    {
+      size_t count=name.find(ground_names[i]);
+      if(count!=std::string::npos)
+        return (Ground::Type)i;
+    }
+
+    return std::nullopt;
   }
 
   void Track::update(btScalar dt)
