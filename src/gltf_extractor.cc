@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <algorithm>
+//#include <iostream>
 
 namespace boink
 {
@@ -82,6 +83,9 @@ namespace boink
       return;
 
     const tinygltf::Mesh& mesh=model_.meshes[node.mesh];
+    //std::cout<<"Node: "<<node.name<<"\n";
+    //std::cout<<"Node extra: "<<node.extras_json_string<<"\n";
+    //std::cout<<"Mesh: "<<mesh.name<<"\n";
     
     for(const auto& primitive:mesh.primitives)
     {
@@ -90,6 +94,14 @@ namespace boink
         throw Exception(
             Exception::Type::UnsupportedFormatError,
             "Triangles and line modes are only supported.");
+
+      //int material=primitive.material;
+      //if(material!=-1)
+      //{
+      //  std::cout<<"\tMaterial: "<<model_.materials[material].name;
+      //  std::cout<<"\n\tExtra: "<<model_.materials[material].extras_json_string;
+      //  std::cout<<"\n\n";
+      //}
 
       new_node.type=primitive.mode;
       
@@ -106,6 +118,9 @@ namespace boink
     }
 
     nodes_.push_back(std::move(new_node));
+
+    //std::cout<<"Name: "<<node.name<<std::endl;
+    //std::cout<<"\ttype: "<<node.<<std::endl;
 
     for(auto index:node.children)
       bindNode(model_.nodes[index],transform);
