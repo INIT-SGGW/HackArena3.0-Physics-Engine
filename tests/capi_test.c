@@ -7,6 +7,7 @@
 void printVehicleState(const BoinkVehicleState* state);
 void printTrackData(const BoinkTrackData* data);
 void printCenterlineSample(const BoinkCenterlineSample* sample, int num);
+void printGhostModeData(const BoinkGhostModeRuntimeState* state);
 size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* samples, size_t samples_count);
 #define PRINT_ERROR()                     \
   {                                       \
@@ -63,11 +64,11 @@ int main()
   }
   BoinkGhostModeSettings settings;
   settings.enter_delay_ms = 5000.f;
-  settings.exit_delay_ms = 10000.f;
+  settings.exit_delay_ms = 2000.f;
   settings.enter_speed_max_mps = 5.f;
   settings.exit_speed_min_mps = 20.f;
-  settings.until_completed_laps = 1;
-  settings.vehicle_overlap_exit_delay_ms = 1000.f;
+  settings.until_completed_laps = 0;
+  settings.vehicle_overlap_exit_delay_ms = 3000.f;
 
   if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
   {
@@ -91,12 +92,12 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  /*uint64_t id1;
+  uint64_t id1;
   if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
-  }*/
+  }
 
   if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
   {
@@ -104,6 +105,17 @@ int main()
     goto clear;
   }
   if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+
+  BoinkQuaternion vehicle_rot;
+  vehicle_rot.x = 0.;
+  vehicle_rot.y = 0.7;
+  vehicle_rot.z = 0.;
+  vehicle_rot.w = 0.7;
+  if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
@@ -118,16 +130,7 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  BoinkQuaternion vehicle_rot;
-  vehicle_rot.x = 0.;
-  vehicle_rot.y = 0.7;
-  vehicle_rot.z = 0.;
-  vehicle_rot.w = 0.7;
-  if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+
   BoinkControls controls;
   controls.brake = 0.0;
   controls.steer = 0.0;
@@ -182,28 +185,28 @@ int main()
       }
     }
 
-    if (!runOnce && dur > 10.)
-    {
-      if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
-      runOnce = true;
-    }
+    //if (!runOnce && dur > 10.)
+    //{
+    //  if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
+    //  {
+    //    PRINT_ERROR();
+    //    goto clear;
+    //  }
+    //  runOnce = true;
+    //}
 
-    if (!runOnce2 && dur > 20.)
-    {
-      if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
-      runOnce2 = true;
-    }
+    //if (!runOnce2 && dur > 20.)
+    //{
+    //  if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
+    //  {
+    //    PRINT_ERROR();
+    //    goto clear;
+    //  }
+    //  runOnce2 = true;
+    //}
 
     struct BoinkVehicleState state;
-    if ((code = boink_read_vehicle_state(handle, id0, &state)) != BOINK_OK)
+    if ((code = boink_read_vehicle_state(handle, id1, &state)) != BOINK_OK)
     {
       PRINT_ERROR();
       goto clear;
@@ -213,6 +216,16 @@ int main()
         findClosestIndex(&state.chassis_position, data.centerline_samples, data.centerline_sample_count);
 
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
+
+    BoinkGhostModeRuntimeState state_ghost;
+    if ((code = boink_read_vehicle_ghost_mode_state(handle, id0, &state_ghost)) != BOINK_OK)
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
+
+    //printGhostModeData(&state_ghost);
+    //printf("Speed: %f\n",state.speed);
 
     boink_update_debug();
   }
@@ -290,4 +303,16 @@ void printCenterlineSample(const BoinkCenterlineSample* sample, int num)
   printStateReal(sample->bank_rad);
   printStateReal(sample->grade_rad);
   printStateReal(sample->s_m);
+}
+
+
+void printGhostModeData(const BoinkGhostModeRuntimeState* state)
+{
+  printf("Ghost data\n");
+
+  printStateInt(state->blockers_mask);
+  printStateInt(state->can_collide_now);
+  printStateInt(state->enter_delay_remaining_ms);
+  printStateInt(state->exit_delay_remaining_ms);
+  printStateInt(state->phase);
 }
