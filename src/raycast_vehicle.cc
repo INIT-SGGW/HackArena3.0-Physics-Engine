@@ -540,103 +540,110 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       class btRigidBody* groundObject = (class btRigidBody*)wheelInfo.m_raycastInfo.m_groundObject;
 
       btScalar rollingFriction = 0.f;
-      // TODO: differential here should seperate in right proportions drive torque to left and right wheel, for now is
-      // always equal
+
+      btScalar total_torque = 0.f;
+      auto traction_torque = 0.f;
+      auto drive_torque = 0.f;
+      if (groundObject) traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelSimRadius;
+
       if (!wheelInfo.m_bIsFrontWheel)
       {
-        auto drive_torque = total_drive_torque / 2;
-        auto traction_torque = 0.f;
-        if (groundObject) traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelSimRadius;
-        auto total_torque = drive_torque + traction_torque;
+        // TODO: differential here should seperate in right proportions drive torque to left and right wheel, for now is
+        // always equal
+        drive_torque = total_drive_torque / 2;
+        total_torque = drive_torque + traction_torque;
+      }
+      else
+        total_torque = traction_torque;
 
-        auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
-        auto engine_inertia_part =
+      auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
+      auto engine_inertia_part = 0.f;
+      if (!wheelInfo.m_bIsFrontWheel)
+        engine_inertia_part =
             m_engine.inertia *
             btPow(m_gearbox.GetCurrentRatio() * m_gearbox.kDifferentialRatio * kTransmissionEfficiency, 2);
 
-        auto wheel_angular_acceleration = total_torque / (wheel_inertia + engine_inertia_part);
-        auto wheel_speed_diff = wheel_angular_acceleration * timeStep;
+      auto wheel_angular_acceleration = total_torque / (wheel_inertia + engine_inertia_part);
+      auto wheel_speed_diff = wheel_angular_acceleration * timeStep;
 
-        if (m_gearbox.current_gear != Gear::Reverse)
-        {
-          if ((wheelInfo.m_angSpeed + wheel_speed_diff) < 0)
-            wheelInfo.m_angSpeed = 0;
-          else
-            wheelInfo.m_angSpeed += wheel_speed_diff;
-        }
+      if (m_gearbox.current_gear != Gear::Reverse)
+      {
+        if ((wheelInfo.m_angSpeed + wheel_speed_diff) < 0)
+          wheelInfo.m_angSpeed = 0;
+        else
+          wheelInfo.m_angSpeed += wheel_speed_diff;
+      }
+      else
+      {
+        if ((wheelInfo.m_angSpeed + wheel_speed_diff) > 0)
+          wheelInfo.m_angSpeed = 0;
+        else
+          wheelInfo.m_angSpeed += wheel_speed_diff;
+      }
+
+      auto speed = 0.f;
+      auto slip_ratio = 0.0f;
+      // calculating slip ratio and traction force
+      if (groundObject)
+      {
+        speed = getWheelLongSpeed(wheelInfo);
+        if (btFabs(speed) < 0.00001f) speed = 0.f;
+        slip_ratio = 0.0f;
+
+        if (speed == 0 && m_throttle == 0)
+          wheelInfo.m_traction_force = 0.0f;
         else
         {
-          if ((wheelInfo.m_angSpeed + wheel_speed_diff) > 0)
-            wheelInfo.m_angSpeed = 0;
-          else
-            wheelInfo.m_angSpeed += wheel_speed_diff;
-        }
-
-        auto speed = 0.f;
-        auto slip_ratio = 0.0f;
-        // calculating slip ratio and traction force
-        if (groundObject)
-        {
-          speed = getWheelLongSpeed(wheelInfo);
-          slip_ratio = 0.0f;
-
-          if (speed == 0 && m_throttle == 0)
-            wheelInfo.m_traction_force = 0.0f;
-          else
+          if (speed == 0)
           {
-            if (speed == 0)
+            if (!wheelInfo.m_bIsFrontWheel)
             {
               if (m_gearbox.current_gear == Gear::Reverse)
                 slip_ratio = -0.0001f;
               else
                 slip_ratio = 0.0001f;
             }
-            else if (btFabs(speed) < 2.9 && m_throttle == 0)
-            {
-              // this is a protection against speed approachig zero and then slip
-              // ratio approaching infinity what causing numerical instability (
-              // TODO: and not working too well xD)
-              slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / 2.9;
-            }
             else
-            {
-              slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / btFabs(speed);
-            }
-
-            if (slip_ratio < 0)
-              wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * -kSlipRatioToGrip.GetValue(-slip_ratio);
-            else
-              wheelInfo.m_traction_force = wheelInfo.m_wheelsSuspensionForce * kSlipRatioToGrip.GetValue(slip_ratio);
-
-            rollingFriction = wheelInfo.m_traction_force * timeStep;
+              slip_ratio = 0.f;
           }
-        }
-        else
-          wheelInfo.m_traction_force = 0.0f;
+          else if (btFabs(speed) < 2.9)
+          {
+            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / 2.9;
+          }
+          else
+          {
+            slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / btFabs(speed);
+          }
 
-        // std::cout << "drive_torque:  " << drive_torque << "\t";
-        // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
-        // std::cout << "total_torque: " << total_torque << "\t";
-        // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
-        // std::cout << "long_speed: " << speed << "\t";
-        // std::cout << "slip_ratio: " << slip_ratio << "\t";
-        // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
-        // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
-      }
-      else if (groundObject)  // bullet mechanic for front wheels (temporary)
-      {
-        if (wheelInfo.m_engineForce != 0.f)
-          rollingFriction = wheelInfo.m_engineForce * timeStep;
-        else
-        {
-          btScalar defaultRollingFrictionImpulse = 0.f;
-          btScalar maxImpulse = wheelInfo.m_brake ? wheelInfo.m_brake : defaultRollingFrictionImpulse;
-          WheelContactPoint contactPt(m_chassisBody, groundObject, wheelInfo.m_raycastInfo.m_contactPointWS,
-                                      m_forwardWS[wheel], maxImpulse);
-          btAssert(numWheelsOnGround > 0);
-          rollingFriction = calcRollingFriction(contactPt, numWheelsOnGround);
+          btScalar raw_traction_force;
+          if (slip_ratio < 0)
+            raw_traction_force = wheelInfo.m_wheelsSuspensionForce * -kSlipRatioToGrip.GetValue(-slip_ratio);
+          else
+            raw_traction_force = wheelInfo.m_wheelsSuspensionForce * kSlipRatioToGrip.GetValue(slip_ratio);
+
+          if (wheelInfo.m_bIsFrontWheel)
+            wheelInfo.m_traction_force +=
+                kSmoothingTractionForceFactor * (raw_traction_force - wheelInfo.m_traction_force);
+          else
+            wheelInfo.m_traction_force = raw_traction_force;
+
+          rollingFriction = wheelInfo.m_traction_force * timeStep;
         }
       }
+      else
+        wheelInfo.m_traction_force = 0.0f;
+
+      // if (wheelInfo.m_bIsFrontWheel)
+      //{
+      // std::cout << "drive_torque:  " << drive_torque << "\t";
+      // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
+      // std::cout << "total_torque: " << total_torque << "\t";
+      // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
+      // std::cout << "long_speed: " << speed << "\t";
+      // std::cout << "slip_ratio: " << slip_ratio << "\t";
+      // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
+      // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
+      //}
 
       // switch between active rolling (throttle), braking and non-active rolling friction (no throttle/break)
 
@@ -733,6 +740,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   /*std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   std::cout << "rpm:  " << m_engine.rpm << "\t";
   std::cout << "old_speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";*/
+  // std::cout << "\n";
 }
 
 btVector3 RaycastVehicle::getForwardVector() const

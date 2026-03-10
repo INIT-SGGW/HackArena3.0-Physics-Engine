@@ -166,6 +166,7 @@ class RaycastVehicle : public btActionInterface
   bool m_drawEnable = true;
 
   static constexpr float kTransmissionEfficiency = 0.7f;
+  static constexpr float kSmoothingTractionForceFactor = 0.35f;
   static inline const Curve kSlipRatioToGrip =
       Curve({0.000, 0.850, 1.100, 1.080, 1.020, 0.970, 0.930, 0.900, 0.880, 0.865, 0.850,
              0.840, 0.830, 0.825, 0.820, 0.815, 0.810, 0.805, 0.800, 0.800, 0.800},
