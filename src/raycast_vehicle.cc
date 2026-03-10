@@ -268,10 +268,14 @@ void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
 //  wheelInfo.m_engineForce = force;
 //}
 
-void RaycastVehicle::setBrake(btScalar brake, int wheelIndex)
+void RaycastVehicle::setBrake(btScalar brake)
 {
-  btAssert((wheelIndex >= 0) && (wheelIndex < getNumWheels()));
-  getWheelInfo(wheelIndex).m_brake = brake;
+  // TODO: for now for all wheels there is always the same braking value, if it will not changed brake var in every
+  // wheel is not needed
+  for (int i = 0; i < m_wheelsInfo.size(); i++)
+  {
+    getWheelInfo(i).m_brake = brake;
+  }
 }
 
 btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
@@ -544,17 +548,20 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       btScalar total_torque = 0.f;
       auto traction_torque = 0.f;
       auto drive_torque = 0.f;
+      auto brake_torque = (m_gearbox.current_gear != Gear::Reverse) ? -kBrakeTorque : kBrakeTorque;
+
       if (groundObject) traction_torque = -wheelInfo.m_traction_force * wheelInfo.m_wheelSimRadius;
+      brake_torque *= wheelInfo.m_brake;
 
       if (!wheelInfo.m_bIsFrontWheel)
       {
         // TODO: differential here should seperate in right proportions drive torque to left and right wheel, for now is
         // always equal
         drive_torque = total_drive_torque / 2;
-        total_torque = drive_torque + traction_torque;
+        total_torque = drive_torque + traction_torque + brake_torque;
       }
       else
-        total_torque = traction_torque;
+        total_torque = traction_torque + brake_torque;
 
       auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
       auto engine_inertia_part = 0.f;
@@ -600,7 +607,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
             {
               if (m_gearbox.current_gear == Gear::Reverse)
                 slip_ratio = -0.0001f;
-              else
+              else if (m_gearbox.current_gear != Gear::Neutral)
                 slip_ratio = 0.0001f;
             }
             else
