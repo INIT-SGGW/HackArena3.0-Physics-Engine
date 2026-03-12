@@ -22,8 +22,10 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
 int main()
 {
 #ifdef WIN32
-  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor_BIG.glb";
+  //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
+  //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor_BIG.glb";
+  const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\Bolid_F1.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\HorizonTrack_04.glb";
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
@@ -66,7 +68,7 @@ int main()
   settings.enter_delay_ms = 5000.f;
   settings.exit_delay_ms = 2000.f;
   settings.enter_speed_max_mps = 5.f;
-  settings.exit_speed_min_mps = 20.f;
+  settings.exit_speed_min_mps = 10.f;
   settings.until_completed_laps = 0;
   settings.vehicle_overlap_exit_delay_ms = 3000.f;
 
