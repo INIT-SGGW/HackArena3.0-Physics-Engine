@@ -20,6 +20,7 @@
 #include <iostream>
 #include <sstream>
 #include <charconv>
+#include <random>
 
 namespace boink
 {
@@ -49,6 +50,46 @@ namespace boink
     return gui_;
   }
 
+  btVector3 Track::getStartingPosition(size_t position) const
+  {
+    size_t index=position-1;
+
+    if(index>=start_postions_.size())
+    {
+      std::stringstream ss;
+      ss<<"Position: "<<position<<" does not exist";
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          ss.str());
+    }
+
+    return start_postions_.at(index);
+  }
+
+  btVector3 Track::getOnTrackRandomPosition() const
+  {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<size_t> dist(0,centerline_.getPointsSize()-1);
+    size_t random_index=dist(gen);
+    return centerline_.getPoint(random_index);
+  }
+
+  btVector3 Track::getForwardDirection(const btVector3& point) const
+  {
+    size_t index=centerline_.getClosestIndex(point).first;
+    
+    btAssert(index<track_data_.size());
+    if(index>track_data_.size())
+      return g_Forward;
+
+    const auto& sample=track_data_.at(index);
+    btAssert((sample.position-centerline_.getPoint(index)).length2()<g_Epsilon);
+
+    return sample.tangent;
+  }
+
   void Track::initSurfaceInfos()
   {
     btScalar wetness=weather_->getWetness();
@@ -72,6 +113,10 @@ namespace boink
     {
       if(node.vertices.size()==0 || node.indices.size()==0)
         continue;
+#ifndef NDEBUG
+      if(node.name!="COLLIDER_STATIC_GROUND_ASPHALT")
+        continue;
+#endif
 
       std::optional<Ground::Type> type=Track::resolveGroundTypeFromName(node.name);
 
@@ -155,6 +200,16 @@ namespace boink
     // verify if there are all postions
     for(const auto& pair:postion_pairs)
     {
+      if(pair.first-1>pos_exist.size())
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Cannot be position greater from number of positions");
+
+      if(pos_exist[pair.first-1]==true)
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Found duplicated position");
+
       pos_exist[pair.first-1]=true;
       start_postions_[pair.first-1]=pair.second;
     }
@@ -206,6 +261,11 @@ namespace boink
 
       track_data_[i].curvature=dTds.dot(track_data_[i].right);
     }
+
+    if(track_data_.size()!=centerline_.getPointsSize())
+      throw Exception(
+          Exception::Type::InternalError,
+          "After read track_data and center line points sizes does not match");
   }
 
   Track::SampleData Track::generateSampleTrackData(size_t i) const

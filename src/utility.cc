@@ -146,7 +146,7 @@ namespace boink::math
     btVector3 offset=vec-local_origin;
     return btVector3(local_x.dot(offset),local_y.dot(offset),0.f);
   }
-  
+
   std::optional<std::tuple<btVector3,btScalar,btScalar>> getRayLineInterscetion(
       btVector3 ray_dir,
       btVector3 ray_start,

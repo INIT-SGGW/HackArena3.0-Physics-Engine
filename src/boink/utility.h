@@ -1,5 +1,6 @@
 #pragma once
 
+#include <LinearMath/btQuaternion.h>
 #include <LinearMath/btTransform.h>
 #include <LinearMath/btMatrix3x3.h>
 #include <LinearMath/btVector3.h>

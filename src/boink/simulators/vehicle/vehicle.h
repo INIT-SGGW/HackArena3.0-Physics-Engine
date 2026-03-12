@@ -39,6 +39,13 @@ class Vehicle : public Simulator
       RaycastVehicle::VehicleTuning tuning;
       WheelInfo::TyreType tyre_type;
     };
+
+    struct Dimensions
+    {
+      btScalar width;
+      btScalar height;
+      btScalar depth;
+    };
     
     enum class TurnDirection
     {
@@ -123,8 +130,9 @@ class Vehicle : public Simulator
     void enableGhostSim(const GhostModeSettings& ghost_setttings);
     void disableGhostSim();
     bool isInGhostMode() const {return ghost_info_.enabled;}
-    
+
     const GhostMode& getGhostMode() const {return ghost_sim_;}
+    Dimensions getBoundingDims() const { return bounding_dimensions_;}
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -134,13 +142,15 @@ class Vehicle : public Simulator
         btCompoundShape* col_shape,
         btMotionState* motion_state,
         btScalar mass);
+
+    static Dimensions getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
 
     btVector3 center_of_mass_;
 
-    std::unique_ptr<btCompoundShape> collision_shape_;
+    std::shared_ptr<btCompoundShape> collision_shape_;
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<VehicleRaycaster> raycaster_;
@@ -156,6 +166,8 @@ class Vehicle : public Simulator
 
     GhostModeInfo ghost_info_;
     GhostMode ghost_sim_;
+
+    Dimensions bounding_dimensions_;
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;

@@ -66,6 +66,14 @@ namespace boink
 
     const std::vector<SampleData>& getTrackData() const {return track_data_;}
     std::vector<SampleData>& getTrackData() {return track_data_;}
+
+    size_t getNumberOfStartingPositions() const {return start_postions_.size();}
+    btVector3 getStartingPosition(size_t position) const;
+    btVector3 getFinishLine() const {return finish_line_;}
+
+    btVector3 getOnTrackRandomPosition() const;
+
+    btVector3 getForwardDirection(const btVector3& point) const;
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);

@@ -32,9 +32,9 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 11
+#define BOINK_C_API_VERSION_MINOR 12
 
-#define BOINK_C_API_VERSION_PATCH 2
+#define BOINK_C_API_VERSION_PATCH 0
 
 /**
  * Indicates successful operation.
@@ -801,6 +801,61 @@ BOINK_API int boink_set_vehicle_position(BoinkHandle h,
                                       const struct BoinkVec3 *position);
 
 /**
+ * Sets the world-space position of a vehicle to a position before the given point.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ * - `point` - non-null pointer to the new point vector.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `point` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_before_point(
+                              BoinkHandle handle,
+                              uint64_t vehicle_id,
+                              const struct BoinkVec3* point);
+
+/**
+ * Sets the world-space position of a vehicle to a point before the finish line.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_before_finish_line(BoinkHandle h,
+                                      uint64_t vehicle_id);
+
+/**
+ * Sets the world-space position of a vehicle to a random point.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_random_pos(BoinkHandle h,
+                                      uint64_t vehicle_id);
+
+/**
  * Sets the world-space orientation of a vehicle.
  *
  * This immediately updates the specified vehicle's orientation in the simulation.
@@ -819,6 +874,41 @@ BOINK_API int boink_set_vehicle_position(BoinkHandle h,
 BOINK_API int boink_set_vehicle_orientation(BoinkHandle h,
                                          uint64_t vehicle_id,
                                          const struct BoinkQuaternion *orientation);
+
+/**
+ * Sets the world-space position of a vehicle.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ * - `position_index` - index to starting positions from 1 to max_starting postions
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `h` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist or the position index does not exist
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_at_start_pos(BoinkHandle h,
+                                      uint64_t vehicle_id,
+                                      uint64_t position_index);
+
+/**
+ * Sets the desired driver controls for the specified vehicle.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `out_number_pos` - non-null pointer that receives number of available starting positions.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `h` or `out_number_pos` is null.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_get_number_of_start_pos(BoinkHandle h,
+                                      uint64_t* out_number_pos);
 
 /**
  * Reads the current state of the specified vehicle.

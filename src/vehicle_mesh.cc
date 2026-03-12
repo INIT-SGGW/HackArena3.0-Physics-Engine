@@ -7,6 +7,8 @@
 
 #include "boink/gltf_extractor.h"
 #include "boink/utility.h"
+#include "boink/constants.h"
+#include "boink/exception.h"
 
 #include <algorithm>
 #include <vector>
@@ -35,6 +37,34 @@ namespace boink
         std::move(node.indices),
         nullptr,
         std::move(node.transform)};
+
+    btVector3 rear_right=getWheel(WheelPosition::RearRight).transform.getOrigin();
+    btVector3 rear_left=getWheel(WheelPosition::RearLeft).transform.getOrigin();
+    btVector3 front_right=getWheel(WheelPosition::FrontRight).transform.getOrigin();
+    btVector3 front_left=getWheel(WheelPosition::FrontLeft).transform.getOrigin();
+
+    btVector3 rear_midpoint =
+      (rear_left+rear_right)*0.5f;
+
+    btVector3 front_midpoint =
+      (front_left+front_right)*0.5f;
+
+    local_forward_=(front_midpoint-rear_midpoint).normalize();
+    local_left_=(rear_left-rear_right).normalize();
+    local_up_=local_forward_.cross(local_left_).normalize();
+
+    if((local_forward_-g_Forward).length2()>g_Epsilon)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Vehicle model forward must be equal to g_Forward");
+    if((local_left_-g_Left).length2()>g_Epsilon)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Vehicle model left must be equal to g_Left");
+    if((local_up_-g_Up).length2()>g_Epsilon)
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Vehicle model up must be equal to g_Up");
   }
 
   std::shared_ptr<const piksel::Mesh> 

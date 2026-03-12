@@ -101,6 +101,8 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
                      create_info.tyre_type);
 
   this->setTuning(tuning_);
+
+  bounding_dimensions_=getBoundingDims(collision_shape_);
 }
 
 Vehicle::~Vehicle() noexcept
@@ -392,4 +394,20 @@ std::unique_ptr<btRigidBody> Vehicle::createRigidbody(btCompoundShape* col_shape
 
   return body;
 }
+
+Vehicle::Dimensions Vehicle::getBoundingDims(
+    std::shared_ptr<btCollisionShape> col_shape)
+{
+  btVector3 aabb_min;
+  btVector3 aabb_max;
+  col_shape->getAabb(btTransform::getIdentity(),aabb_min,aabb_max);
+
+  Dimensions dims;
+  dims.width=aabb_max.x()-aabb_min.x();
+  dims.height=aabb_max.y()-aabb_min.y();
+  dims.depth=aabb_max.z()-aabb_min.z();
+
+  return dims;
+}
+
 }  // namespace boink

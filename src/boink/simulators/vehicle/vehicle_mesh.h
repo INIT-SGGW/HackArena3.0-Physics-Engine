@@ -35,6 +35,10 @@ namespace boink
       getWheelPikselMesh(WheelPosition pos) const;
 
     btTransform getLocalWheelTransform(WheelPosition wheel) const;
+
+    btVector3 getLocalForward() const {return local_forward_;}
+    btVector3 getLocalLeft() const {return local_left_;}
+    btVector3 getLocalUp() const {return local_up_;}
   private:
     static std::shared_ptr<piksel::Mesh> createPikselMesh(
         const std::vector<btVector3>& vertices,
@@ -51,5 +55,9 @@ namespace boink
   private:
     std::unordered_map<WheelPosition,Element> wheels_;
     Element chassis_;
+
+    btVector3 local_left_;
+    btVector3 local_up_;
+    btVector3 local_forward_;
   };
 }

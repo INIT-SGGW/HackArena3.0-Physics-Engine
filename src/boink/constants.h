@@ -10,4 +10,5 @@ namespace boink
   extern const int g_MaxSubSteps;
   extern const btScalar g_FixedDeltaTime;
   extern const btScalar g_MaxDeltaTime;
+  extern const btScalar g_Epsilon;
 }

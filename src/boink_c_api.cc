@@ -12,8 +12,10 @@
 
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/version.h"
+#include "boink/constants.h"
 
 #include <LinearMath/btQuaternion.h>
+#include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 #include <exception>
 #include <memory>
@@ -546,6 +548,108 @@ int boink_set_vehicle_position(
   return BOINK_OK;
 }
 
+int boink_set_vehicle_before_point(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    const BoinkVec3* point)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      point);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+  
+  btVector3 bt_point(point->x,point->y,point->z);
+
+  btVector3 bt_forward=p_race->getTrack()->getForwardDirection(bt_point);
+  boink::Vehicle::Dimensions bounding_dims=vehicle->getBoundingDims();
+
+  btScalar half_depth=bounding_dims.depth/2.f;
+  btVector3 bt_pos=-1*bt_forward*half_depth+bt_point;
+  BoinkVec3 pos;
+  pos.x=bt_pos.x();
+  pos.y=bt_pos.y();
+  pos.z=bt_pos.z();
+  
+  HANDLE_EXCEPTIONS(
+      boink_set_vehicle_position(handle,vehicle_id,&pos));
+
+  btVector3 axis_rot=boink::g_Forward.cross(bt_forward);
+  btScalar rot_angle=boink::g_Forward.angle(bt_forward);
+
+  btQuaternion rot;
+
+  if(axis_rot.length2()<boink::g_Epsilon)
+  {
+    if(boink::g_Forward.dot(bt_forward)>0.f)
+      rot=btQuaternion::getIdentity();
+    else
+      rot=btQuaternion(boink::g_Up*-1,SIMD_PI);
+  }
+  else
+  {
+    axis_rot.normalize();
+    rot=btQuaternion(axis_rot,rot_angle);
+  }
+
+  btTransform transform=vehicle->getChassisWorldTransform();
+  transform.setRotation(rot);
+  vehicle->setChassisWorldTransform(transform);
+
+  return BOINK_OK;
+}
+
+int boink_set_vehicle_before_finish_line(
+    BoinkHandle handle,
+    uint64_t vehicle_id)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  btVector3 bt_finish_point=p_race->getTrack()->getFinishLine();
+
+  BoinkVec3 finish_point;
+  finish_point.x=bt_finish_point.x();
+  finish_point.y=bt_finish_point.y();
+  finish_point.z=bt_finish_point.z();
+  HANDLE_EXCEPTIONS(
+      boink_set_vehicle_before_point(
+        handle,vehicle_id,&finish_point));
+
+  return BOINK_OK;
+}
+
+int boink_set_vehicle_random_pos(BoinkHandle handle,uint64_t vehicle_id)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  btVector3 bt_random_pos=p_race->getTrack()->getOnTrackRandomPosition();
+  BoinkVec3 random_pos;
+  random_pos.x=bt_random_pos.x();
+  random_pos.y=bt_random_pos.y();
+  random_pos.z=bt_random_pos.z();
+  HANDLE_EXCEPTIONS(
+      boink_set_vehicle_before_point(
+        handle,vehicle_id,&random_pos));
+
+  return BOINK_OK;
+}
+
 int boink_set_vehicle_orientation(
     BoinkHandle handle,
     uint64_t vehicle_id,
@@ -567,8 +671,48 @@ int boink_set_vehicle_orientation(
       orientation->z,
       orientation->w);
   btTransform transform=vehicle->getChassisWorldTransform();
-  transform.setRotation(rot);
-  vehicle->setChassisWorldTransform(transform);
+  vehicle->setChassisWorldTransform(transform*btTransform(rot));
+
+  return BOINK_OK;
+}
+
+
+int boink_set_vehicle_at_start_pos(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    uint64_t position_index)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  btVector3 bt_start_pos;
+  HANDLE_EXCEPTIONS(
+    bt_start_pos=p_race->getTrack()->getStartingPosition(position_index));
+  BoinkVec3 start_pos;
+  start_pos.x=bt_start_pos.x();
+  start_pos.y=bt_start_pos.y();
+  start_pos.z=bt_start_pos.z();
+
+  HANDLE_EXCEPTIONS(
+      boink_set_vehicle_before_point(
+        handle,vehicle_id,&start_pos));
+
+  return BOINK_OK;
+}
+
+int boink_get_number_of_start_pos(BoinkHandle handle,uint64_t* out_number_pos)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_number_pos);
+
+  *out_number_pos=p_race->getTrack()->getNumberOfStartingPositions();
 
   return BOINK_OK;
 }

@@ -141,12 +141,6 @@ int main()
 
   BoinkAcceptedControls acc_controls;
 
-  if ((code = boink_set_controls(handle, id0, &controls, &acc_controls)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-
   BoinkTrackData data;
   if ((code = boink_get_track_data(handle, &data)) != BOINK_OK)
   {
@@ -158,6 +152,9 @@ int main()
   Real prev = boink_get_time_debug();
   bool runOnce = false;
   bool runOnce2 = false;
+
+  int pos=1;
+  Real time=0.f;
   while (!boink_should_close_debug())
   {
     Real now = boink_get_time_debug();
@@ -187,9 +184,9 @@ int main()
       }
     }
 
-    //if (!runOnce && dur > 10.)
+    //if (!runOnce && dur > 6.)
     //{
-    //  if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
+    //  if ((code = boink_set_vehicle_at_start_pos(handle,id0,2)) != BOINK_OK)
     //  {
     //    PRINT_ERROR();
     //    goto clear;
@@ -197,15 +194,26 @@ int main()
     //  runOnce = true;
     //}
 
-    //if (!runOnce2 && dur > 20.)
+    //if (!runOnce2 && dur > 2.)
     //{
-    //  if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
+    //  if ((code = boink_set_vehicle_at_start_pos(handle,id0,34)) != BOINK_OK)
     //  {
     //    PRINT_ERROR();
     //    goto clear;
     //  }
     //  runOnce2 = true;
     //}
+
+    if(time>2.f)
+    {
+      if ((code = boink_set_vehicle_at_start_pos(handle,id0,pos++)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      time=0.f;
+    }
+    time+=sim_time;
 
     struct BoinkVehicleState state;
     if ((code = boink_read_vehicle_state(handle, id1, &state)) != BOINK_OK)
@@ -225,9 +233,16 @@ int main()
       PRINT_ERROR();
       goto clear;
     }
+    uint64_t number;
+    if ((code = boink_get_number_of_start_pos(handle,&number) != BOINK_OK))
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
+
+    //printf("# of positions: %lu\n",number);
 
     //printGhostModeData(&state_ghost);
-    //printf("Speed: %f\n",state.speed);
 
     boink_update_debug();
   }
