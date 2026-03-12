@@ -539,10 +539,9 @@ int boink_set_vehicle_position(
     vehicle=p_race->getVehicle(vehicle_id));
   
   btVector3 pos(position->x,position->y,position->z);
-  btTransform transform;
-  transform.setIdentity();
+  btTransform transform=vehicle->getChassisWorldTransform();
   transform.setOrigin(pos);
-  vehicle->setWorldTransform(transform);
+  vehicle->setChassisWorldTransform(transform);
 
   return BOINK_OK;
 }
@@ -567,9 +566,9 @@ int boink_set_vehicle_orientation(
       orientation->y,
       orientation->z,
       orientation->w);
-  btTransform transform=vehicle->getWorldTransform();
+  btTransform transform=vehicle->getChassisWorldTransform();
   transform.setRotation(rot);
-  vehicle->setWorldTransform(transform);
+  vehicle->setChassisWorldTransform(transform);
 
   return BOINK_OK;
 }
@@ -681,6 +680,114 @@ int boink_disable_ghost_mode(BoinkHandle handle)
 
   p_race->disableGhostMode();
 
+  return BOINK_OK;
+}
+int boink_read_vehicle_ghost_mode_state(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    struct BoinkGhostModeRuntimeState *out_state)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id))
+  
+  const auto& ghost_mode=vehicle->getGhostMode();
+  const auto& enter_timer=ghost_mode.getEnterTimer();
+  const auto& exit_timer=ghost_mode.getExitTimer();
+  const auto& overlap_timer=ghost_mode.getOverlapTimer();
+
+  BoinkGhostModeRuntimeState state;
+  state.can_collide_now=!vehicle->isInGhostMode();
+
+  state.blockers_mask=0;
+
+  state.blockers_mask|=
+    ghost_mode.isCompletedLapsConditionMet()?
+    BOINK_GHOST_MODE_BLOCKER_LAPS_REQUIREMENT_NOT_MET:
+    0;
+
+  state.blockers_mask|=
+    !ghost_mode.isExitSpeedConditionMet()?
+    BOINK_GHOST_MODE_BLOCKER_EXIT_SPEED_NOT_MET:
+    0;
+
+  state.blockers_mask|=
+    exit_timer.isRunning()?
+    BOINK_GHOST_MODE_BLOCKER_EXIT_DELAY_RUNNING:
+    0;
+
+  state.blockers_mask|=
+    ghost_mode.isOverlapping()?
+    BOINK_GHOST_MODE_BLOCKER_VEHICLE_OVERLAP_ACTIVE:
+    0;
+
+  state.blockers_mask|=
+    overlap_timer.isRunning()?
+    BOINK_GHOST_MODE_BLOCKER_OVERLAP_EXIT_DELAY_RUNNING:
+    0;
+
+  if(state.blockers_mask==0 && ghost_mode.isInGhostMode())
+  {
+    set_last_error(
+        __func__,
+        RETURN_CODE_STR(BOINK_ERR_INTERNAL),
+        "out_state->blockers_mask is 0 but vehicle is in ghost mode");
+    return BOINK_ERR_INTERNAL;
+  }
+
+  state.exit_delay_remaining_ms=0;
+  state.enter_delay_remaining_ms=0;
+  if(ghost_mode.isInGhostMode())
+  {
+    int mask=0;
+    mask|=BOINK_GHOST_MODE_BLOCKER_LAPS_REQUIREMENT_NOT_MET;
+    mask|=BOINK_GHOST_MODE_BLOCKER_EXIT_SPEED_NOT_MET;
+    mask|=BOINK_GHOST_MODE_BLOCKER_VEHICLE_OVERLAP_ACTIVE;
+    mask|=BOINK_GHOST_MODE_BLOCKER_IN_PIT;
+
+    if((mask&state.blockers_mask)==0)
+    {
+      if(exit_timer.isRunning())
+        state.exit_delay_remaining_ms=
+          (unsigned int)((exit_timer.getTarget()-exit_timer.getCurrent())*1000);
+
+      if(overlap_timer.isRunning())
+      {
+        unsigned int exit_delay_overlap_ms=
+          (unsigned int)((overlap_timer.getTarget()-overlap_timer.getCurrent())*1000);
+
+        if(exit_delay_overlap_ms>state.exit_delay_remaining_ms)
+          state.exit_delay_remaining_ms=exit_delay_overlap_ms;
+      }
+      state.phase=BOINK_GHOST_MODE_PHASE_PENDING_EXIT;
+    }
+    else
+    {
+      state.exit_delay_remaining_ms=0;
+      state.phase=BOINK_GHOST_MODE_PHASE_ACTIVE;
+    }
+  }
+  else
+  {
+    if(enter_timer.isRunning())
+    {
+      state.enter_delay_remaining_ms=
+        (unsigned int)((enter_timer.getTarget()-enter_timer.getCurrent())*1000);
+
+      state.phase=BOINK_GHOST_MODE_PHASE_PENDING_ENTER;
+    }
+    else
+    {
+      state.enter_delay_remaining_ms=0;
+      state.phase=BOINK_GHOST_MODE_PHASE_INACTIVE;
+    }
+  } 
+
+  *out_state=state;
   return BOINK_OK;
 }
 

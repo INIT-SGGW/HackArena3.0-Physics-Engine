@@ -58,6 +58,8 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
     rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
+    this->setChassisWorldTransform(btTransform::getIdentity());
+
     vehicle_->setCoordinateSystem(
         0, // right (X)
         1, // up (Y)
@@ -126,7 +128,7 @@ void Vehicle::update(btScalar dt)
 
   int curr_laps_completed = this->getLapsCompleted();
 
-  const btVector3 vehicle_pos = this->getWorldTransform().getOrigin();
+  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
   btScalar prev_coverage = this->getCurrentLapDistanceCovered();
   btScalar curr_coverage = track_->getCenterline().getCoverage(vehicle_pos);
 
@@ -205,16 +207,12 @@ std::shared_ptr<piksel::GuiObject> Vehicle::getGui()
   return gui_; 
 }
 
-void Vehicle::setWorldTransform(const btTransform& transform) 
+void Vehicle::setChassisWorldTransform(const btTransform& transform) 
 { 
-  rigidbody_->setWorldTransform(transform);
-}
-
-btTransform Vehicle::getWorldTransform() const
-{
-  btTransform transform;
-  motion_state_->getWorldTransform(transform);
-  return transform;
+  btTransform offset(btQuaternion::getIdentity(),center_of_mass_);
+  btTransform new_transform=transform*offset;
+  rigidbody_->setWorldTransform(new_transform);
+  motion_state_->setWorldTransform(new_transform);
 }
 
 btTransform Vehicle::getChassisWorldTransform() const
@@ -224,11 +222,9 @@ btTransform Vehicle::getChassisWorldTransform() const
   btTransform translate;
   translate.setIdentity();
   translate.setOrigin(-center_of_mass_);
-  btTransform transform;
-  // we must translate before rotation
-  // return vehicle_->getChassisWorldTransform()*translate;
-  motion_state_->getWorldTransform(transform);
+  btTransform transform=rigidbody_->getWorldTransform();
 
+  // we must translate after rotation
   return transform * translate;
 }
 

@@ -27,17 +27,31 @@ namespace boink
     void update(btScalar dt);
 
     bool isInGhostMode() const {return is_in_ghost_mode_;}
+    bool isOverlapping() const {return is_overlapping_;}
+
+    const Timer& getEnterTimer() const {return enter_timer_;}
+    const Timer& getExitTimer() const {return exit_timer_;}
+    const Timer& getOverlapTimer() const {return overlap_timer_;}
+
+    bool isCompletedLapsConditionMet() const 
+    { return *laps_completed_<(int)settings_.enabled_until_completed_laps;}
+    bool isEnterSpeedConditionMet() const
+    { return speed_<settings_.max_enter_speed;}
+    bool isExitSpeedConditionMet() const
+    { return speed_>settings_.min_exit_speed;}
   private:
     void enterGhostMode();
     void exitGhostMode();
 
-    bool isOverlapping() const;
+    void doHitTest();
   private:
     btDynamicsWorld* world_;
     RaycastVehicle* vehicle_;
     const int* laps_completed_;
 
     bool is_sim_enabled_=false;
+    bool is_overlapping_=false;
+    btScalar speed_=0.f;
 
     bool is_in_ghost_mode_=false;
 
