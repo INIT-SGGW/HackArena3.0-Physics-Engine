@@ -703,7 +703,6 @@ int boink_read_vehicle_ghost_mode_state(
   BoinkGhostModeRuntimeState state;
   state.can_collide_now=!vehicle->isInGhostMode();
 
-
   state.blockers_mask=0;
 
   state.blockers_mask|=
@@ -717,7 +716,7 @@ int boink_read_vehicle_ghost_mode_state(
     0;
 
   state.blockers_mask|=
-    !exit_timer.hasFinised()?
+    exit_timer.isRunning()?
     BOINK_GHOST_MODE_BLOCKER_EXIT_DELAY_RUNNING:
     0;
 
@@ -727,7 +726,7 @@ int boink_read_vehicle_ghost_mode_state(
     0;
 
   state.blockers_mask|=
-    !overlap_timer.hasFinised()?
+    overlap_timer.isRunning()?
     BOINK_GHOST_MODE_BLOCKER_OVERLAP_EXIT_DELAY_RUNNING:
     0;
 
@@ -750,39 +749,42 @@ int boink_read_vehicle_ghost_mode_state(
     mask|=BOINK_GHOST_MODE_BLOCKER_VEHICLE_OVERLAP_ACTIVE;
     mask|=BOINK_GHOST_MODE_BLOCKER_IN_PIT;
 
-    if((!exit_timer.hasFinised() || !overlap_timer.hasFinised())&&
-        (mask&state.blockers_mask)==0)
+    if((mask&state.blockers_mask)==0)
     {
-      if(!exit_timer.hasFinised())
+      if(exit_timer.isRunning())
         state.exit_delay_remaining_ms=
           (unsigned int)((exit_timer.getTarget()-exit_timer.getCurrent())*1000);
 
-      if(!overlap_timer.hasFinised())
+      if(overlap_timer.isRunning())
       {
         unsigned int exit_delay_overlap_ms=
           (unsigned int)((overlap_timer.getTarget()-overlap_timer.getCurrent())*1000);
+
         if(exit_delay_overlap_ms>state.exit_delay_remaining_ms)
           state.exit_delay_remaining_ms=exit_delay_overlap_ms;
       }
       state.phase=BOINK_GHOST_MODE_PHASE_PENDING_EXIT;
     }
     else
+    {
+      state.exit_delay_remaining_ms=0;
       state.phase=BOINK_GHOST_MODE_PHASE_ACTIVE;
+    }
   }
   else
   {
-    if(!enter_timer.hasFinised())
+    if(enter_timer.isRunning())
     {
-      if(!enter_timer.hasFinised())
-        state.enter_delay_remaining_ms=
-          (unsigned int)((enter_timer.getTarget()-enter_timer.getCurrent())*1000);
-      else
-        state.enter_delay_remaining_ms=0;
+      state.enter_delay_remaining_ms=
+        (unsigned int)((enter_timer.getTarget()-enter_timer.getCurrent())*1000);
 
       state.phase=BOINK_GHOST_MODE_PHASE_PENDING_ENTER;
     }
     else
+    {
+      state.enter_delay_remaining_ms=0;
       state.phase=BOINK_GHOST_MODE_PHASE_INACTIVE;
+    }
   } 
 
   *out_state=state;

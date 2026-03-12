@@ -12,7 +12,7 @@ namespace boink
     {}
 
     Timer(btScalar target_duration)
-      :elapsed_(0.f),target_(target_duration),has_finised_(true)
+      :elapsed_(0.f),target_(target_duration),has_finised_(false)
     {}
 
     void update(btScalar dt)
@@ -31,7 +31,7 @@ namespace boink
 
     void reset()
     {
-      has_finised_=true;
+      has_finised_=false;
       elapsed_=0.f;
     }
 
@@ -44,6 +44,11 @@ namespace boink
     bool hasFinised() const
     {
       return has_finised_;
+    }
+
+    bool isRunning() const
+    {
+      return elapsed_!=0.f && !hasFinised();
     }
 
     btScalar getCurrent() const
