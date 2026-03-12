@@ -2,6 +2,7 @@
 
 #include <LinearMath/btScalar.h>
 
+#include "boink/bullet_user_data.h"
 #include "boink/collision_group.h"
 #include "boink/who_contact_callback.h"
 #include "boink/exception.h"
@@ -30,6 +31,7 @@ namespace boink
     enter_timer_.reset(settings_.enter_delay);
     exit_timer_.reset(settings_.exit_delay);
     overlap_timer_.reset(settings.exit_delay_when_overlap);
+    overlap_timer_.setElapsedToFinish();
   }
 
   void GhostMode::disable()
@@ -45,13 +47,19 @@ namespace boink
     if(!is_sim_enabled_)
       return;
 
-    btScalar speed=vehicle_->getRigidBody()->getLinearVelocity().length();
+    this->doHitTest();
 
-    if(speed<=settings_.max_enter_speed || 
-        *laps_completed_<(int)settings_.enabled_until_completed_laps)
+    if(isOverlapping())
+      overlap_timer_.reset();
+    else
+      overlap_timer_.update(dt);
+
+    speed_=vehicle_->getRigidBody()->getLinearVelocity().length();
+
+    if(this->isEnterSpeedConditionMet()|| 
+       isCompletedLapsConditionMet()) 
     {
       exit_timer_.reset();
-      overlap_timer_.reset();
 
       if(is_in_ghost_mode_)
         return;
@@ -61,7 +69,7 @@ namespace boink
         this->enterGhostMode();
     }
 
-    if(speed>=settings_.min_exit_speed)
+    if(this->isExitSpeedConditionMet())
     {
       enter_timer_.reset();
 
@@ -69,30 +77,23 @@ namespace boink
         return;
 
       exit_timer_.update(dt);
-      if(exit_timer_.hasFinised())
-      {
-        if(isOverlapping())
-          overlap_timer_.reset();
-        else
-        {
-          overlap_timer_.update(dt);
-          if(overlap_timer_.hasFinised())
-            this->exitGhostMode();
-        }
-      }
+
+      if(exit_timer_.hasFinised()&&overlap_timer_.hasFinised())
+        this->exitGhostMode();
     }
 
-    if(speed>settings_.max_enter_speed && speed<settings_.min_exit_speed)
+    if(!this->isEnterSpeedConditionMet() && !this->isExitSpeedConditionMet())
     {
       enter_timer_.reset();
       exit_timer_.reset();
-      overlap_timer_.reset();
     }
   }
 
   void GhostMode::enterGhostMode()
   {
     is_in_ghost_mode_=true;
+    enter_timer_.reset();
+
     world_->removeAction(vehicle_);
     world_->removeRigidBody(vehicle_->getRigidBody());
 
@@ -106,6 +107,8 @@ namespace boink
   void GhostMode::exitGhostMode()
   {
     is_in_ghost_mode_=false;
+    exit_timer_.reset();
+
     world_->removeAction(vehicle_);
     world_->removeRigidBody(vehicle_->getRigidBody());
 
@@ -116,13 +119,36 @@ namespace boink
     world_->addAction(vehicle_);
   }
 
-  bool GhostMode::isOverlapping() const
+ void GhostMode::doHitTest()
   {
     WhoContactCallback who_callback(vehicle_->getRigidBody());
-    world_->contactTest(vehicle_->getRigidBody(),who_callback);
-
     // TODO
     // i belive hit is also when chasiss touch ground or walls
-    return who_callback.getHits().size()!=0;
+    world_->contactTest(vehicle_->getRigidBody(),who_callback);
+    const auto& hits=who_callback.getHits();
+
+    for(size_t i=0;i<hits.size();i++)
+    {
+      if(hits[i]->getUserPointer())
+      {
+        BulletUserData* bullet_user_data=
+          reinterpret_cast<BulletUserData*>(hits[i]->getUserPointer());
+        
+        if(bullet_user_data->getType()==BulletUserData::Type::Vehicle)
+        {
+          is_overlapping_=true;
+          return;
+        }
+      }
+#ifndef NDEBUG
+      // TODO put it into logger
+      else
+        throw Exception(
+            Exception::Type::InternalError,
+            "Collision object does not have set BulletUserDataPointer");
+#endif
+    }
+
+    is_overlapping_=false;
   }
 }

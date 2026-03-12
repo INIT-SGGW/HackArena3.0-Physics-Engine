@@ -79,12 +79,11 @@ class Vehicle : public Simulator
     void updateRender(Renderer* renderer) override;
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
-    void setWorldTransform(const btTransform& transform);
+    void setChassisWorldTransform(const btTransform& transform);
 
     int getLapsCompleted() const {return laps_completed_;}
     btScalar getCurrentLapDistanceCovered() const {return curr_lap_dist_point_;}
 
-    btTransform getWorldTransform() const;
     btTransform getChassisWorldTransform() const;
 
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
@@ -124,6 +123,8 @@ class Vehicle : public Simulator
     void enableGhostSim(const GhostModeSettings& ghost_setttings);
     void disableGhostSim();
     bool isInGhostMode() const {return ghost_info_.enabled;}
+    
+    const GhostMode& getGhostMode() const {return ghost_sim_;}
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
