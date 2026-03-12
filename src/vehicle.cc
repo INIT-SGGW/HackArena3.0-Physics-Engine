@@ -193,7 +193,7 @@ void Vehicle::updateRender(Renderer* renderer)
       rigidbody_->getWorldTransform().getBasis()[1][1],
       rigidbody_->getWorldTransform().getBasis()[2][1]);
 
-  btVector3 COM=rigidbody_->getWorldTransform().getOrigin();
+  btVector3 COM=this->getChassisWorldTransform().getOrigin();
   renderer->drawLine(
       COM,
       COM+ forward_axle,

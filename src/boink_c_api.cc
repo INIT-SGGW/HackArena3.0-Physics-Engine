@@ -692,6 +692,12 @@ int boink_set_vehicle_at_start_pos(
   btVector3 bt_start_pos;
   HANDLE_EXCEPTIONS(
     bt_start_pos=p_race->getTrack()->getStartingPosition(position_index));
+
+  btVector3 bt_forward=p_race->getTrack()->getForwardDirection(bt_start_pos);
+  boink::Vehicle::Dimensions bounding_dims=vehicle->getBoundingDims();
+  btScalar half_depth=bounding_dims.depth/2.f;
+  bt_start_pos=bt_forward*half_depth+bt_start_pos;
+
   BoinkVec3 start_pos;
   start_pos.x=bt_start_pos.x();
   start_pos.y=bt_start_pos.y();
