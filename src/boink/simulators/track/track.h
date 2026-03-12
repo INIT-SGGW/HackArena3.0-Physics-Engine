@@ -70,6 +70,8 @@ namespace boink
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
     void createLines(const GltfExtractor& extractor);
+    void initPositions(const GltfExtractor& extractor);
+    void initFinishLine(const GltfExtractor& extractor);
 
     void createTrackData();
     SampleData generateSampleTrackData(size_t i) const;
@@ -81,11 +83,18 @@ namespace boink
     static constexpr std::string_view RIGHTLINE_NAME="LINE_RIGHT";
     static constexpr std::string_view LEFTLINE_NAME="LINE_LEFT";
     static constexpr std::string_view CENTERLINE_NAME="LINE_CENTER";
+
+    static constexpr std::string_view DELIM="_";
+    static constexpr std::string_view POSITION_SEG_NAME="POSITION";
+    static constexpr std::string_view FINISH_LANE_NAME="FINISH_LINE_POINT";
   private:
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
 
     std::unordered_map<Ground::Type,Ground::SurfaceInfo> surface_infos_;
+
+    std::vector<btVector3> start_postions_;
+    btVector3 finish_line_;
 
     Line centerline_;
     Line rightline_;

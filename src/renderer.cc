@@ -50,6 +50,22 @@ namespace boink
     gfx_.addDrawable(drawable);
   }
 
+  void Renderer::drawPoint(
+      const btVector3& point,
+      const btVector3& color,
+      const btVector3& dir0,
+      const btVector3& dir1)
+  {
+      this->drawLine(
+          point,
+          point+dir0,
+          color);
+      this->drawLine(
+          point,
+          point+dir1,
+          color);
+  }
+
   void Renderer::drawLine(
         const btVector3& from,
         const btVector3& to,

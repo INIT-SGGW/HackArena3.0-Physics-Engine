@@ -5,6 +5,8 @@
 namespace boink
 {
   extern const btVector3 g_Up;
+  extern const btVector3 g_Left;
+  extern const btVector3 g_Forward;
   extern const int g_MaxSubSteps;
   extern const btScalar g_FixedDeltaTime;
   extern const btScalar g_MaxDeltaTime;

@@ -226,7 +226,7 @@ int main()
       goto clear;
     }
 
-    printGhostModeData(&state_ghost);
+    //printGhostModeData(&state_ghost);
     //printf("Speed: %f\n",state.speed);
 
     boink_update_debug();

@@ -15,8 +15,11 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <system_error>
 #include <vector>
 #include <iostream>
+#include <sstream>
+#include <charconv>
 
 namespace boink
 {
@@ -34,6 +37,8 @@ namespace boink
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
     this->createLines(extractor);
+    this->initPositions(extractor);
+    this->initFinishLine(extractor);
 
     this->createTrackData();
     gui_=std::make_shared<TrackGui>(this);
@@ -66,9 +71,7 @@ namespace boink
     for(const auto& node : nodes)
     {
       if(node.vertices.size()==0 || node.indices.size()==0)
-        throw Exception(
-            Exception::Type::InvalidArgumentError,
-            "Ground mesh is empty.");
+        continue;
 
       std::optional<Ground::Type> type=Track::resolveGroundTypeFromName(node.name);
 
@@ -110,6 +113,67 @@ namespace boink
         centerline_.reverse();
     }
 
+  }
+
+  void Track::initPositions(const GltfExtractor& extractor)
+  {
+    const auto& nodes=extractor.getNodes();
+
+    std::vector<std::pair<size_t,btVector3>> postion_pairs;
+
+    for(const auto& node : nodes)
+    {
+      size_t pos=node.name.find(POSITION_SEG_NAME);
+      if(pos==std::string::npos)
+        continue;
+
+      pos+=DELIM.size()+POSITION_SEG_NAME.size();
+
+      std::string pos_num_str=node.name.substr(pos);
+      unsigned int pos_num;
+      
+      auto [ptr, ec]=
+        std::from_chars(
+            pos_num_str.data(),pos_num_str.data()+pos_num_str.size(),pos_num);
+
+      if(!(ec==std::errc()&&(pos_num_str.data()+pos_num_str.size())==ptr))
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Cannot extract postion number from node name");
+
+      if(pos_num==0)
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Position num cannot be zero");
+
+      postion_pairs.push_back({pos_num,node.transform.getOrigin()});
+    }
+
+    start_postions_.resize(postion_pairs.size());
+    std::vector<bool> pos_exist(postion_pairs.size(),false);
+
+    // verify if there are all postions
+    for(const auto& pair:postion_pairs)
+    {
+      pos_exist[pair.first-1]=true;
+      start_postions_[pair.first-1]=pair.second;
+    }
+
+    if(auto it=std::find(pos_exist.begin(),pos_exist.end(),false);it!=pos_exist.end())
+    {
+      std::stringstream ss;
+      ss<<"Position: "<<it-pos_exist.begin()+1;
+      throw Exception(
+        Exception::Type::UnsupportedFormatError,
+        ss.str());
+    }
+  }
+
+  void Track::initFinishLine(const GltfExtractor& extractor)
+  {
+    const auto& node= extractor.getNode(FINISH_LANE_NAME);
+
+    finish_line_=node.transform.getOrigin();
   }
 
   void Track::createTrackData()
@@ -250,14 +314,12 @@ namespace boink
     for(const auto& sample:samples)
     {
       auto pos=offset+sample.position;
-      p_renderer->drawLine(
+      p_renderer->drawPoint(
           pos,
-          pos+sample.normal,
-          {0.5,0.5,0.0});
-      p_renderer->drawLine(
-          pos,
-          pos+sample.tangent,
-          {0.5,0.5,0.0});
+          {0.5,0.5,0.0},
+          sample.normal,
+          sample.tangent);
+
       p_renderer->drawLine(
           pos,
           pos+sample.right*sample.right_width,
@@ -267,5 +329,10 @@ namespace boink
           pos+sample.right*-sample.left_width,
           {0.5,0.0,0.0});
     }
+
+    p_renderer->drawPoint(finish_line_,{1.0,1.0,1.0});
+    
+    for(const auto& point:start_postions_)
+      p_renderer->drawPoint(point,{1.0,1.0,1.0});
   }
 }
