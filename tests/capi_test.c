@@ -99,16 +99,16 @@ int main()
     goto clear;
   }
 
-  if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
+  //if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
 
   BoinkQuaternion vehicle_rot;
   vehicle_rot.x = 0.;

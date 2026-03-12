@@ -51,7 +51,8 @@ namespace boink
     this->calculateFramerate(dt);
 
     this->handleWindowClose();
-    this->updateController(dt);
+    this->updateController(selected_controller_,dt);
+    this->updateController(selected_controller_2_,dt);
 
     renderer_.render();
     gui_manager_.render();
@@ -86,9 +87,9 @@ namespace boink
       wnd_.close();
   }
 
-  void Debugger::updateController(float dt)
+  void Debugger::updateController(int selected,float dt)
   {
-    if(selected_controller_==-1 &&
+    if(selected==-1 &&
         wnd_.getKey(GLFW_KEY_LEFT_SHIFT)!=piksel::Window::KeyState::Press)
     {
       gui_manager_.ignoreInput();
@@ -100,10 +101,9 @@ namespace boink
       wnd_.setCursor();
       default_controller_->updateMouse(wnd_);
 
-      if(selected_controller_==-1)
+      if(selected==-1)
         return;
 
-      int selected=selected_controller_;
       auto it=std::find_if(controllers_.begin(),controllers_.end(),
           [=](const auto& p)
           {

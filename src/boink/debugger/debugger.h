@@ -39,7 +39,7 @@ namespace boink
     bool shouldClose() const;
   private:
     void handleWindowClose();
-    void updateController(float dt);
+    void updateController(int selected,float dt);
     inline void calculateFramerate(float dt) {fps_=1.f/dt;}
   private:
     piksel::Window wnd_;
@@ -54,6 +54,7 @@ namespace boink
 
     float fps_;
     int selected_controller_=-1;
+    int selected_controller_2_=-1;
     float cam_speed_;
     float mouse_speed_;
 
