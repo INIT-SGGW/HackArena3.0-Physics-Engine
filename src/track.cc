@@ -113,10 +113,10 @@ namespace boink
     {
       if(node.vertices.size()==0 || node.indices.size()==0)
         continue;
-#ifndef NDEBUG
-      if(node.name!="COLLIDER_STATIC_GROUND_ASPHALT")
-        continue;
-#endif
+//#ifndef NDEBUG
+//      if(node.name!="COLLIDER_STATIC_GROUND_ASPHALT")
+//        continue;
+//#endif
 
       std::optional<Ground::Type> type=Track::resolveGroundTypeFromName(node.name);
 
