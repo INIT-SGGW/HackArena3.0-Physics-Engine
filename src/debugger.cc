@@ -5,6 +5,7 @@
 
 #include "boink/utility.h"
 #include "boink/debugger/camera_controller.h"
+#include "boink/gui/debugger_gui.h"
 
 #include <algorithm>
 
@@ -16,22 +17,17 @@ namespace boink
       const btVector3& camera_target)
     :
       wnd_(title.data()),
-      cam_(bt2glm(camera_position),bt2glm(camera_target)),
+      cam_(math::bt2glm(camera_position),math::bt2glm(camera_target)),
       renderer_(wnd_,cam_),
       gui_manager_(wnd_.getGLFWPointer()),
-      gui_(std::make_shared<DebuggerGui>()),
       default_controller_(std::make_shared<CameraController>()),
-      fps_(0.f)
+      fps_(0.f),
+      gui_(std::make_shared<DebuggerGui>(this))
   {
     cam_.setMovementSpeed(5.f);
     cam_.setRotationSpeed(0.3f);
     mouse_speed_=cam_.getRotationSpeed();
     cam_speed_=cam_.getMovementSpeed();
-
-    gui_->camera_speed=&cam_speed_;
-    gui_->mouse_speed=&mouse_speed_;
-    gui_->fps=&fps_;
-    gui_->selected_controller=&selected_controller_;
 
     gui_manager_.addObject(gui_);
   }

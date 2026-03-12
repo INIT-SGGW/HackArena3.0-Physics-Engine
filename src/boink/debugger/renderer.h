@@ -39,6 +39,8 @@ namespace boink
 
     void reportErrorWarning(const char*) override {}
     void draw3dText(const btVector3&, const char*) override {}
+
+    int getDefaultDebugMode() const {return DBG_DrawWireframe;}
   private:
     static const std::string_view s_kSrcVertexShader_;
     static const std::string_view s_kSrcFragShader_;

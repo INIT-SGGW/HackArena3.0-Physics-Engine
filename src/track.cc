@@ -8,6 +8,7 @@
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
 #include "boink/gui/track_gui.h"
+#include "boink/constants.h"
 
 #include <algorithm>
 #include <cctype>
@@ -73,16 +74,10 @@ namespace boink
 
       if(!type.has_value())
         continue;
-      std::cout<<node.name<<std::endl;
-
-      // TODO
-      // Uncomment when Michal fix it
-      //if(node.type!=TINYGLTF_MODE_TRIANGLES)
-      //  throw Exception(
-      //      Exception::Type::UnsupportedFormatError,
-      //      "Node type is not TRIANGLES_MODE");
       if(node.type!=TINYGLTF_MODE_TRIANGLES)
-        continue;
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Node type is not TRIANGLES_MODE");
 
       grounds.emplace_back(
           node.vertices,
@@ -94,13 +89,9 @@ namespace boink
 
   void Track::createLines(const GltfExtractor& extractor)
   {
-    Track::createLine(extractor,centerline_,CENTERLINE_NAME);
-    Track::createLine(extractor,rightline_,RIGHTLINE_NAME);
-    Track::createLine(extractor,leftline_,LEFTLINE_NAME);
-
-    //Track::createLine(extractor,pitstop_centerline_,PITSTOP_CENTERLINE_NAME);
-    //Track::createLine(extractor,pitstop_rightline_,PITSTOP_RIGHTLINE_NAME);
-    //Track::createLine(extractor,pitstop_leftline_,PITSTOP_LEFTLINE_NAME);
+    centerline_=Line::createLine(extractor,CENTERLINE_NAME);
+    rightline_=Line::createLine(extractor,RIGHTLINE_NAME);
+    leftline_=Line::createLine(extractor,LEFTLINE_NAME);
 
     // Check if centerline should be reveresed
     {
@@ -115,55 +106,10 @@ namespace boink
 
       auto normal=right.cross(dir);
 
-      if(normal.dot(s_kUp)<0)
+      if(normal.dot(g_Up)<0)
         centerline_.reverse();
     }
 
-    //Check also for pitstop centerline
-    //{
-    //  auto center_point=pitstop_centerline_.getPoint(0);
-    //  auto next_center_point=pitstop_centerline_.getPoint(1);
-
-    //  auto dir=next_center_point-center_point;
-
-    //  auto right_point=pitstop_rightline_.getPoint( 
-    //      pitstop_rightline_.getClosestIndex(center_point).first);
-    //  auto right=right_point-center_point;
-
-    //  auto normal=right.cross(dir);
-
-    //  if(normal.dot(s_kUp)<0)
-    //    pitstop_centerline_.reverse();
-    //}
-  }
-
-  void Track::createLine(
-      const GltfExtractor& extractor, Line& line, std::string_view name)
-  {
-    auto& line_node=extractor.getNode(name);
-    if(line_node.type!=TINYGLTF_MODE_LINE)
-      throw Exception(
-          Exception::Type::UnsupportedFormatError,
-          "Line mesh unsupported mode. Use lines mode for line mesh.");
-
-    auto& line_vertices=line_node.vertices;
-    auto& line_indices=line_node.indices;
-    if(line_vertices.size()==0 || line_indices.size()==0)
-      throw Exception(
-          Exception::Type::InvalidArgumentError,
-          "Line mesh is empty.");
-
-    std::vector<btVector3> points;
-    points.reserve(line_indices.size());
-
-    for(size_t i=0;i<line_indices.size();i+=2)
-      points.push_back(line_vertices[line_indices[i]]);
-
-    // Add last point
-    points.push_back(
-        line_vertices[line_indices[line_indices.size()-1]]);
-    
-    line=Line(std::move(points));
   }
 
   void Track::createTrackData()
@@ -207,8 +153,6 @@ namespace boink
     const auto& [center_point,dist]=centerline_.getPointAndDist(i);
     btVector3 right_point=
       rightline_.getPoint(rightline_.getClosestIndex(center_point).first);
-    btVector3 left_point=
-      leftline_.getPoint(leftline_.getClosestIndex(center_point).first);
 
     sample.position=center_point;
     sample.coverage=dist;
@@ -235,7 +179,7 @@ namespace boink
     sample.normal=sample.right.cross(sample.tangent);
     sample.normal.normalize();
 
-    if(sample.normal.dot(s_kUp)<0.0)
+    if(sample.normal.dot(g_Up)<0.0)
     {
       std::stringstream ss;
       ss<<"For centerline point i=("<<i;
@@ -245,12 +189,14 @@ namespace boink
           ss.str());
     }
 
-    sample.right_width=btVector3(center_point-right_point).length();
-    sample.left_width=btVector3(center_point-left_point).length();
+    sample.right_width=rightline_.getRayLineIntersection(
+        sample.right,center_point,sample.normal).second;
+    sample.left_width=leftline_.getRayLineIntersection(
+        -1*sample.right,center_point,sample.normal).second;
 
-    sample.grade=btAsin(sample.tangent.dot(s_kUp));
+    sample.grade=btAsin(sample.tangent.dot(g_Up));
 
-    btVector3 proj_up=s_kUp-s_kUp.dot(sample.tangent)*sample.tangent;
+    btVector3 proj_up=g_Up-g_Up.dot(sample.tangent)*sample.tangent;
     btScalar cos_angle=proj_up.dot(sample.normal);
     btScalar sin_angle=proj_up.dot(sample.right);
 

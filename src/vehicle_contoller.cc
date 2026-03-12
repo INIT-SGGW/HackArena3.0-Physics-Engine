@@ -54,6 +54,6 @@ void VehicleController::update(piksel::Window& wnd, piksel::Camera& camera, floa
   btVector3 back = trans.getBasis() * btVector3(0.f, 0.25f, -1.f);
   btVector3 cam_pos = trans.getOrigin() + back * 15;
 
-  camera.set(bt2glm(trans.getOrigin()), bt2glm(cam_pos));
+  camera.set(math::bt2glm(trans.getOrigin()), math::bt2glm(cam_pos));
 }
 }  // namespace boink

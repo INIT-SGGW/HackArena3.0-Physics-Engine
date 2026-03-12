@@ -112,6 +112,7 @@ target_sources(boink
     src/wheel_info.cc
     src/ghost_mode.cc
     src/ghost_gui.cc
+    src/constants.cc
 )
 
 target_include_directories(boink

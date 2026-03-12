@@ -156,7 +156,7 @@ void Vehicle::updateRender(Renderer* renderer)
   if (gui_->mesh_enabled)
   {
     auto chassis_obj =
-        std::make_shared<piksel::Object>(mesh_->getChassisPikselMesh(), bt2glm(this->getChassisWorldTransform()));
+        std::make_shared<piksel::Object>(mesh_->getChassisPikselMesh(), math::bt2glm(this->getChassisWorldTransform()));
     renderer->addDrawable(chassis_obj);
 
     for (int i = 0; i < (int)WheelPosition::Count; i++)
@@ -164,7 +164,7 @@ void Vehicle::updateRender(Renderer* renderer)
       WheelPosition pos = (WheelPosition)i;
 
       auto wheel_obj =
-          std::make_shared<piksel::Object>(mesh_->getWheelPikselMesh(pos), bt2glm(this->getWheelWorldTransform(pos)));
+          std::make_shared<piksel::Object>(mesh_->getWheelPikselMesh(pos), math::bt2glm(this->getWheelWorldTransform(pos)));
       renderer->addDrawable(wheel_obj);
     }
   }

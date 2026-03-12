@@ -75,26 +75,12 @@ namespace boink
     SampleData generateSampleTrackData(size_t i) const;
 
   private:
-    static void createLine(
-        const GltfExtractor& extractor,
-        Line& line,
-        std::string_view name);
-
     static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
   private:
     //static constexpr std::string_view TRACK_NAME="Asphalt";
     static constexpr std::string_view RIGHTLINE_NAME="LINE_RIGHT";
     static constexpr std::string_view LEFTLINE_NAME="LINE_LEFT";
     static constexpr std::string_view CENTERLINE_NAME="LINE_CENTER";
-
-    //static constexpr std::string_view PITSTOP_RIGHTLINE_NAME=
-    //  "PITSTOP_ZONE_LINE_RIGHT";
-    //static constexpr std::string_view PITSTOP_LEFTLINE_NAME=
-    //  "PITSTOP_ZONE_LINE_LEFT";
-    //static constexpr std::string_view PITSTOP_CENTERLINE_NAME=
-    //  "PITSTOP_ZONE_LINE_CENTER";
-
-    const btVector3 s_kUp={0.0,1.0,0.0};
   private:
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;

@@ -8,7 +8,6 @@
 #include <piksel/gui_manager.hh>
 
 #include "boink/debugger/renderer.h"
-#include "boink/gui/debugger_gui.h"
 #include "boink/simulators/simulator.h"
 #include "boink/debugger/camera_controller.h"
 
@@ -16,8 +15,11 @@
 
 namespace boink
 {
+  class DebuggerGui;
   class Debugger
   {
+  public:
+    friend class DebuggerGui;
   public:
     Debugger(
         std::string_view title,
@@ -44,7 +46,6 @@ namespace boink
     piksel::Camera cam_;
     Renderer renderer_;
     piksel::GuiManager gui_manager_;
-    std::shared_ptr<DebuggerGui> gui_;
 
     std::shared_ptr<CameraController> default_controller_;
 
@@ -55,5 +56,7 @@ namespace boink
     int selected_controller_=-1;
     float cam_speed_;
     float mouse_speed_;
+
+    std::shared_ptr<DebuggerGui> gui_;
   };
 }

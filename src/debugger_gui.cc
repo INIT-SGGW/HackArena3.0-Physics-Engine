@@ -6,11 +6,23 @@
 
 namespace boink
 {
+  DebuggerGui::DebuggerGui(Debugger* p_debug)
+    :p_debug(p_debug)
+  {
+
+  }
+
   void DebuggerGui::draw()
   {
-    ImGui::Text("FPS: %.2f",*fps);
-    ImGui::SliderFloat("Mouse speed",mouse_speed,0.f,1.f);
-    ImGui::SliderFloat("Camera speed",camera_speed,0.f,100.f);
+    ImGui::Text("FPS: %.2f",p_debug->fps_);
+    ImGui::SliderFloat("Mouse speed",&p_debug->mouse_speed_,0.f,1.f);
+    ImGui::SliderFloat("Camera speed",&p_debug->cam_speed_,0.f,100.f);
+    ImGui::Checkbox("Enable bullet draw",&bullet_draw_);
+    
+    if(bullet_draw_)
+      p_debug->renderer_.setDebugMode(p_debug->renderer_.getDefaultDebugMode());
+    else
+      p_debug->renderer_.setDebugMode(0);
 
     static size_t selected=0;
     const char* camera_option="Free camera";
@@ -34,8 +46,9 @@ namespace boink
       ImGui::EndCombo();
     }
     if(controller_ids[selected].second==camera_option)
-      *selected_controller=-1;
+      p_debug->selected_controller_=-1;
     else
-      *selected_controller=(int)controller_ids[selected].first;
+      p_debug->selected_controller_=(int)controller_ids[selected].first;
+
   }
 }

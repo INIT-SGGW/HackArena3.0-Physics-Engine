@@ -55,7 +55,7 @@ namespace boink
         const btVector3& to,
         const btVector3& color)
   {
-    gfx_.drawLine(piksel::Line{bt2glm(from),bt2glm(to),bt2glm(color)});
+    gfx_.drawLine(piksel::Line{math::bt2glm(from),math::bt2glm(to),math::bt2glm(color)});
   }
 
   void Renderer::drawContactPoint(

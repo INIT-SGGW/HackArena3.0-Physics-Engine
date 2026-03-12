@@ -84,7 +84,7 @@ namespace boink
         std::back_inserter(piksel_vertices),
         [](const btVector3& vec)
         {
-          return piksel::Mesh::Vertex{bt2glm(vec)};
+          return piksel::Mesh::Vertex{math::bt2glm(vec)};
         });
     
     return std::make_shared<piksel::Mesh>(piksel_vertices,indices);
