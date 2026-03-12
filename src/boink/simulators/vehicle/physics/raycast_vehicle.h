@@ -107,6 +107,16 @@ class RaycastVehicle : public btActionInterface
   /// </summary>
   btScalar getWheelLongSpeed(WheelInfo& wheel) const;
 
+  /// <summary>
+  /// Zwraca globalna szybkosc kola w kierunku poprzecznym kola (na kierunku osi kola).
+  /// </summary>
+  btScalar getWheelLatSpeed(WheelInfo& wheel) const;
+
+  /// <summary>
+  /// Zwraca globalny wektor predkosci kola w punkcie kontaktu kola z podlozem.
+  /// </summary>
+  btVector3 getWheelContactVel(WheelInfo& wheel) const;
+
   inline btRigidBody* getRigidBody() { return m_chassisBody; }
   const btRigidBody* getRigidBody() const { return m_chassisBody; }
 
@@ -169,8 +179,11 @@ class RaycastVehicle : public btActionInterface
   static constexpr float kSmoothingTractionForceFactor = 0.35f;
   static constexpr float kBrakeTorque = 3300.0f;  // [Nm]
   static inline const Curve kSlipRatioToGrip =
-      Curve({0.000, 0.850, 1.100, 1.080, 1.020, 0.970, 0.930, 0.900, 0.880, 0.865, 0.850,
-             0.840, 0.830, 0.825, 0.820, 0.815, 0.810, 0.805, 0.800, 0.800, 0.800},
+      Curve({0.000, 1.100, 1.600, 1.500, 1.350, 1.250, 1.200, 1.150, 1.120, 1.100, 1.080,
+             1.060, 1.050, 1.040, 1.030, 1.020, 1.010, 1.000, 1.000, 1.000, 1.000},
             0.05f, 0.0f);
+  static inline const Curve kSlipAngleToGrip = Curve({0.00, 0.50, 0.95, 1.35, 1.55, 1.50, 1.35, 1.20, 1.12, 1.08, 1.06,
+                                                      1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
+                                                     0.02f, 0.0f);
 };
 }  // namespace boink
