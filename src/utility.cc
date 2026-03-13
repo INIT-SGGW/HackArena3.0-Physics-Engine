@@ -11,7 +11,7 @@
 
 #include <vector>
 
-namespace boink
+namespace boink::math
 {
 
   glm::mat4 bt2glm(const btTransform& bt_trans)
@@ -135,5 +135,61 @@ namespace boink
     }
 
     return i_closest;
+  }
+
+  btVector3 vec3toLocalvec2(
+      const btVector3& vec,
+      const btVector3& local_x,
+      const btVector3& local_y,
+      const btVector3& local_origin)
+  {
+    btVector3 offset=vec-local_origin;
+    return btVector3(local_x.dot(offset),local_y.dot(offset),0.f);
+  }
+
+  std::optional<std::tuple<btVector3,btScalar,btScalar>> getRayLineInterscetion(
+      btVector3 ray_dir,
+      btVector3 ray_start,
+      btVector3 normal,
+      btVector3 a,
+      btVector3 b,
+      btScalar epsilon)
+  {
+    normal.normalize();
+    ray_dir.normalize();
+
+    // Calculate plane
+    btVector3 arbitrary_vec=
+      normal.y()>0.9?
+      btVector3{1.f,0.f,0.f}:btVector3{0.f,1.f,0.f};
+    
+    btVector3 local_x=normal.cross(arbitrary_vec).normalize();
+    btVector3 local_y=normal.cross(local_x).normalize();
+    
+    // Turn vec3 to vec2 in local plane
+    btVector3 local_ray_dir(ray_dir.dot(local_x),ray_dir.dot(local_y),0.f);
+    btAssert(local_ray_dir.length()>1.f-epsilon &&
+        local_ray_dir.length()<1.f+epsilon);
+
+    btVector3 local_ray_start(vec3toLocalvec2(ray_start,local_x,local_y,ray_start));
+    btVector3 local_a(vec3toLocalvec2(a,local_x,local_y,ray_start));
+    btVector3 local_b(vec3toLocalvec2(b,local_x,local_y,ray_start));
+
+    btVector3 c=local_b-local_a;
+    btVector3 v=local_ray_start-local_a;
+
+    btScalar cross_2d=local_ray_dir.x()*c.y()-local_ray_dir.y()*c.x();
+
+    // Means line is parallel to line
+    if(btFabs(cross_2d)<epsilon)
+      return std::nullopt;
+
+    btScalar t=(c.x()*v.y()-c.y()*v.x())/cross_2d;
+    btScalar u=(local_ray_dir.x()*v.y()-local_ray_dir.y()*v.x())/cross_2d;
+
+    btVector3 intersection_point=
+      local_ray_start+t*local_ray_dir;
+    
+    return {{intersection_point,t,u}};
   }
 }

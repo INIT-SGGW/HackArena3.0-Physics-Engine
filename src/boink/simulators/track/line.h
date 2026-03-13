@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boink/gltf_extractor.h"
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 
@@ -13,7 +14,8 @@ namespace boink
   public:
     Line()=default;
     Line(
-        const std::vector<btVector3>& points);
+        const std::vector<btVector3>& points,
+        bool is_line_closed=true);
 
     btScalar getLength() const;
     btScalar getCoverage(const btVector3& point) const;
@@ -34,8 +36,18 @@ namespace boink
     btVector3& getPoint(size_t index);
     const btVector3& getPoint(size_t index) const;
     size_t getPointsSize() const { return points_dist_.size();}
+
+    // Point of intersection and distance form ra_start to poitn of intersection
+    std::pair<btVector3,btScalar> getRayLineIntersection(
+      btVector3 ray_dir,
+      btVector3 ray_start,
+      btVector3 normal,
+      btScalar epsilon=1e-4) const;
+  public:
+    static Line createLine(const GltfExtractor& extractor,std::string_view name);
   private:
     // Point and distance from first point on curve
     std::vector<std::pair<btVector3,btScalar>> points_dist_;
+    bool is_line_closed_;
   };
 }

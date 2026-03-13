@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boink/constants.h"
 #include <LinearMath/btIDebugDraw.h>
 
 #include <memory>
@@ -24,6 +25,12 @@ namespace boink
     int getDebugMode() const override { return debug_mode_; }
     void addDrawable(std::shared_ptr<const piksel::IDrawable> drawable);
 
+    void drawPoint(
+        const btVector3& point,
+        const btVector3& color,
+        const btVector3& dir0=g_Up,
+        const btVector3& dir1=g_Left);
+
     void drawLine(
         const btVector3& from,
         const btVector3& to,
@@ -39,6 +46,9 @@ namespace boink
 
     void reportErrorWarning(const char*) override {}
     void draw3dText(const btVector3&, const char*) override {}
+
+
+    int getDefaultDebugMode() const {return DBG_DrawWireframe;}
   private:
     static const std::string_view s_kSrcVertexShader_;
     static const std::string_view s_kSrcFragShader_;

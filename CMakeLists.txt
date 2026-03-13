@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(BoinkEngine VERSION 0.11.1)
+project(BoinkEngine VERSION 0.12.2)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -112,6 +112,7 @@ target_sources(boink
     src/wheel_info.cc
     src/ghost_mode.cc
     src/ghost_gui.cc
+    src/constants.cc
 )
 
 target_include_directories(boink

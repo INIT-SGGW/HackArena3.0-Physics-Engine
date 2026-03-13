@@ -66,20 +66,25 @@ namespace boink
 
     const std::vector<SampleData>& getTrackData() const {return track_data_;}
     std::vector<SampleData>& getTrackData() {return track_data_;}
+
+    size_t getNumberOfStartingPositions() const {return start_postions_.size();}
+    btVector3 getStartingPosition(size_t position) const;
+    btVector3 getFinishLine() const {return finish_line_;}
+
+    btVector3 getOnTrackRandomPosition() const;
+
+    SampleData getClosestTrackSample(const btVector3& point) const;
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
     void createLines(const GltfExtractor& extractor);
+    void initPositions(const GltfExtractor& extractor);
+    void initFinishLine(const GltfExtractor& extractor);
 
     void createTrackData();
     SampleData generateSampleTrackData(size_t i) const;
 
   private:
-    static void createLine(
-        const GltfExtractor& extractor,
-        Line& line,
-        std::string_view name);
-
     static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
   private:
     //static constexpr std::string_view TRACK_NAME="Asphalt";
@@ -87,19 +92,17 @@ namespace boink
     static constexpr std::string_view LEFTLINE_NAME="LINE_LEFT";
     static constexpr std::string_view CENTERLINE_NAME="LINE_CENTER";
 
-    //static constexpr std::string_view PITSTOP_RIGHTLINE_NAME=
-    //  "PITSTOP_ZONE_LINE_RIGHT";
-    //static constexpr std::string_view PITSTOP_LEFTLINE_NAME=
-    //  "PITSTOP_ZONE_LINE_LEFT";
-    //static constexpr std::string_view PITSTOP_CENTERLINE_NAME=
-    //  "PITSTOP_ZONE_LINE_CENTER";
-
-    const btVector3 s_kUp={0.0,1.0,0.0};
+    static constexpr std::string_view DELIM="_";
+    static constexpr std::string_view POSITION_SEG_NAME="POSITION";
+    static constexpr std::string_view FINISH_LANE_NAME="FINISH_LINE_POINT";
   private:
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
 
     std::unordered_map<Ground::Type,Ground::SurfaceInfo> surface_infos_;
+
+    std::vector<btVector3> start_postions_;
+    btVector3 finish_line_;
 
     Line centerline_;
     Line rightline_;
