@@ -18,6 +18,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 namespace boink
 {
@@ -59,41 +60,57 @@ namespace boink
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
     const btTransform& getWorldTransform() const {return transform_;}
-    void setWorldTransform(const btTransform& position);
 
     const Line& getCenterline() const {return centerline_;}
     std::string_view getFilename() const { return filename_;}
 
     const std::vector<SampleData>& getTrackData() const {return track_data_;}
     std::vector<SampleData>& getTrackData() {return track_data_;}
+
+    size_t getNumberOfStartingPositions() const {return start_postions_.size();}
+    btVector3 getStartingPosition(size_t position) const;
+    btVector3 getFinishLine() const {return finish_line_;}
+
+    btVector3 getOnTrackRandomPosition() const;
+
+    SampleData getClosestTrackSample(const btVector3& point) const;
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
     void createLines(const GltfExtractor& extractor);
+    void initPositions(const GltfExtractor& extractor);
+    void initFinishLine(const GltfExtractor& extractor);
 
     void createTrackData();
     SampleData generateSampleTrackData(size_t i) const;
-  private:
-    static void createLine(
-        const GltfExtractor& extractor,
-        Line& line,
-        std::string_view name);
-  private:
-    static constexpr std::string_view TRACK_NAME="Asphalt";
-    static constexpr std::string_view RIGHTLINE_NAME="Edgeline_right";
-    static constexpr std::string_view LEFTLINE_NAME="Edgeline_left";
-    static constexpr std::string_view CENTERLINE_NAME="Centerline";
 
-    const btVector3 s_kUp={0.0,1.0,0.0};
+  private:
+    static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
+  private:
+    //static constexpr std::string_view TRACK_NAME="Asphalt";
+    static constexpr std::string_view RIGHTLINE_NAME="LINE_RIGHT";
+    static constexpr std::string_view LEFTLINE_NAME="LINE_LEFT";
+    static constexpr std::string_view CENTERLINE_NAME="LINE_CENTER";
+
+    static constexpr std::string_view DELIM="_";
+    static constexpr std::string_view POSITION_SEG_NAME="POSITION";
+    static constexpr std::string_view FINISH_LANE_NAME="FINISH_LINE_POINT";
   private:
     std::vector<Ground> grounds;
     std::shared_ptr<btDiscreteDynamicsWorld> world_;
 
     std::unordered_map<Ground::Type,Ground::SurfaceInfo> surface_infos_;
 
+    std::vector<btVector3> start_postions_;
+    btVector3 finish_line_;
+
     Line centerline_;
     Line rightline_;
     Line leftline_;
+
+    Line pitstop_centerline_;
+    Line pitstop_rightline_;
+    Line pitstop_leftline_;
 
     std::vector<SampleData> track_data_;
 

@@ -8,10 +8,19 @@
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
 #include "boink/gui/track_gui.h"
+#include "boink/constants.h"
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
+#include <optional>
 #include <sstream>
+#include <system_error>
 #include <vector>
+#include <iostream>
+#include <sstream>
+#include <charconv>
+#include <random>
 
 namespace boink
 {
@@ -29,6 +38,8 @@ namespace boink
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
     this->createLines(extractor);
+    this->initPositions(extractor);
+    this->initFinishLine(extractor);
 
     this->createTrackData();
     gui_=std::make_shared<TrackGui>(this);
@@ -37,6 +48,63 @@ namespace boink
   std::shared_ptr<piksel::GuiObject> Track::getGui() 
   {
     return gui_;
+  }
+
+  btVector3 Track::getStartingPosition(size_t position) const
+  {
+    size_t index=position-1;
+
+    if(index>=start_postions_.size())
+    {
+      std::stringstream ss;
+      ss<<"Position: "<<position<<" does not exist";
+      throw Exception(
+          Exception::Type::InvalidArgumentError,
+          ss.str());
+    }
+
+    return start_postions_.at(index);
+  }
+
+  btVector3 Track::getOnTrackRandomPosition() const
+  {
+    std::random_device rd;
+    static std::mt19937 gen(rd());
+
+    std::uniform_int_distribution<size_t> dist(0,centerline_.getPointsSize()-1);
+    size_t random_index=dist(gen);
+
+    btAssert(random_index<track_data_.size());
+    if(random_index>track_data_.size())
+      return centerline_.getPoint(random_index);
+
+    const auto& sample=track_data_.at(random_index);
+    btAssert((sample.position-centerline_.getPoint(random_index)).length2()<g_Epsilon);
+
+    // TODO
+    std::uniform_real_distribution<btScalar> real_dist(0.0f,1.f);
+    btScalar random_left_width=real_dist(gen)*sample.left_width;
+    //btScalar random_left_width=0.0;
+    btScalar random_right_width=real_dist(gen)*sample.right_width;
+
+    btVector3 offset=sample.right*(random_right_width-random_left_width);
+    btVector3 random_point=centerline_.getPoint(random_index);
+
+    return random_point+offset;
+  }
+
+  Track::SampleData Track::getClosestTrackSample(const btVector3& point) const
+  {
+    size_t index=centerline_.getClosestIndex(point).first;
+    
+    btAssert(index<track_data_.size());
+    if(index>track_data_.size())
+      return track_data_.at(0);;
+
+    const auto& sample=track_data_.at(index);
+    btAssert((sample.position-centerline_.getPoint(index)).length2()<g_Epsilon);
+
+    return sample;
   }
 
   void Track::initSurfaceInfos()
@@ -50,6 +118,8 @@ namespace boink
       {3.f,0.4f,wetness,Ground::Type::Gravel};
     surface_infos_[Ground::Type::Asphalt]= 
       {0.0f,0.1f,wetness,Ground::Type::Asphalt};
+    surface_infos_[Ground::Type::Wall]= 
+      {1.0f,0.1f,wetness,Ground::Type::Wall};
   }
 
   void Track::initGrounds(const GltfExtractor& extractor)
@@ -58,76 +128,124 @@ namespace boink
 
     for(const auto& node : nodes)
     {
-#ifndef NDEBUG
-      //if(node.name!=TRACK_NAME)
-      //  continue;
-#endif
-      if(node.type!=TINYGLTF_MODE_TRIANGLES)
-        continue;
-
       if(node.vertices.size()==0 || node.indices.size()==0)
-        throw Exception(
-            Exception::Type::InvalidArgumentError,
-            "Ground mesh is empty.");
+        continue;
+//#ifndef NDEBUG
+//      if(node.name!="COLLIDER_STATIC_GROUND_ASPHALT")
+//        continue;
+//#endif
 
-      // TODO
+      std::optional<Ground::Type> type=Track::resolveGroundTypeFromName(node.name);
+
+      if(!type.has_value())
+        continue;
+      if(node.type!=TINYGLTF_MODE_TRIANGLES)
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Node type is not TRIANGLES_MODE");
+
       grounds.emplace_back(
           node.vertices,
           node.indices,
           node.transform,
-          &surface_infos_[Ground::Type::Asphalt],world_);
+          &surface_infos_[type.value()],world_);
     }
   }
 
   void Track::createLines(const GltfExtractor& extractor)
   {
-    Track::createLine(extractor,centerline_,CENTERLINE_NAME);
-    Track::createLine(extractor,rightline_,RIGHTLINE_NAME);
-    Track::createLine(extractor,leftline_,LEFTLINE_NAME);
+    centerline_=Line::createLine(extractor,CENTERLINE_NAME);
+    rightline_=Line::createLine(extractor,RIGHTLINE_NAME);
+    leftline_=Line::createLine(extractor,LEFTLINE_NAME);
 
     // Check if centerline should be reveresed
+    {
+      auto center_point=centerline_.getPoint(0);
+      auto next_center_point=centerline_.getPoint(1);
 
-    auto center_point=centerline_.getPoint(0);
-    auto next_center_point=centerline_.getPoint(1);
+      auto dir=next_center_point-center_point;
 
-    auto dir=next_center_point-center_point;
+      auto right_point=rightline_.getPoint( 
+          rightline_.getClosestIndex(center_point).first);
+      auto right=right_point-center_point;
 
-    auto right_point=rightline_.getPoint( rightline_.getClosestIndex(center_point).first);
-    auto right=right_point-center_point;
+      auto normal=right.cross(dir);
 
-    auto normal=right.cross(dir);
+      if(normal.dot(g_Up)<0)
+        centerline_.reverse();
+    }
 
-    if(normal.dot(s_kUp)<0)
-      centerline_.reverse();
   }
 
-  void Track::createLine(
-      const GltfExtractor& extractor, Line& line, std::string_view name)
+  void Track::initPositions(const GltfExtractor& extractor)
   {
-    auto& line_node=extractor.getNode(name);
-    if(line_node.type!=TINYGLTF_MODE_LINE)
+    const auto& nodes=extractor.getNodes();
+
+    std::vector<std::pair<size_t,btVector3>> postion_pairs;
+
+    for(const auto& node : nodes)
+    {
+      size_t pos=node.name.find(POSITION_SEG_NAME);
+      if(pos==std::string::npos)
+        continue;
+
+      pos+=DELIM.size()+POSITION_SEG_NAME.size();
+
+      std::string pos_num_str=node.name.substr(pos);
+      unsigned int pos_num;
+      
+      auto [ptr, ec]=
+        std::from_chars(
+            pos_num_str.data(),pos_num_str.data()+pos_num_str.size(),pos_num);
+
+      if(!(ec==std::errc()&&(pos_num_str.data()+pos_num_str.size())==ptr))
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Cannot extract postion number from node name");
+
+      if(pos_num==0)
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Position num cannot be zero");
+
+      postion_pairs.push_back({pos_num,node.transform.getOrigin()});
+    }
+
+    start_postions_.resize(postion_pairs.size());
+    std::vector<bool> pos_exist(postion_pairs.size(),false);
+
+    // verify if there are all postions
+    for(const auto& pair:postion_pairs)
+    {
+      if(pair.first-1>pos_exist.size())
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Cannot be position greater from number of positions");
+
+      if(pos_exist[pair.first-1]==true)
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Found duplicated position");
+
+      pos_exist[pair.first-1]=true;
+      start_postions_[pair.first-1]=pair.second;
+    }
+
+    if(auto it=std::find(pos_exist.begin(),pos_exist.end(),false);it!=pos_exist.end())
+    {
+      std::stringstream ss;
+      ss<<"Position: "<<it-pos_exist.begin()+1;
       throw Exception(
-          Exception::Type::UnsupportedFormatError,
-          "Line mesh unsupported mode. Use lines mode for line mesh.");
+        Exception::Type::UnsupportedFormatError,
+        ss.str());
+    }
+  }
 
-    auto& line_vertices=line_node.vertices;
-    auto& line_indices=line_node.indices;
-    if(line_vertices.size()==0 || line_indices.size()==0)
-      throw Exception(
-          Exception::Type::InvalidArgumentError,
-          "Line mesh is empty.");
+  void Track::initFinishLine(const GltfExtractor& extractor)
+  {
+    const auto& node= extractor.getNode(FINISH_LANE_NAME);
 
-    std::vector<btVector3> points;
-    points.reserve(line_indices.size());
-
-    for(size_t i=0;i<line_indices.size();i+=2)
-      points.push_back(line_vertices[line_indices[i]]);
-
-    // Add last point
-    points.push_back(
-        line_vertices[line_indices[line_indices.size()-1]]);
-    
-    line=Line(std::move(points));
+    finish_line_=node.transform.getOrigin();
   }
 
   void Track::createTrackData()
@@ -160,6 +278,11 @@ namespace boink
 
       track_data_[i].curvature=dTds.dot(track_data_[i].right);
     }
+
+    if(track_data_.size()!=centerline_.getPointsSize())
+      throw Exception(
+          Exception::Type::InternalError,
+          "After read track_data and center line points sizes does not match");
   }
 
   Track::SampleData Track::generateSampleTrackData(size_t i) const
@@ -171,8 +294,6 @@ namespace boink
     const auto& [center_point,dist]=centerline_.getPointAndDist(i);
     btVector3 right_point=
       rightline_.getPoint(rightline_.getClosestIndex(center_point).first);
-    btVector3 left_point=
-      leftline_.getPoint(leftline_.getClosestIndex(center_point).first);
 
     sample.position=center_point;
     sample.coverage=dist;
@@ -185,9 +306,6 @@ namespace boink
     sample.right=right_point-center_point;
     sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
     sample.right.normalize();
-
-    //sample.right=right_point-center_point;
-    //sample.right.normalize();
 
     if(sample.tangent.dot(sample.right)>1e-5)
     {
@@ -202,7 +320,7 @@ namespace boink
     sample.normal=sample.right.cross(sample.tangent);
     sample.normal.normalize();
 
-    if(sample.normal.dot(s_kUp)<0.0)
+    if(sample.normal.dot(g_Up)<0.0)
     {
       std::stringstream ss;
       ss<<"For centerline point i=("<<i;
@@ -212,18 +330,43 @@ namespace boink
           ss.str());
     }
 
-    sample.right_width=btVector3(center_point-right_point).length();
-    sample.left_width=btVector3(center_point-left_point).length();
+    sample.right_width=rightline_.getRayLineIntersection(
+        sample.right,center_point,sample.normal).second;
+    sample.left_width=leftline_.getRayLineIntersection(
+        -1*sample.right,center_point,sample.normal).second;
 
-    sample.grade=btAsin(sample.tangent.dot(s_kUp));
+    sample.grade=btAsin(sample.tangent.dot(g_Up));
 
-    btVector3 proj_up=s_kUp-s_kUp.dot(sample.tangent)*sample.tangent;
+    btVector3 proj_up=g_Up-g_Up.dot(sample.tangent)*sample.tangent;
     btScalar cos_angle=proj_up.dot(sample.normal);
     btScalar sin_angle=proj_up.dot(sample.right);
 
     sample.bank=btAtan2(sin_angle,cos_angle);
 
     return sample;
+  }
+
+  std::optional<Ground::Type> Track::resolveGroundTypeFromName(std::string name)
+  {
+    std::vector<std::string> ground_names;
+    ground_names.reserve((size_t)Ground::Type::Count);
+    for(int i=0;i<(int)Ground::Type::Count;i++)
+      ground_names.emplace_back(Ground::toString((Ground::Type)i));
+
+    std::transform(name.begin(),name.end(),name.begin(),
+        [](auto c)
+        {
+          return std::tolower(c);
+        });
+
+    for(size_t i=0;i<ground_names.size();i++)
+    {
+      size_t count=name.find(ground_names[i]);
+      if(count!=std::string::npos)
+        return (Ground::Type)i;
+    }
+
+    return std::nullopt;
   }
 
   void Track::update(btScalar dt)
@@ -248,14 +391,12 @@ namespace boink
     for(const auto& sample:samples)
     {
       auto pos=offset+sample.position;
-      p_renderer->drawLine(
+      p_renderer->drawPoint(
           pos,
-          pos+sample.normal,
-          {0.5,0.5,0.0});
-      p_renderer->drawLine(
-          pos,
-          pos+sample.tangent,
-          {0.5,0.5,0.0});
+          {0.5,0.5,0.0},
+          sample.normal,
+          sample.tangent);
+
       p_renderer->drawLine(
           pos,
           pos+sample.right*sample.right_width,
@@ -265,18 +406,10 @@ namespace boink
           pos+sample.right*-sample.left_width,
           {0.5,0.0,0.0});
     }
-  }
 
-  void Track::setWorldTransform(const btTransform& transform)
-  {
-    transform_=transform;
-    for(auto& ground:grounds)
-    {
-      btTransform new_transform=transform_*ground.getModelTransform();
-      ground.setWorldTransform(new_transform);
-    }
-
-    // TODO
-    // track_data world transform
+    p_renderer->drawPoint(finish_line_,{1.0,1.0,1.0});
+    
+    for(const auto& point:start_postions_)
+      p_renderer->drawPoint(point,{1.0,1.0,1.0});
   }
 }

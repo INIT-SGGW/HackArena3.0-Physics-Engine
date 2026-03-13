@@ -11,6 +11,7 @@
 #include <memory>
 #include <piksel/object.hh>
 
+#include "boink/constants.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/utility.h"
@@ -36,9 +37,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       track_(track),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
-      laps_completed_(0),
-      curr_lap_dist_point_(0.f),
-      ghost_sim_(world_.get(),vehicle_.get(),&laps_completed_),
+      ghost_sim_(world_.get(),vehicle_.get(),&lap_info_.laps_completed),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
@@ -54,9 +53,11 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
     rigidbody_->setActivationState(DISABLE_DEACTIVATION);
 
     // Because cars might move fast we wanna avoid
-    // cliping them or just going over a wall
+    // cliping or just going over a wall
     rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
+
+    this->setChassisWorldTransform(btTransform::getIdentity());
 
     vehicle_->setCoordinateSystem(
         0, // right (X)
@@ -99,6 +100,11 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
                      create_info.tyre_type);
 
   this->setTuning(tuning_);
+
+  bounding_dimensions_=getBoundingDims(collision_shape_);
+
+  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
+  lap_info_.curr_lap_coverage=track_->getCenterline().getCoverage(vehicle_pos);
 }
 
 Vehicle::~Vehicle() noexcept
@@ -121,13 +127,20 @@ Vehicle::~Vehicle() noexcept
 
 void Vehicle::update(btScalar dt)
 {
-  (void)dt;
+  this->updateLapInfo(dt);
+
+  ghost_sim_.update(dt);
+  ghost_info_.enabled=ghost_sim_.isInGhostMode();
+}
+
+void Vehicle::updateLapInfo(btScalar dt)
+{
   btScalar track_length = track_->getCenterline().getLength();
 
-  int curr_laps_completed = this->getLapsCompleted();
+  int curr_laps_completed = lap_info_.laps_completed;
 
-  const btVector3 vehicle_pos = this->getWorldTransform().getOrigin();
-  btScalar prev_coverage = this->getCurrentLapDistanceCovered();
+  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
+  btScalar prev_coverage = lap_info_.curr_lap_coverage;
   btScalar curr_coverage = track_->getCenterline().getCoverage(vehicle_pos);
 
   btScalar v = curr_coverage - prev_coverage;
@@ -137,14 +150,31 @@ void Vehicle::update(btScalar dt)
     if (v > 0)
       curr_laps_completed--;
     else
+    {
+      // Only here we calculate the time
+      btScalar curr_distance=track_length+v;
+      btAssert(curr_distance>=0.f);
+      // First update old time
+      lap_info_.curr_lap_time+=dt*(track_length-prev_coverage)/curr_distance;
+
+      // Vehicle can ride this multiple times so we only save the first one
+      if(curr_laps_completed>=LapInfo::kStartingLap&&
+          lap_info_.lap_times_history.try_emplace(
+          curr_laps_completed,lap_info_.curr_lap_time).second)
+        lap_info_.curr_lap_time=0;
+
       curr_laps_completed++;
+
+      // Update dt we need to short it
+      dt=dt*(curr_coverage/curr_distance);
+    }
   }
+  
+  btAssert(dt>=0);
+  lap_info_.curr_lap_time+=dt;
 
-  laps_completed_ = curr_laps_completed;
-  curr_lap_dist_point_ = curr_coverage;
-
-  ghost_sim_.update(dt);
-  ghost_info_.enabled=ghost_sim_.isInGhostMode();
+  lap_info_.laps_completed = curr_laps_completed;
+  lap_info_.curr_lap_coverage = curr_coverage;
 }
 
 void Vehicle::updateRender(Renderer* renderer)
@@ -156,7 +186,7 @@ void Vehicle::updateRender(Renderer* renderer)
   if (gui_->mesh_enabled)
   {
     auto chassis_obj =
-        std::make_shared<piksel::Object>(mesh_->getChassisPikselMesh(), bt2glm(this->getChassisWorldTransform()));
+        std::make_shared<piksel::Object>(mesh_->getChassisPikselMesh(), math::bt2glm(this->getChassisWorldTransform()));
     renderer->addDrawable(chassis_obj);
 
     for (int i = 0; i < (int)WheelPosition::Count; i++)
@@ -164,7 +194,7 @@ void Vehicle::updateRender(Renderer* renderer)
       WheelPosition pos = (WheelPosition)i;
 
       auto wheel_obj =
-          std::make_shared<piksel::Object>(mesh_->getWheelPikselMesh(pos), bt2glm(this->getWheelWorldTransform(pos)));
+          std::make_shared<piksel::Object>(mesh_->getWheelPikselMesh(pos), math::bt2glm(this->getWheelWorldTransform(pos)));
       renderer->addDrawable(wheel_obj);
     }
   }
@@ -189,26 +219,28 @@ void Vehicle::updateRender(Renderer* renderer)
       rigidbody_->getWorldTransform().getBasis()[1][1],
       rigidbody_->getWorldTransform().getBasis()[2][1]);
 
-  btVector3 COM=rigidbody_->getWorldTransform().getOrigin();
-  renderer->drawLine(
-      COM,
-      COM+ forward_axle,
-      {1,1,1});
-  renderer->drawLine(
-      COM,
-      COM+ up_axle,
-      {1,1,1});
+  btVector3 chassis_center=this->getChassisWorldTransform().getOrigin();
+  //renderer->drawLine(
+  //    chassis_center,
+  //    chassis_center-1*this->getChassisToGroundDist()*g_Up,
+  //    {0.5,1.0,0.75f});
+  renderer->drawPoint(
+      chassis_center,{1,1,1},-forward_axle,-up_axle);
 }
 
-std::shared_ptr<piksel::GuiObject> Vehicle::getGui() { return gui_; }
+std::shared_ptr<piksel::GuiObject> Vehicle::getGui() 
+{ 
+  return gui_; 
+}
 
-void Vehicle::setPosition(const btVector3& position) { rigidbody_->getWorldTransform().setOrigin(position); }
+void Vehicle::setChassisWorldTransform(const btTransform& transform) 
+{ 
+  this->reset();
 
-btTransform Vehicle::getWorldTransform() const
-{
-  btTransform transform;
-  motion_state_->getWorldTransform(transform);
-  return transform;
+  btTransform offset(btQuaternion::getIdentity(),center_of_mass_);
+  btTransform new_transform=transform*offset;
+  rigidbody_->setWorldTransform(new_transform);
+  motion_state_->setWorldTransform(new_transform);
 }
 
 btTransform Vehicle::getChassisWorldTransform() const
@@ -218,12 +250,22 @@ btTransform Vehicle::getChassisWorldTransform() const
   btTransform translate;
   translate.setIdentity();
   translate.setOrigin(-center_of_mass_);
-  btTransform transform;
-  // we must translate before rotation
-  // return vehicle_->getChassisWorldTransform()*translate;
-  motion_state_->getWorldTransform(transform);
+  btTransform transform=rigidbody_->getWorldTransform();
 
+  // we must translate after rotation
   return transform * translate;
+}
+
+btScalar Vehicle::getChassisToGroundDist() const
+{
+  btAssert((btVector3(0.f,1.f,0.f)-g_Up).length2()<g_Epsilon);
+
+  // TODO i dont know but this function is not ideal
+  const auto& wheel_info=vehicle_->getWheelInfo((int)WheelPosition::RearLeft);
+  return 
+    -wheel_info.m_suspensionInfo.m_chassisConnectionPointCS.y()+
+    wheel_info.m_suspensionInfo.m_restLength+
+    wheel_info.m_wheelsRadius-center_of_mass_.y();
 }
 
 const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) const
@@ -384,4 +426,54 @@ std::unique_ptr<btRigidBody> Vehicle::createRigidbody(btCompoundShape* col_shape
 
   return body;
 }
+
+Vehicle::BoundingBox Vehicle::getBoundingDims(
+    std::shared_ptr<btCollisionShape> col_shape)
+{
+  btVector3 aabb_min;
+  btVector3 aabb_max;
+  col_shape->getAabb(btTransform::getIdentity(),aabb_min,aabb_max);
+
+  BoundingBox box;
+  btScalar depth=aabb_max.z()-aabb_min.z();
+  btScalar width=aabb_max.x()-aabb_min.x();
+
+  box.top_left=aabb_max;
+  box.top_left.setY(0);
+  box.bottom_right=aabb_min;
+  box.bottom_right.setY(0);
+  
+  box.bottom_left=box.bottom_right;
+  box.bottom_left.setX(box.bottom_left.x()+width);
+
+  box.top_right=box.bottom_right;
+  box.top_right.setZ(box.bottom_right.z()+depth);
+
+  return box;
+}
+
+void Vehicle::reset()
+{
+  rigidbody_->setLinearVelocity({0,0,0});
+  rigidbody_->setAngularVelocity({0,0,0});
+
+  rigidbody_->clearForces();
+
+  // Prevent the 1-frame visual "swoosh" (Fixes interpolation artifacts)
+  btTransform new_transform = rigidbody_->getWorldTransform();
+  rigidbody_->setInterpolationWorldTransform(new_transform);
+  rigidbody_->setInterpolationLinearVelocity(btVector3(0, 0, 0));
+  rigidbody_->setInterpolationAngularVelocity(btVector3(0, 0, 0));
+
+  vehicle_->resetSuspension();
+  for(int i=0; i < vehicle_->getNumWheels(); i++)
+  {
+    auto& wheel_info=vehicle_->getWheelInfo(i);
+
+    wheel_info.m_rotation = 0.0f;
+    wheel_info.m_deltaRotation = 0.0f;
+  }
+}
+
+
 }  // namespace boink

@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 9
+#define BOINK_C_API_VERSION_MINOR 12
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -88,6 +88,60 @@ typedef enum BoinkGearShift {
    */
   BOINK_GEAR_SHIFT_DOWNSHIFT = 2,
 } BoinkGearShift;
+
+/**
+ * High-level runtime phase of ghost mode for a single vehicle.
+ */
+typedef enum BoinkGhostModePhase {
+  /**
+   * Ghost mode is disabled for this vehicle and collisions are enabled.
+   */
+  BOINK_GHOST_MODE_PHASE_INACTIVE = 0,
+  /**
+   * Ghost mode enter conditions are progressing; collisions are still enabled.
+   */
+  BOINK_GHOST_MODE_PHASE_PENDING_ENTER = 1,
+  /**
+   * Ghost mode is enabled for this vehicle and collisions are disabled.
+   */
+  BOINK_GHOST_MODE_PHASE_ACTIVE = 2,
+  /**
+   * Ghost mode is still active, but exit countdown is currently running.
+   */
+  BOINK_GHOST_MODE_PHASE_PENDING_EXIT = 3,
+} BoinkGhostModePhase;
+
+/**
+ * Active conditions that can keep a vehicle in ghost mode.
+ *
+ * Values are bit flags intended to be OR-combined inside [`BoinkGhostModeBlockersMask`].
+ */
+typedef enum BoinkGhostModeBlocker {
+  /**
+   * completed_laps is below GhostModeSettings.until_completed_laps.
+   */
+  BOINK_GHOST_MODE_BLOCKER_LAPS_REQUIREMENT_NOT_MET = (1 << 0),
+  /**
+   * Current speed is not above GhostModeSettings.exit_speed_min_mps.
+   */
+  BOINK_GHOST_MODE_BLOCKER_EXIT_SPEED_NOT_MET = (1 << 1),
+  /**
+   * Exit speed condition is met, but exit delay is still counting down.
+   */
+  BOINK_GHOST_MODE_BLOCKER_EXIT_DELAY_RUNNING = (1 << 2),
+  /**
+   * Vehicle overlap is currently present and prevents ghost mode exit.
+   */
+  BOINK_GHOST_MODE_BLOCKER_VEHICLE_OVERLAP_ACTIVE = (1 << 3),
+  /**
+   * Overlap is cleared, but no-overlap exit delay is still counting down.
+   */
+  BOINK_GHOST_MODE_BLOCKER_OVERLAP_EXIT_DELAY_RUNNING = (1 << 4),
+  /**
+   * Vehicle is currently in pit area.
+   */
+  BOINK_GHOST_MODE_BLOCKER_IN_PIT = (1 << 5),
+} BoinkGhostModeBlocker;
 
 /**
  * Represents an opaque engine handle.
@@ -362,6 +416,39 @@ typedef struct BoinkVehicleState {
 } BoinkVehicleState;
 
 /**
+ * Bitmask of active ghost-mode blockers.
+ */
+typedef unsigned int BoinkGhostModeBlockersMask;
+
+/**
+ * Runtime ghost mode state for a single vehicle.
+ */
+typedef struct BoinkGhostModeRuntimeState {
+  /**
+   * Authoritative collision flag for this vehicle at current tick.
+   */
+  bool can_collide_now;
+  /**
+   * Current high-level ghost mode phase.
+   */
+  enum BoinkGhostModePhase phase;
+  /**
+   * Bitmask of currently active blockers.
+   *
+   * Uses bitwise OR of [`BoinkGhostModeBlocker`] values.
+   */
+  BoinkGhostModeBlockersMask blockers_mask;
+  /**
+   * Remaining time to complete ghost-mode enter countdown.
+   */
+  unsigned int enter_delay_remaining_ms;
+  /**
+   * Remaining time to complete ghost-mode exit countdown.
+   */
+  unsigned int exit_delay_remaining_ms;
+} BoinkGhostModeRuntimeState;
+
+/**
  * Represents weather parameters applied globally to the race simulation.
  */
 typedef struct BoinkWeather {
@@ -563,13 +650,15 @@ BOINK_API void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle);
  *
  * Parameters:
  * - `h` - handle to a valid race.
- * - `dt_seconds` - time step in seconds.
+ * - `dt_seconds` - requested time step in seconds.
+ * - `out_simulated_dt_seconds` - non-null pointer receiving the actual
+ *   simulated step in seconds.
  *
  * Returns:
  * - `BOINK_OK` on success.
  * - An error code on failure.
  */
-BOINK_API int boink_step_race(BoinkHandle h, Real dt_seconds);
+BOINK_API int boink_step_race(BoinkHandle h, Real dt_seconds, Real *out_simulated_dt_seconds);
 
 /**
  * Retrieves the duration of the race.
@@ -712,20 +801,114 @@ BOINK_API int boink_set_vehicle_position(BoinkHandle h,
                                       const struct BoinkVec3 *position);
 
 /**
- * Sets the world-space position on the track.
+ * Sets the world-space position of a vehicle to a position before the given point.
  *
- * This updates the track-relative position used for physics or race logic.
+ * This immediately updates the specified vehicle's position in the simulation.
  *
  * Parameters:
  * - `h` - handle to a valid race.
- * - `position` - non-null pointer to the new track position vector.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ * - `point` - non-null pointer to the new point vector.
  *
  * Returns:
  * - `BOINK_OK` on success.
- * - `BOINK_ERR_INVALID_ARG` if `position` is null.
+ * - `BOINK_ERR_INVALID_ARG` if `point` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
  * - Another error code for other failures.
  */
-BOINK_API int boink_set_track_position(BoinkHandle h, const struct BoinkVec3 *position);
+BOINK_API int boink_set_vehicle_before_point(
+                              BoinkHandle handle,
+                              uint64_t vehicle_id,
+                              const struct BoinkVec3* point);
+
+/**
+ * Sets the world-space position of a vehicle to a point before the finish line.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_before_finish_line(BoinkHandle h,
+                                      uint64_t vehicle_id);
+
+/**
+ * Sets the world-space position of a vehicle to a random point.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_random_pos(BoinkHandle h,
+                                      uint64_t vehicle_id);
+
+/**
+ * Sets the world-space orientation of a vehicle.
+ *
+ * This immediately updates the specified vehicle's orientation in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to rotate.
+ * - `orientation` - non-null pointer to the new orientation quaternion.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `orientation` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_orientation(BoinkHandle h,
+                                         uint64_t vehicle_id,
+                                         const struct BoinkQuaternion *orientation);
+
+/**
+ * Sets the world-space position of a vehicle.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ * - `position_index` - index to starting positions from 1 to max_starting postions
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `h` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist or the position index does not exist
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_at_start_pos(BoinkHandle h,
+                                      uint64_t vehicle_id,
+                                      uint64_t position_index);
+
+/**
+ * Sets the desired driver controls for the specified vehicle.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `out_number_pos` - non-null pointer that receives number of available starting positions.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `h` or `out_number_pos` is null.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_get_number_of_start_pos(BoinkHandle h,
+                                      uint64_t* out_number_pos);
 
 /**
  * Reads the current state of the specified vehicle.
@@ -744,6 +927,24 @@ BOINK_API int boink_set_track_position(BoinkHandle h, const struct BoinkVec3 *po
 BOINK_API int boink_read_vehicle_state(BoinkHandle h,
                                     uint64_t vehicle_id,
                                     struct BoinkVehicleState *out_state);
+
+/**
+ * Reads runtime ghost mode state for the specified vehicle.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle whose ghost-mode state is requested.
+ * - `out_state` - non-null pointer that receives the ghost-mode runtime state.
+ *
+ * Returns:
+ * - `BOINK_OK` on success and writes the state to `*out_state`.
+ * - `BOINK_ERR_INVALID_ARG` if `out_state` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_read_vehicle_ghost_mode_state(BoinkHandle h,
+                                               uint64_t vehicle_id,
+                                               struct BoinkGhostModeRuntimeState *out_state);
 
 /**
  * Sets global weather parameters used by the simulation engine.

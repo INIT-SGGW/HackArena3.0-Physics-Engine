@@ -10,6 +10,7 @@
 #include "boink/simulators/simulator.h"
 #include "boink/gui/simulation_gui.h"
 #include "boink/debugger/debugger.h"
+#include "boink/constants.h"
 
 #include <memory>
 #include <piksel/gui_object.hh>
@@ -42,9 +43,9 @@ namespace boink
 
     virtual int update(
         btScalar dt,
-        int max_sub_steps=15,
-        btScalar fixed_delta_time=1.f/120.f,
-        btScalar max_delta_time=0.1);
+        int max_sub_steps=g_MaxSubSteps,
+        btScalar fixed_delta_time=g_FixedDeltaTime,
+        btScalar max_delta_time=g_MaxDeltaTime);
     virtual void updateDebug();
   protected:
     std::shared_ptr<btDiscreteDynamicsWorld> getDynamicsWorld() 

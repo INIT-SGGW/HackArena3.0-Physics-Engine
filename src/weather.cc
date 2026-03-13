@@ -88,9 +88,9 @@ namespace boink
   const Weather Weather::Rainy{1,20,0.5};
   const Weather Weather::HeavyRainy{1,20,1.0};
 
-  btScalar Weather::s_kSunFactorConstant=0.02f;
-  btScalar Weather::s_kTempRateConstant=0.06f;
-  btScalar Weather::s_kCloundinessRateConstant=0.04f;
-  btScalar Weather::s_kRainAddConstant=0.7f;
+  btScalar Weather::s_kSunFactorConstant=0.41f;
+  btScalar Weather::s_kTempRateConstant=0.21f;
+  btScalar Weather::s_kCloundinessRateConstant=0.00f;
+  btScalar Weather::s_kRainAddConstant=0.73f;
   btScalar Weather::s_kWetnessSpeedConstant=0.15f;
 }

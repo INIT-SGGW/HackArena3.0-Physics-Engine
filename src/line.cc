@@ -5,10 +5,17 @@
 #include <unordered_set>
 
 #include "boink/exception.h"
+#include "boink/utility.h"
 
 namespace boink {
 
-Line::Line(const std::vector<btVector3>& points) : points_dist_(points.size()) {
+Line::Line(
+    const std::vector<btVector3>& points,
+    bool is_line_closed) 
+  : 
+    points_dist_(points.size()),
+    is_line_closed_(is_line_closed)
+{
   if (points.size() < 2)
     throw Exception(Exception::Type::InvalidArgumentError,
                     "The vector of given points is lesser than 2");
@@ -60,7 +67,7 @@ Line::Line(const std::vector<btVector3>& points) : points_dist_(points.size()) {
     if (seen.insert(index).second) {
       length += (points[index] - points[prev_index]).length();
 
-      assert(length > 1e-6 || i == 0);
+      //assert(length > 1e-6 || i == 0);
       points_dist_[i] = {points[index], length};
       prev_index = index;
     }
@@ -96,9 +103,12 @@ btScalar Line::getCoverage(const btVector3& point) const {
   }
 
   // if are the first and last points
-  if (first_i == 0 && second_i == this->getPointsSize() - 1) {
-    first_i = second_i;
-    second_i = 0;
+  if(is_line_closed_)
+  {
+    if (first_i == 0 && second_i == this->getPointsSize() - 1) {
+      first_i = second_i;
+      second_i = 0;
+    }
   }
   assert(first_i != second_i);
 
@@ -116,88 +126,186 @@ btScalar Line::getCoverage(const btVector3& point) const {
 
 std::pair<size_t,btScalar> Line::getClosestIndex(
       const btVector3& point) const
+{
+  size_t closest_i=0;
+  btScalar closest_dist2=(points_dist_[closest_i].first-point).length2();
+  for(size_t i=1;i<points_dist_.size();i++)
   {
-    size_t closest_i=0;
-    btScalar closest_dist2=(points_dist_[closest_i].first-point).length2();
-    for(size_t i=1;i<points_dist_.size();i++)
+    btScalar curr_len2=(points_dist_[i].first-point).length2();
+    if(curr_len2<closest_dist2)
     {
-      btScalar curr_len2=(points_dist_[i].first-point).length2();
-      if(curr_len2<closest_dist2)
-      {
-        closest_dist2=curr_len2;
-        closest_i=i;
-      }
-    }
-
-    return {closest_i,btSqrt(closest_dist2)};
-  }
-
-  std::pair<size_t,btScalar> Line::getIthClosestIndex(
-      const btVector3& point, size_t ith) const
-  {
-    assert(points_dist_.size()>ith);
-
-    std::vector<size_t> closest_is;
-    btScalar ith_closest_dist2=0;
-    size_t ith_closest_i;
-    for(size_t i=0;i<ith;i++)
-    {
-      ith_closest_i=0;
-      while(std::find(closest_is.begin(),closest_is.end(),ith_closest_i)
-          !=closest_is.end())
-      {
-        ith_closest_i++;
-        assert(ith_closest_i<points_dist_.size());
-      }
-      ith_closest_dist2=(this->getPoint(ith_closest_i)-point).length2();
-      
-      for(size_t j=0;j<points_dist_.size();j++)
-      {
-        if(std::find(closest_is.begin(),closest_is.end(),j)!=closest_is.end())
-        {
-          continue;
-        }
-
-        btScalar curr_len2=(this->getPoint(j)-point).length2();
-        if(curr_len2<ith_closest_dist2)
-        {
-          ith_closest_dist2=curr_len2;
-          ith_closest_i=j;
-        }
-      }
-      closest_is.push_back(ith_closest_i);
-    }
-
-    return {ith_closest_i,btSqrt(ith_closest_dist2)};
-  }
-
-  void Line::reverse()
-  {
-    std::reverse(points_dist_.begin(),points_dist_.end());
-    auto last_data=points_dist_[points_dist_.size()-1];
-    points_dist_.pop_back();
-    points_dist_.insert(points_dist_.begin(),last_data);
-
-    // and know we neeed to update distance :(
-    btScalar lenght=0.0f;
-    btVector3 prev=points_dist_[0].first;
-    for(size_t i=0;i<points_dist_.size();i++)
-    {
-      lenght+=(points_dist_[i].first-prev).length();
-      points_dist_[i].second=lenght;
-
-      prev=points_dist_[i].first;
+      closest_dist2=curr_len2;
+      closest_i=i;
     }
   }
 
-  btVector3& Line::getPoint(size_t index)
+  return {closest_i,btSqrt(closest_dist2)};
+}
+
+
+std::pair<size_t,btScalar> Line::getIthClosestIndex(
+    const btVector3& point, size_t ith) const
+{
+  assert(points_dist_.size()>ith);
+
+  std::vector<size_t> closest_is;
+  btScalar ith_closest_dist2=0;
+  size_t ith_closest_i;
+  for(size_t i=0;i<ith;i++)
   {
-    return points_dist_[index].first;
+    ith_closest_i=0;
+    while(std::find(closest_is.begin(),closest_is.end(),ith_closest_i)
+        !=closest_is.end())
+    {
+      ith_closest_i++;
+      assert(ith_closest_i<points_dist_.size());
+    }
+    ith_closest_dist2=(this->getPoint(ith_closest_i)-point).length2();
+    
+    for(size_t j=0;j<points_dist_.size();j++)
+    {
+      if(std::find(closest_is.begin(),closest_is.end(),j)!=closest_is.end())
+      {
+        continue;
+      }
+
+      btScalar curr_len2=(this->getPoint(j)-point).length2();
+      if(curr_len2<ith_closest_dist2)
+      {
+        ith_closest_dist2=curr_len2;
+        ith_closest_i=j;
+      }
+    }
+    closest_is.push_back(ith_closest_i);
   }
 
-  const btVector3& Line::getPoint(size_t index) const
+  return {ith_closest_i,btSqrt(ith_closest_dist2)};
+}
+
+void Line::reverse()
+{
+  std::reverse(points_dist_.begin(),points_dist_.end());
+  auto last_data=points_dist_[points_dist_.size()-1];
+  points_dist_.pop_back();
+  points_dist_.insert(points_dist_.begin(),last_data);
+
+  // and know we neeed to update distance :(
+  btScalar lenght=0.0f;
+  btVector3 prev=points_dist_[0].first;
+  for(size_t i=0;i<points_dist_.size();i++)
   {
-    return points_dist_.at(index).first;
+    lenght+=(points_dist_[i].first-prev).length();
+    points_dist_[i].second=lenght;
+
+    prev=points_dist_[i].first;
+  }
+}
+
+btVector3& Line::getPoint(size_t index)
+{
+  btAssert(index<points_dist_.size());
+
+  return points_dist_[index].first;
+}
+
+const btVector3& Line::getPoint(size_t index) const
+{
+  return points_dist_.at(index).first;
+}
+
+std::pair<btVector3,btScalar> Line::getRayLineIntersection(
+    btVector3 ray_dir,
+    btVector3 ray_start,
+    btVector3 normal,
+    btScalar epsilon) const
+{
+  btScalar t_closest=FLT_MAX;
+  btVector3 point_closest;
+  for(size_t i=0;i<points_dist_.size()-1;i++)
+  {
+    auto ray_info=math::getRayLineInterscetion(
+        ray_dir,
+        ray_start,
+        normal,
+        points_dist_[i].first,
+        points_dist_[i+1].first,
+        epsilon);
+
+    if(!ray_info.has_value())
+      continue;
+
+    auto [point,t,u]=ray_info.value();
+
+    if(u<0.f||u>1.f)
+      continue;
+
+    if(t<0.f)
+      continue;
+
+    if(t<t_closest)
+    {
+      point_closest=point;
+      t_closest=t;
+    }
   }
 
+  if(is_line_closed_)
+  {
+    auto ray_info=math::getRayLineInterscetion(
+        ray_dir,
+        ray_start,
+        normal,
+        points_dist_[points_dist_.size()-1].first,
+        points_dist_[0].first,
+        epsilon);
+
+    if(!ray_info.has_value())
+      return {point_closest,t_closest};
+
+    auto [point,t,u]=ray_info.value();
+
+    if(u<0.f||u>1.f)
+      return {point_closest,t_closest};
+
+    if(t<0.f)
+      return {point_closest,t_closest};
+
+    if(t<t_closest)
+    {
+      point_closest=point;
+      t_closest=t;
+    }
+  }
+
+  return {point_closest,t_closest};
+
+}
+
+Line Line::createLine(const GltfExtractor& extractor,std::string_view name)
+{
+  auto& line_node=extractor.getNode(name);
+  if(line_node.type!=TINYGLTF_MODE_LINE)
+    throw Exception(
+        Exception::Type::UnsupportedFormatError,
+        "Line mesh unsupported mode. Use lines mode for line mesh.");
+
+  auto& line_vertices=line_node.vertices;
+  auto& line_indices=line_node.indices;
+  if(line_vertices.size()==0 || line_indices.size()==0)
+    throw Exception(
+        Exception::Type::InvalidArgumentError,
+        "Line mesh is empty.");
+
+  std::vector<btVector3> points;
+  points.reserve(line_indices.size());
+
+  for(size_t i=0;i<line_indices.size();i++)
+    points.push_back(line_vertices[line_indices[i]]);
+
+  // Add last point
+  //points.push_back(
+  //    line_vertices[line_indices[line_indices.size()-1]]);
+  
+  return Line(std::move(points));
+}
 }  // namespace boink

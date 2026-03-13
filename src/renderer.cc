@@ -50,12 +50,28 @@ namespace boink
     gfx_.addDrawable(drawable);
   }
 
+  void Renderer::drawPoint(
+      const btVector3& point,
+      const btVector3& color,
+      const btVector3& dir0,
+      const btVector3& dir1)
+  {
+      this->drawLine(
+          point,
+          point+dir0,
+          color);
+      this->drawLine(
+          point,
+          point+dir1,
+          color);
+  }
+
   void Renderer::drawLine(
         const btVector3& from,
         const btVector3& to,
         const btVector3& color)
   {
-    gfx_.drawLine(piksel::Line{bt2glm(from),bt2glm(to),bt2glm(color)});
+    gfx_.drawLine(piksel::Line{math::bt2glm(from),math::bt2glm(to),math::bt2glm(color)});
   }
 
   void Renderer::drawContactPoint(

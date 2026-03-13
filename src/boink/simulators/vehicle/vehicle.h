@@ -20,6 +20,7 @@
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/ghost_mode.h"
+#include "boink/simulators/vehicle/lap_info.h"
 
 namespace boink
 {
@@ -38,6 +39,14 @@ class Vehicle : public Simulator
       btVector3 center_of_mass;
       RaycastVehicle::VehicleTuning tuning;
       WheelInfo::TyreType tyre_type;
+    };
+
+    struct BoundingBox
+    {
+      btVector3 top_left;
+      btVector3 top_right;
+      btVector3 bottom_left;
+      btVector3 bottom_right;
     };
     
     enum class TurnDirection
@@ -65,6 +74,7 @@ class Vehicle : public Simulator
         std::shared_ptr<const Track> track,
         std::shared_ptr<btDynamicsWorld> world);
 
+    // Implementation must be done with care.
     Vehicle(const Vehicle&)=delete;
     Vehicle& operator=(const Vehicle&)=delete;
 
@@ -79,13 +89,12 @@ class Vehicle : public Simulator
     void updateRender(Renderer* renderer) override;
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
-    void setPosition(const btVector3& position);
+    void setChassisWorldTransform(const btTransform& transform);
 
-    int getLapsCompleted() const {return laps_completed_;}
-    btScalar getCurrentLapDistanceCovered() const {return curr_lap_dist_point_;}
+    const LapInfo& getLapInfo() const {return lap_info_;}
 
-    btTransform getWorldTransform() const;
     btTransform getChassisWorldTransform() const;
+    btScalar getChassisToGroundDist() const;
 
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
     btScalar getEngineRPM() const;
@@ -124,6 +133,16 @@ class Vehicle : public Simulator
     void enableGhostSim(const GhostModeSettings& ghost_setttings);
     void disableGhostSim();
     bool isInGhostMode() const {return ghost_info_.enabled;}
+
+    const GhostMode& getGhostMode() const {return ghost_sim_;}
+    BoundingBox getBoundingDims() const { return bounding_dimensions_;}
+    
+    /**
+     * @brief Resets all speeds, forces, interpolation of a vehicle.
+     */
+    void reset();
+  private:
+    void updateLapInfo(btScalar dt);
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -133,13 +152,15 @@ class Vehicle : public Simulator
         btCompoundShape* col_shape,
         btMotionState* motion_state,
         btScalar mass);
+
+    static BoundingBox getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
 
     btVector3 center_of_mass_;
 
-    std::unique_ptr<btCompoundShape> collision_shape_;
+    std::shared_ptr<btCompoundShape> collision_shape_;
     std::unique_ptr<btMotionState> motion_state_;
     std::unique_ptr<btRigidBody> rigidbody_;
     std::unique_ptr<VehicleRaycaster> raycaster_;
@@ -150,11 +171,14 @@ class Vehicle : public Simulator
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     
-    int laps_completed_;
-    btScalar curr_lap_dist_point_;
+    //int laps_completed_;
+    //btScalar curr_lap_dist_point_;
+    LapInfo lap_info_;
 
     GhostModeInfo ghost_info_;
     GhostMode ghost_sim_;
+
+    BoundingBox bounding_dimensions_;
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;

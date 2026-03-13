@@ -5,6 +5,7 @@
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/debugger/controller.h"
 #include "boink/simulators/weather.h"
+#include "boink/constants.h"
 
 #include <string_view>
 #include <unordered_map>
@@ -22,9 +23,9 @@ namespace boink
     ~Race() ;
     int update(
         btScalar dt,
-        int max_sub_steps=15,
-        btScalar fixed_delta_time=1.f/120.f,
-        btScalar max_delta_time=0.1) override;
+        int max_sub_steps=g_MaxSubSteps,
+        btScalar fixed_delta_time=g_FixedDeltaTime,
+        btScalar max_delta_time=g_MaxDeltaTime) override;
     void updateDebug() override;
 
     std::shared_ptr<Track> getTrack();

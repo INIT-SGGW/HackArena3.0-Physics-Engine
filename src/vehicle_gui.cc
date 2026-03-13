@@ -2,10 +2,13 @@
 
 #include <imgui.h>
 
+#include "boink/bullet_user_data.h"
 #include "boink/gui/ghost_gui.h"
+#include "boink/simulators/track/ground.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/exception.h"
 
 namespace boink
 {
@@ -20,25 +23,16 @@ namespace boink
     if(p_vehicle_==nullptr)
       return;
 
-    RaycastVehicle::VehicleTuning* tunning=&p_vehicle_->tuning_;
 
     ImGui::Checkbox("Mesh enabled",&mesh_enabled);
     ImGui::Checkbox("Collider enabled",&collider_enabled);
     ImGui::Text("In ghost mode: %s",
         p_vehicle_->ghost_info_.enabled?"true":"false");
 
-    ImGui::SliderFloat(
-        "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
-    ImGui::SliderFloat(
-        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,100000.f);
-    ImGui::SliderFloat(
-        "Max suspension travel",&tunning->m_maxSuspensionTravelCm,0.f,20.f);
-    ImGui::SliderFloat(
-        "Suspension compression",&tunning->m_suspensionCompression,0.f,100.f);
-    ImGui::SliderFloat(
-        "Suspension damping",&tunning->m_suspensionDamping,0.f,100.f);
-    ImGui::SliderFloat(
-        "Suspension stifness",&tunning->m_suspensionStiffness,0.f,100.f);
+
+    if(ImGui::CollapsingHeader("Tuning"))
+      drawTuning();
+
 
     // TODO IMPROVEMENT
     // this can be improved via usage of slider values but
@@ -46,9 +40,16 @@ namespace boink
     // changed
     p_vehicle_->setTuning(p_vehicle_->tuning_);
 
-    ImGui::Text("Laps completed: %d",p_vehicle_->getLapsCompleted());
-    ImGui::Text("Current lap coverage: %.2f [m]",
-        p_vehicle_->getCurrentLapDistanceCovered());
+    if(ImGui::CollapsingHeader("LapInfo"))
+    {
+      const auto& lap_info=p_vehicle_->getLapInfo();
+
+      ImGui::Text("Laps completed: %d",lap_info.laps_completed);
+      ImGui::Text("Current lap coverage: %.2f [m]",
+          lap_info.curr_lap_coverage);
+      ImGui::Text("Current lap time: %.2f [s]",
+          lap_info.curr_lap_time);
+    }
     btVector3 chassis_position=
       p_vehicle_->getChassisWorldTransform().getOrigin();
     ImGui::Text("Chassis position: (%.2f,%.2f,%.2f) [m]",
@@ -62,20 +63,8 @@ namespace boink
     if(ImGui::CollapsingHeader(ghost_gui_.getTitle().data()))
       ghost_gui_.draw();
 
-    ImGui::SliderFloat(
-        "Wear rate soft",&WheelInfo::TyreInfo::s_softWearRatePerMin,0.f,0.1f);
-    ImGui::SliderFloat(
-        "Wear rate hard",&WheelInfo::TyreInfo::s_hardWearRatePerMin,0.f,0.1f);
-    ImGui::SliderFloat(
-        "Wear rate wet",&WheelInfo::TyreInfo::s_wetWearRatePerMin,0.f,0.1f);
-
-    ImGui::SliderFloat("Slip ratio temp const",
-        &WheelInfo::TyreInfo::s_slipRatioTempConstant,0.f,0.5f);
-    ImGui::SliderFloat("Wheel speed temp const",
-        &WheelInfo::TyreInfo::s_angularSpeedTempConstant,0.f,0.1f);
-
-    ImGui::SliderFloat("Wheel speed temp cooling const",
-        &WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst,0.f,0.1f);
+    if(ImGui::CollapsingHeader("Tyres"))
+      drawTyres();
 
     for(int i=0;i<(int)WheelPosition::Count;i++)
     {
@@ -90,6 +79,41 @@ namespace boink
 
       ImGui::PopID();
     }
+  }
+
+  void VehicleGui::drawTuning()
+  {
+    RaycastVehicle::VehicleTuning* tunning=&p_vehicle_->tuning_;
+    ImGui::SliderFloat(
+        "Friction slip",&tunning->m_frictionSlip,0.f,10.f);
+    ImGui::SliderFloat(
+        "Max suspension force",&tunning->m_maxSuspensionForce,0.f,100000.f);
+    ImGui::SliderFloat(
+        "Max suspension travel",&tunning->m_maxSuspensionTravelCm,0.f,20.f);
+    ImGui::SliderFloat(
+        "Suspension compression",&tunning->m_suspensionCompression,0.f,100.f);
+    ImGui::SliderFloat(
+        "Suspension damping",&tunning->m_suspensionDamping,0.f,100.f);
+    ImGui::SliderFloat(
+        "Suspension stifness",&tunning->m_suspensionStiffness,0.f,100.f);
+  }
+
+  void VehicleGui::drawTyres()
+  {
+    ImGui::SliderFloat(
+        "Wear rate soft",&WheelInfo::TyreInfo::s_softWearRatePerMin,0.f,0.1f);
+    ImGui::SliderFloat(
+        "Wear rate hard",&WheelInfo::TyreInfo::s_hardWearRatePerMin,0.f,0.1f);
+    ImGui::SliderFloat(
+        "Wear rate wet",&WheelInfo::TyreInfo::s_wetWearRatePerMin,0.f,0.1f);
+
+    ImGui::SliderFloat("Slip ratio temp const",
+        &WheelInfo::TyreInfo::s_slipRatioTempConstant,0.f,0.5f);
+    ImGui::SliderFloat("Wheel speed temp const",
+        &WheelInfo::TyreInfo::s_angularSpeedTempConstant,0.f,0.1f);
+
+    ImGui::SliderFloat("Wheel speed temp cooling const",
+        &WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst,0.f,0.1f);
   }
 
   void VehicleGui::drawWheel(WheelPosition pos)
@@ -110,6 +134,30 @@ namespace boink
         info.m_tyreInfo.m_health);
     ImGui::Text("Tyre temp: %.2f [C]",
         info.m_tyreInfo.m_tempCelsius);
+
+    btRigidBody* body=info.m_raycastInfo.m_groundObject;
+    if(body)
+    {
+      BulletUserData* user_data=
+        reinterpret_cast<BulletUserData*>(body->getUserPointer());
+      if(user_data&&user_data->getType()==BulletUserData::Type::Ground)
+      {
+        Ground::UserData* ground_info=
+          reinterpret_cast<Ground::UserData*>(user_data);
+        auto* sur_info=ground_info->p_surface_info;
+        if(!sur_info)
+          throw Exception(
+              Exception::Type::InternalError,
+              "Pointer was null");
+
+        if(ImGui::CollapsingHeader(Ground::toString(sur_info->type)))
+        {
+          ImGui::Text("Resistive coef: %f",sur_info->resistive_coef);
+          ImGui::Text("Rolling resit: %f",sur_info->rolling_resistance);
+          ImGui::Text("Wetness: %f",sur_info->wetness);
+        }
+      }
+    }
   }
 
   const char* tyreTypeToStr(WheelInfo::TyreType type)

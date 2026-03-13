@@ -78,34 +78,45 @@ namespace boink
 
     btVector3 scale=getNodeScale(node);
     
-    if(node.mesh<0)
-      return;
-
-    const tinygltf::Mesh& mesh=model_.meshes[node.mesh];
-    
-    for(const auto& primitive:mesh.primitives)
+    if(node.mesh>=0)
     {
-      if(primitive.mode!=TINYGLTF_MODE_TRIANGLES &&
-          primitive.mode !=TINYGLTF_MODE_LINE)
-        throw Exception(
-            Exception::Type::UnsupportedFormatError,
-            "Triangles and line modes are only supported.");
-
-      new_node.type=primitive.mode;
+      const tinygltf::Mesh& mesh=model_.meshes[node.mesh];
       
-      auto it_pos_index=primitive.attributes.find("POSITION");
-      if(it_pos_index==primitive.attributes.end())
-        throw Exception(
-            Exception::Type::UnsupportedFormatError,
-            "POSITION attribiute not found.");
-      int pos_index=it_pos_index->second;
+      for(const auto& primitive:mesh.primitives)
+      {
+        if(primitive.mode!=TINYGLTF_MODE_TRIANGLES &&
+            primitive.mode !=TINYGLTF_MODE_LINE)
+          throw Exception(
+              Exception::Type::UnsupportedFormatError,
+              "Triangles and line modes are only supported.");
 
-      uint32_t base_vertex = static_cast<uint32_t>(new_node.vertices.size());
-      loadVertices(model_.accessors.at(pos_index),new_node,scale);
-      loadIndices(model_.accessors.at(primitive.indices),new_node,base_vertex);
+        //int material=primitive.material;
+        //if(material!=-1)
+        //{
+        //  std::cout<<"\tMaterial: "<<model_.materials[material].name;
+        //  std::cout<<"\n\tExtra: "<<model_.materials[material].extras_json_string;
+        //  std::cout<<"\n\n";
+        //}
+
+        new_node.type=primitive.mode;
+        
+        auto it_pos_index=primitive.attributes.find("POSITION");
+        if(it_pos_index==primitive.attributes.end())
+          throw Exception(
+              Exception::Type::UnsupportedFormatError,
+              "POSITION attribiute not found.");
+        int pos_index=it_pos_index->second;
+
+        uint32_t base_vertex = static_cast<uint32_t>(new_node.vertices.size());
+        loadVertices(model_.accessors.at(pos_index),new_node,scale);
+        loadIndices(model_.accessors.at(primitive.indices),new_node,base_vertex);
+      }
     }
 
     nodes_.push_back(std::move(new_node));
+
+    //std::cout<<"Name: "<<node.name<<std::endl;
+    //std::cout<<"\ttype: "<<node.<<std::endl;
 
     for(auto index:node.children)
       bindNode(model_.nodes[index],transform);

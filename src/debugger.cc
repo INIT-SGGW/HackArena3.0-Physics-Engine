@@ -5,6 +5,7 @@
 
 #include "boink/utility.h"
 #include "boink/debugger/camera_controller.h"
+#include "boink/gui/debugger_gui.h"
 
 #include <algorithm>
 
@@ -16,22 +17,17 @@ namespace boink
       const btVector3& camera_target)
     :
       wnd_(title.data()),
-      cam_(bt2glm(camera_position),bt2glm(camera_target)),
+      cam_(math::bt2glm(camera_position),math::bt2glm(camera_target)),
       renderer_(wnd_,cam_),
       gui_manager_(wnd_.getGLFWPointer()),
-      gui_(std::make_shared<DebuggerGui>()),
       default_controller_(std::make_shared<CameraController>()),
-      fps_(0.f)
+      fps_(0.f),
+      gui_(std::make_shared<DebuggerGui>(this))
   {
     cam_.setMovementSpeed(5.f);
     cam_.setRotationSpeed(0.3f);
     mouse_speed_=cam_.getRotationSpeed();
     cam_speed_=cam_.getMovementSpeed();
-
-    gui_->camera_speed=&cam_speed_;
-    gui_->mouse_speed=&mouse_speed_;
-    gui_->fps=&fps_;
-    gui_->selected_controller=&selected_controller_;
 
     gui_manager_.addObject(gui_);
   }
@@ -55,7 +51,8 @@ namespace boink
     this->calculateFramerate(dt);
 
     this->handleWindowClose();
-    this->updateController(dt);
+    this->updateController(selected_controller_,dt);
+    this->updateController(selected_controller_2_,dt);
 
     renderer_.render();
     gui_manager_.render();
@@ -90,9 +87,9 @@ namespace boink
       wnd_.close();
   }
 
-  void Debugger::updateController(float dt)
+  void Debugger::updateController(int selected,float dt)
   {
-    if(selected_controller_==-1 &&
+    if(selected==-1 &&
         wnd_.getKey(GLFW_KEY_LEFT_SHIFT)!=piksel::Window::KeyState::Press)
     {
       gui_manager_.ignoreInput();
@@ -104,10 +101,9 @@ namespace boink
       wnd_.setCursor();
       default_controller_->updateMouse(wnd_);
 
-      if(selected_controller_==-1)
+      if(selected==-1)
         return;
 
-      int selected=selected_controller_;
       auto it=std::find_if(controllers_.begin(),controllers_.end(),
           [=](const auto& p)
           {

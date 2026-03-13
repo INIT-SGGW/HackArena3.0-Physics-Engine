@@ -17,6 +17,8 @@ namespace boink
     std::string_view getTitle() const override { return "Vehicle";}
     void draw() override;
   private:
+    void drawTuning();
+    void drawTyres();
     void drawWheel(WheelPosition pos);
   public:
     bool mesh_enabled=true;
