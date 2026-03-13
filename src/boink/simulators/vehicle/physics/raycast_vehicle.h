@@ -71,8 +71,6 @@ class RaycastVehicle : public btActionInterface
 
   btScalar getSteeringValue(int wheel) const;
   void setSteeringValue(btScalar steering, int wheel);
-  // TO DELETE
-  // void applyEngineForce(btScalar force, int wheel);
   void setBrake(btScalar brake);
 
   btScalar rayCast(WheelInfo& wheel);
@@ -123,8 +121,6 @@ class RaycastVehicle : public btActionInterface
   inline int getRightAxis() const { return m_indexRightAxis; }
   inline int getUpAxis() const { return m_indexUpAxis; }
   inline int getForwardAxis() const { return m_indexForwardAxis; }
-
-  btVector3 getForwardVector() const;
 
   btScalar getEngineRPM() const;
   int getCurrentGear() const;
