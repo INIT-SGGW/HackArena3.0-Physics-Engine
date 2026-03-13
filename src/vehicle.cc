@@ -347,13 +347,7 @@ void Vehicle::setEngineForce(btScalar force) { vehicle_->m_throttle = force; }
 
 void Vehicle::setBrake(btScalar brake)
 {
-  // TODO
-  // Make it much smarter
-  brake*=100.;
-  vehicle_->setBrake(brake, (int)WheelPosition::RearLeft);
-  vehicle_->setBrake(brake, (int)WheelPosition::RearRight);
-  vehicle_->setBrake(brake, (int)WheelPosition::FrontLeft);
-  vehicle_->setBrake(brake, (int)WheelPosition::FrontRight);
+  vehicle_->setBrake(brake);
 }
 
 bool Vehicle::setGearDown() { return vehicle_->setGearDown(); }
