@@ -20,6 +20,7 @@
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/ghost_mode.h"
+#include "boink/simulators/vehicle/lap_info.h"
 
 namespace boink
 {
@@ -90,8 +91,7 @@ class Vehicle : public Simulator
 
     void setChassisWorldTransform(const btTransform& transform);
 
-    int getLapsCompleted() const {return laps_completed_;}
-    btScalar getCurrentLapDistanceCovered() const {return curr_lap_dist_point_;}
+    const LapInfo& getLapInfo() const {return lap_info_;}
 
     btTransform getChassisWorldTransform() const;
     btScalar getChassisToGroundDist() const;
@@ -142,6 +142,8 @@ class Vehicle : public Simulator
      */
     void reset();
   private:
+    void updateLapInfo(btScalar dt);
+  private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
         const std::vector<btVector3>& vertices,
@@ -169,8 +171,9 @@ class Vehicle : public Simulator
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     
-    int laps_completed_;
-    btScalar curr_lap_dist_point_;
+    //int laps_completed_;
+    //btScalar curr_lap_dist_point_;
+    LapInfo lap_info_;
 
     GhostModeInfo ghost_info_;
     GhostMode ghost_sim_;

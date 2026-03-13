@@ -37,9 +37,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       track_(track),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
-      laps_completed_(0),
-      curr_lap_dist_point_(0.f),
-      ghost_sim_(world_.get(),vehicle_.get(),&laps_completed_),
+      ghost_sim_(world_.get(),vehicle_.get(),&lap_info_.laps_completed),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
@@ -104,6 +102,9 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
   this->setTuning(tuning_);
 
   bounding_dimensions_=getBoundingDims(collision_shape_);
+
+  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
+  lap_info_.curr_lap_coverage=track_->getCenterline().getCoverage(vehicle_pos);
 }
 
 Vehicle::~Vehicle() noexcept
@@ -126,13 +127,20 @@ Vehicle::~Vehicle() noexcept
 
 void Vehicle::update(btScalar dt)
 {
-  (void)dt;
+  this->updateLapInfo(dt);
+
+  ghost_sim_.update(dt);
+  ghost_info_.enabled=ghost_sim_.isInGhostMode();
+}
+
+void Vehicle::updateLapInfo(btScalar dt)
+{
   btScalar track_length = track_->getCenterline().getLength();
 
-  int curr_laps_completed = this->getLapsCompleted();
+  int curr_laps_completed = lap_info_.laps_completed;
 
   const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
-  btScalar prev_coverage = this->getCurrentLapDistanceCovered();
+  btScalar prev_coverage = lap_info_.curr_lap_coverage;
   btScalar curr_coverage = track_->getCenterline().getCoverage(vehicle_pos);
 
   btScalar v = curr_coverage - prev_coverage;
@@ -142,14 +150,31 @@ void Vehicle::update(btScalar dt)
     if (v > 0)
       curr_laps_completed--;
     else
+    {
+      // Only here we calculate the time
+      btScalar curr_distance=track_length+v;
+      btAssert(curr_distance>=0.f);
+      // First update old time
+      lap_info_.curr_lap_time+=dt*(track_length-prev_coverage)/curr_distance;
+
+      // Vehicle can ride this multiple times so we only save the first one
+      if(curr_laps_completed>=LapInfo::kStartingLap&&
+          lap_info_.lap_times_history.try_emplace(
+          curr_laps_completed,lap_info_.curr_lap_time).second)
+        lap_info_.curr_lap_time=0;
+
       curr_laps_completed++;
+
+      // Update dt we need to short it
+      dt=dt*(curr_coverage/curr_distance);
+    }
   }
+  
+  btAssert(dt>=0);
+  lap_info_.curr_lap_time+=dt;
 
-  laps_completed_ = curr_laps_completed;
-  curr_lap_dist_point_ = curr_coverage;
-
-  ghost_sim_.update(dt);
-  ghost_info_.enabled=ghost_sim_.isInGhostMode();
+  lap_info_.laps_completed = curr_laps_completed;
+  lap_info_.curr_lap_coverage = curr_coverage;
 }
 
 void Vehicle::updateRender(Renderer* renderer)

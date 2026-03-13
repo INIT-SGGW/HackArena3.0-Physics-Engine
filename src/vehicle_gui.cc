@@ -40,9 +40,16 @@ namespace boink
     // changed
     p_vehicle_->setTuning(p_vehicle_->tuning_);
 
-    ImGui::Text("Laps completed: %d",p_vehicle_->getLapsCompleted());
-    ImGui::Text("Current lap coverage: %.2f [m]",
-        p_vehicle_->getCurrentLapDistanceCovered());
+    if(ImGui::CollapsingHeader("LapInfo"))
+    {
+      const auto& lap_info=p_vehicle_->getLapInfo();
+
+      ImGui::Text("Laps completed: %d",lap_info.laps_completed);
+      ImGui::Text("Current lap coverage: %.2f [m]",
+          lap_info.curr_lap_coverage);
+      ImGui::Text("Current lap time: %.2f [s]",
+          lap_info.curr_lap_time);
+    }
     btVector3 chassis_position=
       p_vehicle_->getChassisWorldTransform().getOrigin();
     ImGui::Text("Chassis position: (%.2f,%.2f,%.2f) [m]",
