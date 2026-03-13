@@ -69,25 +69,42 @@ namespace boink
   btVector3 Track::getOnTrackRandomPosition() const
   {
     std::random_device rd;
-    std::mt19937 gen(rd());
+    static std::mt19937 gen(rd());
 
     std::uniform_int_distribution<size_t> dist(0,centerline_.getPointsSize()-1);
     size_t random_index=dist(gen);
-    return centerline_.getPoint(random_index);
+
+    btAssert(random_index<track_data_.size());
+    if(random_index>track_data_.size())
+      return centerline_.getPoint(random_index);
+
+    const auto& sample=track_data_.at(random_index);
+    btAssert((sample.position-centerline_.getPoint(random_index)).length2()<g_Epsilon);
+
+    // TODO
+    std::uniform_real_distribution<btScalar> real_dist(0.0f,1.f);
+    btScalar random_left_width=real_dist(gen)*sample.left_width;
+    //btScalar random_left_width=0.0;
+    btScalar random_right_width=real_dist(gen)*sample.right_width;
+
+    btVector3 offset=sample.right*(random_right_width-random_left_width);
+    btVector3 random_point=centerline_.getPoint(random_index);
+
+    return random_point+offset;
   }
 
-  btVector3 Track::getForwardDirection(const btVector3& point) const
+  Track::SampleData Track::getClosestTrackSample(const btVector3& point) const
   {
     size_t index=centerline_.getClosestIndex(point).first;
     
     btAssert(index<track_data_.size());
     if(index>track_data_.size())
-      return g_Forward;
+      return track_data_.at(0);;
 
     const auto& sample=track_data_.at(index);
     btAssert((sample.position-centerline_.getPoint(index)).length2()<g_Epsilon);
 
-    return sample.tangent;
+    return sample;
   }
 
   void Track::initSurfaceInfos()

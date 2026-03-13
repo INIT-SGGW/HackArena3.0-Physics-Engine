@@ -11,4 +11,5 @@ namespace boink
   extern const btScalar g_FixedDeltaTime;
   extern const btScalar g_MaxDeltaTime;
   extern const btScalar g_Epsilon;
+  extern const btScalar g_GroundMargin;
 }

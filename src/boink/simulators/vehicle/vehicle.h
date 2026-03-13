@@ -40,11 +40,12 @@ class Vehicle : public Simulator
       WheelInfo::TyreType tyre_type;
     };
 
-    struct Dimensions
+    struct BoundingBox
     {
-      btScalar width;
-      btScalar height;
-      btScalar depth;
+      btVector3 top_left;
+      btVector3 top_right;
+      btVector3 bottom_left;
+      btVector3 bottom_right;
     };
     
     enum class TurnDirection
@@ -72,6 +73,7 @@ class Vehicle : public Simulator
         std::shared_ptr<const Track> track,
         std::shared_ptr<btDynamicsWorld> world);
 
+    // Implementation must be done with care.
     Vehicle(const Vehicle&)=delete;
     Vehicle& operator=(const Vehicle&)=delete;
 
@@ -133,7 +135,12 @@ class Vehicle : public Simulator
     bool isInGhostMode() const {return ghost_info_.enabled;}
 
     const GhostMode& getGhostMode() const {return ghost_sim_;}
-    Dimensions getBoundingDims() const { return bounding_dimensions_;}
+    BoundingBox getBoundingDims() const { return bounding_dimensions_;}
+    
+    /**
+     * @brief Resets all speeds, forces, interpolation of a vehicle.
+     */
+    void reset();
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -144,7 +151,7 @@ class Vehicle : public Simulator
         btMotionState* motion_state,
         btScalar mass);
 
-    static Dimensions getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
+    static BoundingBox getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
@@ -168,7 +175,7 @@ class Vehicle : public Simulator
     GhostModeInfo ghost_info_;
     GhostMode ghost_sim_;
 
-    Dimensions bounding_dimensions_;
+    BoundingBox bounding_dimensions_;
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;

@@ -21,6 +21,7 @@
 #include <memory>
 #include <numbers>
 #include <sstream>
+#include <random>
 
 #define RETURN_STATUS(x) \
     {\
@@ -76,6 +77,12 @@ static thread_local std::string g_last_error="";
 
 static void set_last_error(const char* function, const char* return_code_str,const char* opt_desc);
 static const char* returnCodeStr(int code);
+static bool isVehicleFullyOnTrack(
+    const btVector3& point,
+    const boink::Track::SampleData& sample,
+    const boink::Vehicle::BoundingBox& box,
+    const btVector3& offset,
+    const btQuaternion& orientation);
 
 int boink_get_c_api_version(unsigned int *out_major,
                                  unsigned int *out_minor,
@@ -565,8 +572,8 @@ int boink_set_vehicle_before_point(
   
   btVector3 bt_point(point->x,point->y,point->z);
 
-  btVector3 bt_forward=p_race->getTrack()->getForwardDirection(bt_point);
-  boink::Vehicle::Dimensions bounding_dims=vehicle->getBoundingDims();
+  btVector3 bt_forward=p_race->getTrack()->getClosestTrackSample(bt_point).tangent;
+  boink::Vehicle::BoundingBox bounding_dims=vehicle->getBoundingDims();
 
 
   btVector3 axis_rot=boink::g_Forward.cross(bt_forward);
@@ -591,10 +598,11 @@ int boink_set_vehicle_before_point(
   transform.setRotation(rot);
   vehicle->setChassisWorldTransform(transform);
 
-  btVector3 up_compensate=boink::g_Up*vehicle->getChassisToGroundDist();
+  btVector3 up_compensate=
+    boink::g_Up*(vehicle->getChassisToGroundDist()+boink::g_GroundMargin);
   up_compensate=quatRotate(rot,up_compensate);
 
-  btScalar half_depth=bounding_dims.depth/2.f;
+  btScalar half_depth=(bounding_dims.top_left-bounding_dims.bottom_left).length()/2.f;
   btVector3 bt_pos=-1*bt_forward*half_depth+bt_point;
   bt_pos+=up_compensate;
 
@@ -630,7 +638,7 @@ int boink_set_vehicle_before_finish_line(
       boink_set_vehicle_before_point(
         handle,vehicle_id,&finish_point));
 
-  return BOINK_OK;
+return BOINK_OK;
 }
 
 int boink_set_vehicle_random_pos(BoinkHandle handle,uint64_t vehicle_id)
@@ -643,15 +651,44 @@ int boink_set_vehicle_random_pos(BoinkHandle handle,uint64_t vehicle_id)
   HANDLE_EXCEPTIONS(
     vehicle=p_race->getVehicle(vehicle_id));
 
+
+  std::random_device rd;
+  thread_local static std::mt19937 gen(rd());
+  std::uniform_real_distribution<btScalar> dist(0,2*SIMD_PI);
+
+repeat:
   btVector3 bt_random_pos=p_race->getTrack()->getOnTrackRandomPosition();
+  auto sample=p_race->getTrack()->getClosestTrackSample(bt_random_pos);
+  btScalar angle=dist(gen);
+
+  btQuaternion align;
+  align = shortestArcQuat(boink::g_Up, sample.normal);
+
+  btQuaternion yaw(sample.normal, angle);
+
+  btQuaternion final_rot = yaw * align;
+
+  btVector3 offset=-1*vehicle->getCenterOfMassCS();
+  offset.setY(0);
+  if(!isVehicleFullyOnTrack(bt_random_pos,sample,vehicle->getBoundingDims(),
+        offset,final_rot))
+    goto repeat;
+
+  btTransform bt_transform = vehicle->getChassisWorldTransform();
+  bt_transform.setRotation(final_rot);
+  vehicle->setChassisWorldTransform(bt_transform);
+
+  btVector3 up_compensate=
+    sample.normal*(vehicle->getChassisToGroundDist()+boink::g_GroundMargin);
+  bt_random_pos+=up_compensate;
+
   BoinkVec3 random_pos;
   random_pos.x=bt_random_pos.x();
   random_pos.y=bt_random_pos.y();
   random_pos.z=bt_random_pos.z();
   HANDLE_EXCEPTIONS(
-      boink_set_vehicle_before_point(
+      boink_set_vehicle_position(
         handle,vehicle_id,&random_pos));
-
   return BOINK_OK;
 }
 
@@ -698,9 +735,10 @@ int boink_set_vehicle_at_start_pos(
   HANDLE_EXCEPTIONS(
     bt_start_pos=p_race->getTrack()->getStartingPosition(position_index));
 
-  btVector3 bt_forward=p_race->getTrack()->getForwardDirection(bt_start_pos);
-  boink::Vehicle::Dimensions bounding_dims=vehicle->getBoundingDims();
-  btScalar half_depth=bounding_dims.depth/2.f;
+  btVector3 bt_forward=p_race->getTrack()->getClosestTrackSample(bt_start_pos).tangent;
+  boink::Vehicle::BoundingBox bounding_dims=vehicle->getBoundingDims();
+
+  btScalar half_depth=(bounding_dims.top_left-bounding_dims.bottom_left).length()/2.f;
   bt_start_pos=bt_forward*half_depth+bt_start_pos;
 
   BoinkVec3 start_pos;
@@ -982,6 +1020,39 @@ const char* returnCodeStr(int code)
         default:
             return "Unknown return code string";
     }
+}
+
+bool isVehicleFullyOnTrack(
+    const btVector3& point,
+    const boink::Track::SampleData& sample,
+    const boink::Vehicle::BoundingBox& box,
+    const btVector3& offset,
+    const btQuaternion& orientation)
+{
+  // TODO it is not accutally fully precise but i dont care at this point
+
+  btVector3 help=(point-sample.position);
+  if(help.length2()<boink::g_Epsilon)
+    return true;
+  help.normalize();
+
+  btScalar distance=
+    help.dot(sample.right)>0?sample.right_width:sample.left_width;
+
+  btVector3 rotated_box_point=quatRotate(orientation,box.bottom_left+offset);
+  if((sample.position-(point+rotated_box_point)).length()>distance)
+    return false;
+  rotated_box_point=quatRotate(orientation,box.bottom_right+offset);
+  if((sample.position-(point+rotated_box_point)).length()>distance)
+    return false;
+  rotated_box_point=quatRotate(orientation,box.top_left+offset);
+  if((sample.position-(point+rotated_box_point)).length()>distance)
+    return false;
+  rotated_box_point=quatRotate(orientation,box.top_right+offset);
+  if((sample.position-(point+rotated_box_point)).length()>distance)
+    return false;
+  
+  return true;
 }
 
 BoinkVec3 bt2boink(btVector3 bt_vec)

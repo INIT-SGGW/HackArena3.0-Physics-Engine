@@ -73,7 +73,7 @@ namespace boink
 
     btVector3 getOnTrackRandomPosition() const;
 
-    btVector3 getForwardDirection(const btVector3& point) const;
+    SampleData getClosestTrackSample(const btVector3& point) const;
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);

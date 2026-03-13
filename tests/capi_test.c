@@ -194,7 +194,7 @@ int main()
 
     if (!runOnce && dur > 6.)
     {
-      if ((code = boink_set_vehicle_random_pos(handle,id1)) != BOINK_OK)
+      if ((code = boink_set_vehicle_at_start_pos(handle,id1,5)) != BOINK_OK)
       {
         PRINT_ERROR();
         goto clear;
@@ -202,7 +202,7 @@ int main()
       runOnce = true;
     }
 
-    if (!runOnce2 && dur > 2.)
+    if (!runOnce2 && dur > 3.)
     {
       if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
       {
@@ -214,7 +214,7 @@ int main()
 
     if(time>2.f)
     {
-      if ((code = boink_set_vehicle_at_start_pos(handle,id0,pos++)) != BOINK_OK)
+      if ((code = boink_set_vehicle_random_pos(handle,id0)) != BOINK_OK)
       {
         PRINT_ERROR();
         goto clear;
