@@ -44,7 +44,7 @@ namespace boink
     {
       const auto& lap_info=p_vehicle_->getLapInfo();
 
-      ImGui::Text("Laps completed: %d",lap_info.laps_completed);
+      ImGui::Text("Lap: %d",lap_info.current_lap);
       ImGui::Text("Current lap coverage: %.2f [m]",
           lap_info.curr_lap_coverage);
       ImGui::Text("Current lap time: %.2f [s]",

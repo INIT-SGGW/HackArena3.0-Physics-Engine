@@ -6,6 +6,7 @@
 #include "boink/simulation/race.h"
 #include "boink/simulation/simulation.h"
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
+#include "boink/simulators/vehicle/lap_info.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/vehicle_mesh.h"
@@ -875,6 +876,94 @@ int boink_disable_ghost_mode(BoinkHandle handle)
 
   return BOINK_OK;
 }
+
+int boink_read_vehicle_race_metrics(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    struct BoinkVehicleRaceMetrics *out_metrics)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_metrics);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  const boink::LapInfo& lap_info=vehicle->getLapInfo();
+
+  out_metrics->completed_laps=lap_info.getLapsCompleted();
+  out_metrics->current_lap_time_ms=(unsigned int)(lap_info.curr_lap_time*1000.f);
+  out_metrics->lap_progress_m=lap_info.curr_lap_coverage;
+
+  auto opt_last_time=lap_info.getLastLapTime();
+  if(opt_last_time.has_value())
+  {
+    out_metrics->last_lap_time_ms=
+      (unsigned int)(opt_last_time.value().second*1000.f);
+
+    out_metrics->has_last_lap_time=true;
+  }
+  else
+  {
+    out_metrics->last_lap_time_ms=0;
+    out_metrics->has_last_lap_time=false;
+  }
+
+  return BOINK_OK;
+}
+
+
+int boink_get_vehicle_personal_best_lap(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    unsigned int *out_lap,
+    unsigned int *out_lap_time_ms)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_lap);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_lap_time_ms);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  auto opt_best=vehicle->getLapInfo().getPersonalBest();
+
+  if(!opt_best.has_value())
+    return BOINK_NO_DATA;
+
+  *out_lap=opt_best.value().first;
+  *out_lap_time_ms=opt_best.value().second*1000;
+
+  return BOINK_OK;
+}
+
+int boink_get_best_lap(
+    BoinkHandle handle,
+    uint64_t *out_vehicle_id,
+    unsigned int *out_lap,
+    unsigned int *out_lap_time_ms)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_vehicle_id);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_lap);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_lap_time_ms);
+
+
+}
+
 int boink_read_vehicle_ghost_mode_state(
     BoinkHandle handle,
     uint64_t vehicle_id,

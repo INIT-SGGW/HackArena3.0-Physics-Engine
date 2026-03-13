@@ -3,21 +3,34 @@
 #include <LinearMath/btScalar.h>
 
 #include <unordered_map>
+#include <optional>
 
 namespace boink
 {
   struct LapInfo
   {
     static constexpr int kStartingLap=-1;
-    int laps_completed=kStartingLap;
+
+    int current_lap=kStartingLap;
     btScalar curr_lap_coverage=0.f;
     btScalar curr_lap_time=0.f;
 
     std::unordered_map<int,btScalar> lap_times_history;
 
-    std::pair<int,btScalar> getPersonalBest() const
+    int getLapsCompleted() const
     {
-      int lap;
+      int laps_completed=current_lap-kStartingLap-1;
+
+      if(laps_completed<0)
+        return 0;
+      else
+        return laps_completed;
+    }
+
+    std::optional<std::pair<int,btScalar>> getPersonalBest() const
+    {
+      bool found=false;
+      int lap=-1;
       btScalar best_time=FLT_MAX;
       for(const auto& pair:lap_times_history)
       {
@@ -28,10 +41,26 @@ namespace boink
         {
           best_time=pair.second;
           lap=pair.first;
+          found=true;
         }
       }
 
-      return {lap,best_time};
+      if(found)
+        return {{lap,best_time}};
+      else
+        return std::nullopt;
+    }
+
+    std::optional<std::pair<int,btScalar>> getLastLapTime() const
+    {
+      auto it=lap_times_history.find(current_lap-1);
+      if(it==lap_times_history.end())
+        return std::nullopt;
+
+      if(it->first<=kStartingLap)
+        return std::nullopt;
+
+      return {{it->first,it->second}};
     }
   };
 }

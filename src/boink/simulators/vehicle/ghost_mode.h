@@ -7,6 +7,7 @@
 #include "boink/simulators/vehicle/physics/raycast_vehicle.h"
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/timer.h"
+#include "boink/simulators/vehicle/lap_info.h"
 
 namespace boink
 {
@@ -19,7 +20,7 @@ namespace boink
     GhostMode(
         btDynamicsWorld* world, 
         RaycastVehicle* vehicle,
-        const int* laps_completed);
+        const LapInfo* lap_info);
 
     void enable(GhostModeSettings settings);
     void disable();
@@ -34,7 +35,7 @@ namespace boink
     const Timer& getOverlapTimer() const {return overlap_timer_;}
 
     bool isCompletedLapsConditionMet() const 
-    { return *laps_completed_<(int)settings_.enabled_until_completed_laps;}
+    { return lap_info_->getLapsCompleted()<(int)settings_.enabled_until_completed_laps;}
     bool isEnterSpeedConditionMet() const
     { return speed_<settings_.max_enter_speed;}
     bool isExitSpeedConditionMet() const
@@ -47,7 +48,7 @@ namespace boink
   private:
     btDynamicsWorld* world_;
     RaycastVehicle* vehicle_;
-    const int* laps_completed_;
+    const LapInfo* lap_info_;
 
     bool is_sim_enabled_=false;
     bool is_overlapping_=false;

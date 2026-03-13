@@ -16,6 +16,7 @@ docs
 .vscode
 *.swp
 *.bak
+*.glb
 
 
 build
