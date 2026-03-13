@@ -518,11 +518,11 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       auto slip_angle = btAtan2(lat_speed, long_speed);
 
       if (slip_angle < 0)
-        raw_lateral_force = wheelInfo.m_wheelsSuspensionForce * -kSlipAngleToGrip.GetValue(-slip_angle);
+        raw_lateral_force = wheelInfo.m_wheelsSuspensionForce * kSlipAngleToGrip.GetValue(-slip_angle);
       else
-        raw_lateral_force = wheelInfo.m_wheelsSuspensionForce * kSlipAngleToGrip.GetValue(slip_angle);
+        raw_lateral_force = wheelInfo.m_wheelsSuspensionForce * -kSlipAngleToGrip.GetValue(slip_angle);
 
-      /*const btTransform& wheelTrans = getWheelTransformWS(i);
+      const btTransform& wheelTrans = getWheelTransformWS(i);
 
       btMatrix3x3 wheelBasis0 = wheelTrans.getBasis();
       m_axle[i] = -btVector3(wheelBasis0[0][m_indexRightAxis], wheelBasis0[1][m_indexRightAxis],
@@ -536,7 +536,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       m_forwardWS[i] = surfNormalWS.cross(m_axle[i]);
       m_forwardWS[i].normalize();
 
-      resolveSingleBilateral(*m_chassisBody, wheelInfo.m_raycastInfo.m_contactPointWS, *groundObject,
+      /*resolveSingleBilateral(*m_chassisBody, wheelInfo.m_raycastInfo.m_contactPointWS, *groundObject,
                              wheelInfo.m_raycastInfo.m_contactPointWS, btScalar(0.), m_axle[i], m_sideImpulse[i],
                              timeStep);
 
@@ -659,8 +659,9 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       // std::cout << "total_torque: " << total_torque << "\t";
       // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
       // std::cout << "long_speed: " << speed << "\t";
+      // std::cout << "lat_speed: " << getWheelLatSpeed(wheelInfo) << "\t";
       // std::cout << "slip_ratio: " << slip_ratio << "\t";
-      std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
+      // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
       // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
       //}
 
@@ -770,10 +771,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     }
   }
 
-  std::cout << "gear:  " << m_gearbox.current_gear << "\t";
-  std::cout << "rpm:  " << m_engine.rpm << "\t";
+  /*std::cout << "gear:  " << m_gearbox.current_gear << "\t";
+  std::cout << "rpm:  " << m_engine.rpm << "\t";*/
   std::cout << "old_speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  std::cout << "\n";
+  // std::cout << "\n";
 }
 
 btVector3 RaycastVehicle::getForwardVector() const
@@ -1063,6 +1064,9 @@ btScalar RaycastVehicle::getWheelLongSpeed(WheelInfo& wheel) const
 btScalar RaycastVehicle::getWheelLatSpeed(WheelInfo& wheel) const
 {
   btVector3 axleDir = -wheel.m_worldTransform.getBasis().getColumn(m_indexRightAxis);
+  // std::cout << "axle_dir_X: " << axleDir.getX() << "\t";
+  // std::cout << "axle_dir_Y: " << axleDir.getY() << "\t";
+  // std::cout << "axle_dir_Z: " << axleDir.getZ() << "\n";
   auto vel_at_contact = getWheelContactVel(wheel);
   return vel_at_contact.dot(axleDir);
 }
