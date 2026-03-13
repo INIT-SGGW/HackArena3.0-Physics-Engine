@@ -1023,6 +1023,36 @@ BOINK_API int boink_get_best_lap(BoinkHandle h,uint64_t *out_vehicle_id,
                                                unsigned int *out_lap_time_ms);
 
 /**
+ * Returns the laps history of a given vehicle.
+ *
+ * Each lap number in `out_laps` corresponds to its lap time in `out_lap_times_ms`.
+ * If `out_laps` and `out_lap_times_ms` are null, 
+ * the function returns the total number of laps in `in_out_count`.
+ *
+ * Parameters:
+ * - h - handle to a valid race.
+ * - vehicle_id - the vehicle identifier whose lap history is requested.
+ * - out_laps - optional; non-null pointer to an array that receives lap numbers.
+ * - out_lap_times_ms - optional; non-null pointer to an array that 
+ *   receives lap times in milliseconds.
+ * - in_out_count - input as the capacity of the output arrays; 
+ *   output as the actual number of laps written.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_NO_DATA` if the vehicle has not completed any laps yet.
+ * - `BOINK_ERR_INVALID_ARG` if `in_out_count` is null or 
+ *   if only one of `out_laps`/`out_lap_times_ms` is null.
+ * - `BOINK_ERR_BUFFER_TOO_SMALL` if the arrays are too small to 
+ *   hold all laps.
+ * - An error code on failure.
+ */
+//BOINK_API int boink_get_vehicle_laps_history(BoinkHandle h,uint64_t vehicle_id,
+//                                               unsigned int *out_laps,
+//                                               unsigned int *out_lap_times_ms,
+//                                               uint64_t *in_out_count);
+
+/**
  * Reads runtime ghost mode state for the specified vehicle.
  *
  * Parameters:

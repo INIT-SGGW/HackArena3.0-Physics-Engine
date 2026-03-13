@@ -961,8 +961,53 @@ int boink_get_best_lap(
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       out_lap_time_ms);
 
+  auto opt_best=p_race->getBestLap();
 
+  if(!opt_best.has_value())
+    return BOINK_NO_DATA;
+
+  const auto& [lap,best_time,id]=opt_best.value();
+
+  *out_vehicle_id=id;
+  *out_lap=lap;
+  *out_lap_time_ms=(unsigned int)(best_time*1000.f);
+
+  return BOINK_OK;
 }
+
+//BOINK_API int boink_get_vehicle_laps_history(
+//    BoinkHandle handle,
+//    uint64_t vehicle_id,
+//    unsigned int *out_laps,
+//    unsigned int *out_lap_times_ms,
+//    uint64_t *in_out_count)
+//{
+//  boink::Race* p_race=(boink::Race*)handle;
+//  IF_RETURN_STATUS_INVALID_ARG_NULL(
+//      handle);
+//  IF_RETURN_STATUS_INVALID_ARG_NULL(
+//      in_out_count);
+//
+//  if ((out_laps != nullptr) != (out_lap_times_ms != nullptr)) {
+//  {
+//    set_last_error(
+//        __func__,
+//        RETURN_CODE_STR(BOINK_ERR_INVALID_ARG),
+//        "Only one of out_laps or out_laps_times_ms is null."
+//        " Must be both or none");
+//    return BOINK_ERR_INVALID_ARG;
+//  }
+//
+//  std::shared_ptr<boink::Vehicle> vehicle;
+//  HANDLE_EXCEPTIONS(
+//    vehicle=p_race->getVehicle(vehicle_id))
+//
+//  if(out_laps==nullptr) // and out_lap_times but we already checked that
+//  {
+//    vehicle->getLapInfo().lap_times_history.size();
+//  }
+//
+//}
 
 int boink_read_vehicle_ghost_mode_state(
     BoinkHandle handle,

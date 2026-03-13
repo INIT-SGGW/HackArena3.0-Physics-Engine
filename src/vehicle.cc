@@ -57,7 +57,6 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
     rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
-    this->setChassisWorldTransform(btTransform::getIdentity());
 
     vehicle_->setCoordinateSystem(
         0, // right (X)
@@ -103,8 +102,15 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   bounding_dimensions_=getBoundingDims(collision_shape_);
 
-  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
-  lap_info_.curr_lap_coverage=track_->getCenterline().getCoverage(vehicle_pos);
+
+  auto before_finish_point=
+    track_->getCenterline().getPoint(track_->getCenterline().getPointsSize()-1);
+
+  lap_info_.curr_lap_coverage=track_->getCenterline().getLength()-g_Epsilon;
+  btTransform transform;
+  transform.setIdentity();
+  transform.setOrigin(before_finish_point);
+  this->setChassisWorldTransform(transform);
 }
 
 Vehicle::~Vehicle() noexcept
@@ -490,6 +496,5 @@ void Vehicle::reset()
 
   lap_info_.curr_lap_coverage=new_coverage;
 }
-
 
 }  // namespace boink

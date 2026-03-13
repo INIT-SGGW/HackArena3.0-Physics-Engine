@@ -28,6 +28,8 @@ namespace boink
     ImGui::Checkbox("Collider enabled",&collider_enabled);
     ImGui::Text("In ghost mode: %s",
         p_vehicle_->ghost_info_.enabled?"true":"false");
+    ImGui::Text("RPM: %f",
+        p_vehicle_->getEngineRPM());
 
 
     if(ImGui::CollapsingHeader("Tuning"))

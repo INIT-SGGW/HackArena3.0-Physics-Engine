@@ -14,6 +14,7 @@ namespace boink
   public:
     Line()=default;
     Line(
+        const btVector3& first_point,
         const std::vector<btVector3>& points,
         bool is_line_closed=true);
 
@@ -44,7 +45,10 @@ namespace boink
       btVector3 normal,
       btScalar epsilon=1e-4) const;
   public:
-    static Line createLine(const GltfExtractor& extractor,std::string_view name);
+    static Line createLine(
+        const GltfExtractor& extractor,
+        const btVector3& first_point,
+        std::string_view name);
   private:
     // Point and distance from first point on curve
     std::vector<std::pair<btVector3,btScalar>> points_dist_;

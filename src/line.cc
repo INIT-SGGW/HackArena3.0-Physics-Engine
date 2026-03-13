@@ -10,6 +10,7 @@
 namespace boink {
 
 Line::Line(
+    const btVector3& first_point,
     const std::vector<btVector3>& points,
     bool is_line_closed) 
   : 
@@ -26,6 +27,19 @@ Line::Line(
                    return std::pair<btVector3, btScalar>(v, 0.0f);
                  });
 
+  // Get index of the closest point to first point.
+  size_t first_point_index=0;
+  btScalar min_dist=FLT_MAX;
+  for(size_t i=0;i<points.size();i++)
+  {
+    btScalar dist=btFabs((points[i]-first_point).length2());
+    if(dist<min_dist)
+    {
+      first_point_index=i;
+      min_dist=dist;
+    }
+  }
+
   // Order the points
   // We assume that first given point is the
   // starting point. fuck for now direciton
@@ -36,9 +50,9 @@ Line::Line(
                 [n = 0]() mutable { return n++; });
 
   // Assume first element of points is the first in order
-  sorted_indices.push_back(0);
+  sorted_indices.push_back(first_point_index);
   unused_indices.erase(
-      std::find(unused_indices.begin(), unused_indices.end(), 0));
+      std::find(unused_indices.begin(), unused_indices.end(), first_point_index));
 
   // Very inefficient
   while (unused_indices.size() > 0) {
@@ -85,7 +99,12 @@ Line::Line(
 }
 
 btScalar Line::getLength() const {
-  return points_dist_[points_dist_.size() - 1].second;
+  btScalar dist=points_dist_[points_dist_.size() - 1].second;
+  if(is_line_closed_)
+    dist+=
+      (points_dist_[points_dist_.size()-1].first-points_dist_[0].first).length();
+
+  return dist;
 }
 
 btScalar Line::getCoverage(const btVector3& point) const {
@@ -281,7 +300,10 @@ std::pair<btVector3,btScalar> Line::getRayLineIntersection(
 
 }
 
-Line Line::createLine(const GltfExtractor& extractor,std::string_view name)
+Line Line::createLine(
+    const GltfExtractor& extractor, 
+    const btVector3& first_point,
+    std::string_view name)
 {
   auto& line_node=extractor.getNode(name);
   if(line_node.type!=TINYGLTF_MODE_LINE)
@@ -306,6 +328,6 @@ Line Line::createLine(const GltfExtractor& extractor,std::string_view name)
   //points.push_back(
   //    line_vertices[line_indices[line_indices.size()-1]]);
   
-  return Line(std::move(points));
+  return Line(first_point,std::move(points));
 }
 }  // namespace boink
