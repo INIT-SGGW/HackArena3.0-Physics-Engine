@@ -92,6 +92,7 @@ class Vehicle : public Simulator
     btScalar getCurrentLapDistanceCovered() const {return curr_lap_dist_point_;}
 
     btTransform getChassisWorldTransform() const;
+    btScalar getChassisToGroundDist() const;
 
     const btTransform& getWheelWorldTransform(WheelPosition wheel_pos) const;
     btScalar getEngineRPM() const;

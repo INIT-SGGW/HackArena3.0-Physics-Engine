@@ -568,15 +568,6 @@ int boink_set_vehicle_before_point(
   btVector3 bt_forward=p_race->getTrack()->getForwardDirection(bt_point);
   boink::Vehicle::Dimensions bounding_dims=vehicle->getBoundingDims();
 
-  btScalar half_depth=bounding_dims.depth/2.f;
-  btVector3 bt_pos=-1*bt_forward*half_depth+bt_point;
-  BoinkVec3 pos;
-  pos.x=bt_pos.x();
-  pos.y=bt_pos.y();
-  pos.z=bt_pos.z();
-  
-  HANDLE_EXCEPTIONS(
-      boink_set_vehicle_position(handle,vehicle_id,&pos));
 
   btVector3 axis_rot=boink::g_Forward.cross(bt_forward);
   btScalar rot_angle=boink::g_Forward.angle(bt_forward);
@@ -599,6 +590,20 @@ int boink_set_vehicle_before_point(
   btTransform transform=vehicle->getChassisWorldTransform();
   transform.setRotation(rot);
   vehicle->setChassisWorldTransform(transform);
+
+  btVector3 up_compensate=boink::g_Up*vehicle->getChassisToGroundDist();
+  up_compensate=quatRotate(rot,up_compensate);
+
+  btScalar half_depth=bounding_dims.depth/2.f;
+  btVector3 bt_pos=-1*bt_forward*half_depth+bt_point;
+  bt_pos+=up_compensate;
+
+  BoinkVec3 pos;
+  pos.x=bt_pos.x();
+  pos.y=bt_pos.y();
+  pos.z=bt_pos.z();
+  HANDLE_EXCEPTIONS(
+      boink_set_vehicle_position(handle,vehicle_id,&pos));
 
   return BOINK_OK;
 }

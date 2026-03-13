@@ -132,6 +132,14 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
+  vehicle_pos.x = 0.;
+  vehicle_pos.y = 0.;
+  vehicle_pos.z = 0.;
+  if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
 
   BoinkControls controls;
   controls.brake = 0.0;
@@ -184,25 +192,25 @@ int main()
       }
     }
 
-    //if (!runOnce && dur > 6.)
-    //{
-    //  if ((code = boink_set_vehicle_at_start_pos(handle,id0,2)) != BOINK_OK)
-    //  {
-    //    PRINT_ERROR();
-    //    goto clear;
-    //  }
-    //  runOnce = true;
-    //}
+    if (!runOnce && dur > 6.)
+    {
+      if ((code = boink_set_vehicle_random_pos(handle,id1)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      runOnce = true;
+    }
 
-    //if (!runOnce2 && dur > 2.)
-    //{
-    //  if ((code = boink_set_vehicle_at_start_pos(handle,id0,34)) != BOINK_OK)
-    //  {
-    //    PRINT_ERROR();
-    //    goto clear;
-    //  }
-    //  runOnce2 = true;
-    //}
+    if (!runOnce2 && dur > 2.)
+    {
+      if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      runOnce2 = true;
+    }
 
     if(time>2.f)
     {

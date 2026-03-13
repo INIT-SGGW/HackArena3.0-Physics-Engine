@@ -11,6 +11,7 @@
 #include <memory>
 #include <piksel/object.hh>
 
+#include "boink/constants.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/utility.h"
@@ -193,15 +194,13 @@ void Vehicle::updateRender(Renderer* renderer)
       rigidbody_->getWorldTransform().getBasis()[1][1],
       rigidbody_->getWorldTransform().getBasis()[2][1]);
 
-  btVector3 COM=this->getChassisWorldTransform().getOrigin();
-  renderer->drawLine(
-      COM,
-      COM+ forward_axle,
-      {1,1,1});
-  renderer->drawLine(
-      COM,
-      COM+ up_axle,
-      {1,1,1});
+  btVector3 chassis_center=this->getChassisWorldTransform().getOrigin();
+  //renderer->drawLine(
+  //    chassis_center,
+  //    chassis_center-1*this->getChassisToGroundDist()*g_Up,
+  //    {0.5,1.0,0.75f});
+  renderer->drawPoint(
+      chassis_center,{1,1,1},-forward_axle,-up_axle);
 }
 
 std::shared_ptr<piksel::GuiObject> Vehicle::getGui() 
@@ -228,6 +227,18 @@ btTransform Vehicle::getChassisWorldTransform() const
 
   // we must translate after rotation
   return transform * translate;
+}
+
+btScalar Vehicle::getChassisToGroundDist() const
+{
+  btAssert((btVector3(0.f,1.f,0.f)-g_Up).length2()<g_Epsilon);
+
+  // TODO i dont know but this function is not ideal
+  const auto& wheel_info=vehicle_->getWheelInfo((int)WheelPosition::RearLeft);
+  return 
+    +wheel_info.m_suspensionInfo.m_chassisConnectionPointCS.y()+
+    wheel_info.m_suspensionInfo.m_restLength+
+    wheel_info.m_wheelsRadius+center_of_mass_.y();
 }
 
 const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) const
