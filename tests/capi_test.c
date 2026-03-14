@@ -29,7 +29,7 @@ int main()
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
-  const char* track_filename = "HorizonTrack_04.glb";
+  const char* track_filename = "horizon_05.glb";
 #endif
 
   unsigned int major, minor, patch;
@@ -135,11 +135,11 @@ int main()
   vehicle_pos.x = 0.;
   vehicle_pos.y = 0.;
   vehicle_pos.z = 0.;
-  if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
 
   BoinkControls controls;
   controls.brake = 0.0;
@@ -194,11 +194,11 @@ int main()
 
     if (!runOnce && dur > 6.)
     {
-      if ((code = boink_set_vehicle_at_start_pos(handle,id1,5)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+      //if ((code = boink_set_vehicle_at_start_pos(handle,id1,5)) != BOINK_OK)
+      //{
+      //  PRINT_ERROR();
+      //  goto clear;
+      //}
       runOnce = true;
     }
 

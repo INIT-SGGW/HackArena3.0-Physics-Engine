@@ -74,6 +74,8 @@ namespace boink
     btVector3 getOnTrackRandomPosition() const;
 
     SampleData getClosestTrackSample(const btVector3& point) const;
+
+    std::tuple<int,btScalar,Simulator::ID> getBestLapInfo();
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);

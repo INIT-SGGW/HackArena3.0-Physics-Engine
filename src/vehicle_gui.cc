@@ -28,6 +28,10 @@ namespace boink
     ImGui::Checkbox("Collider enabled",&collider_enabled);
     ImGui::Text("In ghost mode: %s",
         p_vehicle_->ghost_info_.enabled?"true":"false");
+    ImGui::Text("RPM: %f",
+        p_vehicle_->getEngineRPM());
+    ImGui::Text("Current gear: %d",
+        p_vehicle_->getCurrentGear());
 
 
     if(ImGui::CollapsingHeader("Tuning"))
@@ -40,16 +44,9 @@ namespace boink
     // changed
     p_vehicle_->setTuning(p_vehicle_->tuning_);
 
-    if(ImGui::CollapsingHeader("LapInfo"))
-    {
-      const auto& lap_info=p_vehicle_->getLapInfo();
+    if(ImGui::CollapsingHeader("Lap info"))
+      this->drawLapInfo();
 
-      ImGui::Text("Laps completed: %d",lap_info.laps_completed);
-      ImGui::Text("Current lap coverage: %.2f [m]",
-          lap_info.curr_lap_coverage);
-      ImGui::Text("Current lap time: %.2f [s]",
-          lap_info.curr_lap_time);
-    }
     btVector3 chassis_position=
       p_vehicle_->getChassisWorldTransform().getOrigin();
     ImGui::Text("Chassis position: (%.2f,%.2f,%.2f) [m]",
@@ -78,6 +75,25 @@ namespace boink
         drawWheel(pos);
 
       ImGui::PopID();
+    }
+  }
+
+  void VehicleGui::drawLapInfo()
+  {
+    const auto& lap_info=p_vehicle_->getLapInfo();
+
+    ImGui::Text("Lap: %d",lap_info.current_lap);
+    ImGui::Text("Current lap coverage: %.2f [m]",
+        lap_info.curr_lap_coverage);
+    ImGui::Text("Current lap time: %.2f [s]",
+        lap_info.curr_lap_time);
+
+    if(ImGui::CollapsingHeader("History"))
+    {
+      for(const auto& lap:lap_info.lap_times_history)
+      {
+        ImGui::Text("Lap %d time: %.2f [s]",lap.first,lap.second);
+      }
     }
   }
 

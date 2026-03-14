@@ -12,8 +12,8 @@ namespace boink
   GhostMode::GhostMode(
       btDynamicsWorld* world, 
       RaycastVehicle* vehicle,
-      const int* laps_completed)
-    :world_(world),vehicle_(vehicle),laps_completed_(laps_completed)
+      const LapInfo* lap_info)
+    :world_(world),vehicle_(vehicle),lap_info_(lap_info)
   {
   }
 

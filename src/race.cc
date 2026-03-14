@@ -116,6 +116,36 @@ namespace boink
       vehicle->disableGhostSim();
   }
 
+  std::optional<std::tuple<int,btScalar,Simulator::ID>> Race::getBestLap() const
+  {
+    bool found=false;
+    int lap=-1;
+    Simulator::ID vehicle_id=-1;
+    btScalar best_time=FLT_MAX;
+
+    for(const auto& pair:vehicles_)
+    {
+      auto vehicle=pair.second;
+      auto opt_personal_best=vehicle->getLapInfo().getPersonalBest();
+
+      if(!opt_personal_best.has_value())
+        continue;
+
+      if(opt_personal_best.value().second<best_time)
+      {
+        found=true;
+        vehicle_id=pair.first;
+        lap=opt_personal_best.value().first;
+        best_time=opt_personal_best.value().second;
+      }
+    }
+
+    if(found)
+      return {{lap,best_time,vehicle_id}};
+    else
+      return std::nullopt;
+  }
+
   std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 
     Race::getControllers() const 
   {

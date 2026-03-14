@@ -37,9 +37,9 @@ namespace boink
 
     GltfExtractor extractor(filename);
     this->initGrounds(extractor);
-    this->createLines(extractor);
-    this->initPositions(extractor);
     this->initFinishLine(extractor);
+    this->initPositions(extractor);
+    this->createLines(extractor);
 
     this->createTrackData();
     gui_=std::make_shared<TrackGui>(this);
@@ -154,9 +154,9 @@ namespace boink
 
   void Track::createLines(const GltfExtractor& extractor)
   {
-    centerline_=Line::createLine(extractor,CENTERLINE_NAME);
-    rightline_=Line::createLine(extractor,RIGHTLINE_NAME);
-    leftline_=Line::createLine(extractor,LEFTLINE_NAME);
+    centerline_=Line::createLine(extractor,finish_line_,CENTERLINE_NAME);
+    rightline_=Line::createLine(extractor,finish_line_,RIGHTLINE_NAME);
+    leftline_=Line::createLine(extractor,finish_line_,LEFTLINE_NAME);
 
     // Check if centerline should be reveresed
     {

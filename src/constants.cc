@@ -1,4 +1,5 @@
 #include "boink/constants.h"
+
 #include <LinearMath/btVector3.h>
 
 namespace boink

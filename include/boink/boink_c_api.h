@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 12
+#define BOINK_C_API_VERSION_MINOR 13
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -42,34 +42,40 @@
 #define BOINK_OK 0
 
 /**
+ * Indicates that no data is currently available for the request.
+ * This is not considered an error.
+ */
+#define BOINK_NO_DATA 1
+
+/**
  * Indicates an invalid argument (for example a null pointer or an out-of-range value).
  */
-#define BOINK_ERR_INVALID_ARG 1
+#define BOINK_ERR_INVALID_ARG -1
 
 /**
  * Indicates that the output buffer was too small.
  */
-#define BOINK_ERR_BUFFER_TOO_SMALL 2
+#define BOINK_ERR_BUFFER_TOO_SMALL -2
 
 /**
  * Indicates that a requested object or identifier was not found.
  */
-#define BOINK_ERR_NOT_FOUND 3
+#define BOINK_ERR_NOT_FOUND -3
 
 /**
  * Indicates that the file format is not supported.
  */
-#define BOINK_ERR_UNSUPPORTED_FORMAT 4
+#define BOINK_ERR_UNSUPPORTED_FORMAT -4
 
 /**
  * Indicates an input/output error (for example a file read/write failure).
  */
-#define BOINK_ERR_IO 5
+#define BOINK_ERR_IO -5
 
 /**
  * Indicates an internal engine error.
  */
-#define BOINK_ERR_INTERNAL 100
+#define BOINK_ERR_INTERNAL -100
 
 /**
  * Requested gear-shift operation for a single controls command.
@@ -414,6 +420,36 @@ typedef struct BoinkVehicleState {
    */
   Real wheel_speeds[4];
 } BoinkVehicleState;
+
+/**
+ * Represents race-progress metrics of a vehicle at a specific simulation instant.
+ */
+typedef struct BoinkVehicleRaceMetrics {
+  /**
+   * Number of fully completed laps.
+   */
+  unsigned int completed_laps;
+  /**
+   * Arc-length progress within the current lap in meters.
+   *
+   * The value is expected to be in `[0, lap_length_m)`.
+   */
+  Real lap_progress_m;
+  /**
+   * Elapsed time in the currently running lap in milliseconds.
+   */
+  unsigned int current_lap_time_ms;
+  /**
+   * True when `last_lap_time_ms` contains a valid value.
+   */
+  bool has_last_lap_time;
+  /**
+   * Duration of the previously finished lap in milliseconds.
+   *
+   * Valid only when `has_last_lap_time == true`.
+   */
+  unsigned int last_lap_time_ms;
+} BoinkVehicleRaceMetrics;
 
 /**
  * Bitmask of active ghost-mode blockers.
@@ -801,14 +837,14 @@ BOINK_API int boink_set_vehicle_position(BoinkHandle h,
                                       const struct BoinkVec3 *position);
 
 /**
- * Sets the world-space position of a vehicle to a position before the given point.
+ * Sets the world-space position of a vehicle to a point before the given point.
  *
  * This immediately updates the specified vehicle's position in the simulation.
  *
  * Parameters:
  * - `h` - handle to a valid race.
  * - `vehicle_id` - identifier of the vehicle to move.
- * - `point` - non-null pointer to the new point vector.
+ * - `point` - non-null pointer to the point vector.
  *
  * Returns:
  * - `BOINK_OK` on success.
@@ -816,10 +852,9 @@ BOINK_API int boink_set_vehicle_position(BoinkHandle h,
  * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
  * - Another error code for other failures.
  */
-BOINK_API int boink_set_vehicle_before_point(
-                              BoinkHandle handle,
-                              uint64_t vehicle_id,
-                              const struct BoinkVec3* point);
+BOINK_API int boink_set_vehicle_before_point(BoinkHandle h,
+                                          uint64_t vehicle_id,
+                                          const struct BoinkVec3 *point);
 
 /**
  * Sets the world-space position of a vehicle to a point before the finish line.
@@ -835,8 +870,7 @@ BOINK_API int boink_set_vehicle_before_point(
  * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
  * - Another error code for other failures.
  */
-BOINK_API int boink_set_vehicle_before_finish_line(BoinkHandle h,
-                                      uint64_t vehicle_id);
+BOINK_API int boink_set_vehicle_before_finish_line(BoinkHandle h, uint64_t vehicle_id);
 
 /**
  * Sets the world-space position of a vehicle to a random point.
@@ -852,8 +886,41 @@ BOINK_API int boink_set_vehicle_before_finish_line(BoinkHandle h,
  * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
  * - Another error code for other failures.
  */
-BOINK_API int boink_set_vehicle_random_pos(BoinkHandle h,
-                                      uint64_t vehicle_id);
+BOINK_API int boink_set_vehicle_random_pos(BoinkHandle h, uint64_t vehicle_id);
+
+/**
+ * Sets the world-space position of a vehicle at a selected starting position.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ * - `position_index` - index of a starting position from 1 to max starting positions.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `h` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist or `position_index` does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_at_start_pos(BoinkHandle h,
+                                          uint64_t vehicle_id,
+                                          uint64_t position_index);
+
+/**
+ * Retrieves the number of available starting positions.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `out_number_pos` - non-null pointer that receives number of available starting positions.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_INVALID_ARG` if `h` or `out_number_pos` is null.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_get_number_of_start_pos(BoinkHandle h, uint64_t *out_number_pos);
 
 /**
  * Sets the world-space orientation of a vehicle.
@@ -876,41 +943,6 @@ BOINK_API int boink_set_vehicle_orientation(BoinkHandle h,
                                          const struct BoinkQuaternion *orientation);
 
 /**
- * Sets the world-space position of a vehicle.
- *
- * This immediately updates the specified vehicle's position in the simulation.
- *
- * Parameters:
- * - `h` - handle to a valid race.
- * - `vehicle_id` - identifier of the vehicle to move.
- * - `position_index` - index to starting positions from 1 to max_starting postions
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - `BOINK_ERR_INVALID_ARG` if `h` is null.
- * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist or the position index does not exist
- * - Another error code for other failures.
- */
-BOINK_API int boink_set_vehicle_at_start_pos(BoinkHandle h,
-                                      uint64_t vehicle_id,
-                                      uint64_t position_index);
-
-/**
- * Sets the desired driver controls for the specified vehicle.
- *
- * Parameters:
- * - `h` - handle to a valid race.
- * - `out_number_pos` - non-null pointer that receives number of available starting positions.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - `BOINK_ERR_INVALID_ARG` if `h` or `out_number_pos` is null.
- * - Another error code for other failures.
- */
-BOINK_API int boink_get_number_of_start_pos(BoinkHandle h,
-                                      uint64_t* out_number_pos);
-
-/**
  * Reads the current state of the specified vehicle.
  *
  * Parameters:
@@ -927,6 +959,98 @@ BOINK_API int boink_get_number_of_start_pos(BoinkHandle h,
 BOINK_API int boink_read_vehicle_state(BoinkHandle h,
                                     uint64_t vehicle_id,
                                     struct BoinkVehicleState *out_state);
+
+/**
+ * Reads race-progress metrics for the specified vehicle.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle whose race metrics are requested.
+ * - `out_metrics` - non-null pointer that receives race metrics.
+ *
+ * Returns:
+ * - `BOINK_OK` on success and writes metrics to `*out_metrics`.
+ * - `BOINK_ERR_INVALID_ARG` if `out_metrics` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_read_vehicle_race_metrics(BoinkHandle h,
+                                               uint64_t vehicle_id,
+                                               struct BoinkVehicleRaceMetrics *out_metrics);
+
+/**
+ * Returns the lap number and lap time of the vehicle's personal best lap.
+ *
+ * Output parameters are written only when `BOINK_OK` is returned.
+ *
+ * Parameters:
+ * - h - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle whose race metrics are requested.
+ * - `out_lap` - non-null pointer that receives lap number.
+ * - `out_lap_time_ms` - non-null pointer that receives the best lap time in miliseconds.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_NO_DATA` if the vehicle exists but has no personal best lap yet.
+ * - `BOINK_ERR_INVALID_ARG` if `out_lap` or `out_lap_time_ms` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - An error code on failure.
+ */
+BOINK_API int boink_get_vehicle_personal_best_lap(BoinkHandle h,
+                                               uint64_t vehicle_id,
+                                               unsigned int *out_lap,
+                                               unsigned int *out_lap_time_ms);
+
+/**
+ * Returns the vehicle ID, lap number, and lap time of the best lap in the race.
+ *
+ * Output parameters are written only when `BOINK_OK` is returned.
+ *
+ * Parameters:
+ * - h - handle to a valid race.
+ * - `out_vehicle_id` - non-null pointer that receives the vehicle identifier.
+ * - `out_lap` - non-null pointer that receives the lap number.
+ * - `out_lap_time_ms` - non-null pointer that receives the best lap time in milliseconds.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_NO_DATA` if no laps have been completed yet.
+ * - `BOINK_ERR_INVALID_ARG` if `out_vehicle_id`, `out_lap`, or `out_lap_time_ms` is null.
+ * - An error code on failure.
+ */
+BOINK_API int boink_get_best_lap(BoinkHandle h,uint64_t *out_vehicle_id,
+                                               unsigned int *out_lap,
+                                               unsigned int *out_lap_time_ms);
+
+/**
+ * Returns the laps history of a given vehicle.
+ *
+ * Each lap number in `out_laps` corresponds to its lap time in `out_lap_times_ms`.
+ * If `out_laps` and `out_lap_times_ms` are null, 
+ * the function returns the total number of laps in `in_out_count`.
+ *
+ * Parameters:
+ * - h - handle to a valid race.
+ * - vehicle_id - the vehicle identifier whose lap history is requested.
+ * - out_laps - optional; non-null pointer to an array that receives lap numbers.
+ * - out_lap_times_ms - optional; non-null pointer to an array that 
+ *   receives lap times in milliseconds.
+ * - in_out_count - input as the capacity of the output arrays; 
+ *   output as the actual number of laps written.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_NO_DATA` if the vehicle has not completed any laps yet.
+ * - `BOINK_ERR_INVALID_ARG` if `in_out_count` is null or 
+ *   if only one of `out_laps`/`out_lap_times_ms` is null.
+ * - `BOINK_ERR_BUFFER_TOO_SMALL` if the arrays are too small to 
+ *   hold all laps.
+ * - An error code on failure.
+ */
+//BOINK_API int boink_get_vehicle_laps_history(BoinkHandle h,uint64_t vehicle_id,
+//                                               unsigned int *out_laps,
+//                                               unsigned int *out_lap_times_ms,
+//                                               uint64_t *in_out_count);
 
 /**
  * Reads runtime ghost mode state for the specified vehicle.

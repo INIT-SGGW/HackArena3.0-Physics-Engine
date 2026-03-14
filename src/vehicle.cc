@@ -12,6 +12,7 @@
 #include <piksel/object.hh>
 
 #include "boink/constants.h"
+#include "boink/exception.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/utility.h"
@@ -37,7 +38,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       track_(track),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
-      ghost_sim_(world_.get(),vehicle_.get(),&lap_info_.laps_completed),
+      ghost_sim_(world_.get(),vehicle_.get(),&lap_info_),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
@@ -57,7 +58,6 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
     rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
-    this->setChassisWorldTransform(btTransform::getIdentity());
 
     vehicle_->setCoordinateSystem(
         0, // right (X)
@@ -103,8 +103,41 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   bounding_dimensions_=getBoundingDims(collision_shape_);
 
-  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
-  lap_info_.curr_lap_coverage=track_->getCenterline().getCoverage(vehicle_pos);
+  const auto& centerline=track_->getCenterline();
+
+  if(!centerline.isClosed())
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line should be closed");
+
+  size_t n=centerline.getPointsSize();
+  if(n<2)
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line has too few points");
+
+  const btVector3& last=centerline.getPoint(n-1);
+  const btVector3& first=centerline.getPoint(0);
+
+  btVector3 segment=first-last;
+
+  if(segment.length2()<g_Epsilon)
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line cannot have dupliacted points");
+
+  // g_epsilon is too small when vehicle tilts a little
+  btVector3 before_finish_point=
+      last+ 0.99*segment;
+
+  lap_info_.curr_lap_coverage=
+      centerline.getCoverage(before_finish_point);
+
+  btTransform transform;
+  transform.setIdentity();
+  transform.setOrigin(before_finish_point);
+
+  this->setChassisWorldTransform(transform);
 }
 
 Vehicle::~Vehicle() noexcept
@@ -137,7 +170,7 @@ void Vehicle::updateLapInfo(btScalar dt)
 {
   btScalar track_length = track_->getCenterline().getLength();
 
-  int curr_laps_completed = lap_info_.laps_completed;
+  int curr_lap= lap_info_.current_lap;
 
   const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
   btScalar prev_coverage = lap_info_.curr_lap_coverage;
@@ -148,22 +181,25 @@ void Vehicle::updateLapInfo(btScalar dt)
   {
     // Means that finish line was crossed
     if (v > 0)
-      curr_laps_completed--;
+      curr_lap--;
     else
     {
       // Only here we calculate the time
       btScalar curr_distance=track_length+v;
       btAssert(curr_distance>=0.f);
-      // First update old time
+
+      if(curr_distance<g_Epsilon)
+        curr_distance=g_Epsilon;
+
       lap_info_.curr_lap_time+=dt*(track_length-prev_coverage)/curr_distance;
 
       // Vehicle can ride this multiple times so we only save the first one
-      if(curr_laps_completed>=LapInfo::kStartingLap&&
+      if(curr_lap>=LapInfo::kStartingLap&&
           lap_info_.lap_times_history.try_emplace(
-          curr_laps_completed,lap_info_.curr_lap_time).second)
+          curr_lap,lap_info_.curr_lap_time).second)
         lap_info_.curr_lap_time=0;
 
-      curr_laps_completed++;
+      curr_lap++;
 
       // Update dt we need to short it
       dt=dt*(curr_coverage/curr_distance);
@@ -173,7 +209,7 @@ void Vehicle::updateLapInfo(btScalar dt)
   btAssert(dt>=0);
   lap_info_.curr_lap_time+=dt;
 
-  lap_info_.laps_completed = curr_laps_completed;
+  lap_info_.current_lap = curr_lap;
   lap_info_.curr_lap_coverage = curr_coverage;
 }
 
@@ -235,12 +271,12 @@ std::shared_ptr<piksel::GuiObject> Vehicle::getGui()
 
 void Vehicle::setChassisWorldTransform(const btTransform& transform) 
 { 
-  this->reset();
-
   btTransform offset(btQuaternion::getIdentity(),center_of_mass_);
   btTransform new_transform=transform*offset;
   rigidbody_->setWorldTransform(new_transform);
   motion_state_->setWorldTransform(new_transform);
+
+  this->reset();
 }
 
 btTransform Vehicle::getChassisWorldTransform() const
@@ -473,7 +509,16 @@ void Vehicle::reset()
     wheel_info.m_rotation = 0.0f;
     wheel_info.m_deltaRotation = 0.0f;
   }
-}
 
+  // After tp we cannot give vehicle better postion only worse
+  btScalar new_coverage=
+    track_->getCenterline().
+    getCoverage(this->getChassisWorldTransform().getOrigin());
+
+  if(new_coverage>lap_info_.curr_lap_coverage)
+    lap_info_.current_lap--;
+
+  lap_info_.curr_lap_coverage=new_coverage;
+}
 
 }  // namespace boink

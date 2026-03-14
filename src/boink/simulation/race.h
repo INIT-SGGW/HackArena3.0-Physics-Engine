@@ -7,6 +7,7 @@
 #include "boink/simulators/weather.h"
 #include "boink/constants.h"
 
+#include <optional>
 #include <string_view>
 #include <unordered_map>
 #include <memory>
@@ -38,6 +39,8 @@ namespace boink
 
     void enableGhostMode(GhostModeSettings ghost_settings);
     void disableGhostMode();
+
+    std::optional<std::tuple<int,btScalar,Simulator::ID>> getBestLap() const;
 
     // Temporary soliton
     void setUserPtr(void* ptr)

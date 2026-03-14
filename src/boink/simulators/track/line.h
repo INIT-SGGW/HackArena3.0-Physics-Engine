@@ -4,6 +4,7 @@
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -14,6 +15,7 @@ namespace boink
   public:
     Line()=default;
     Line(
+        const btVector3& first_point,
         const std::vector<btVector3>& points,
         bool is_line_closed=true);
 
@@ -27,6 +29,16 @@ namespace boink
     std::pair<size_t,btScalar> getIthClosestIndex(
         const btVector3& point, size_t ith) const;
 
+    /**
+     * @brief 
+     *
+     * @param point
+     *
+     * @return 
+     */
+    std::optional<btVector3> getClosestPointInterpolated(
+        const btVector3& point) const;
+
     std::pair<btVector3,btScalar>& getPointAndDist(size_t index)
     {return points_dist_[index];}
 
@@ -37,14 +49,36 @@ namespace boink
     const btVector3& getPoint(size_t index) const;
     size_t getPointsSize() const { return points_dist_.size();}
 
-    // Point of intersection and distance form ra_start to poitn of intersection
+    // Point of intersection and distance form ray_start to point of intersection
     std::pair<btVector3,btScalar> getRayLineIntersection(
       btVector3 ray_dir,
       btVector3 ray_start,
       btVector3 normal,
       btScalar epsilon=1e-4) const;
+
+    bool isClosed() const {return is_line_closed_;}
   public:
-    static Line createLine(const GltfExtractor& extractor,std::string_view name);
+    static Line createLine(
+        const GltfExtractor& extractor,
+        const btVector3& first_point,
+        std::string_view name);
+
+    /**
+     * @brief 
+     *
+     * a and b must be diffrent values
+     *
+     * @param a 
+     * @param b
+     * @param point
+     *
+     * @return Interpolated point on line defined by a and b
+     *
+     */
+    static btVector3 getPointInterpolated(
+        const btVector3& a,
+        const btVector3& b,
+        const btVector3& point);
   private:
     // Point and distance from first point on curve
     std::vector<std::pair<btVector3,btScalar>> points_dist_;
