@@ -17,7 +17,9 @@ configure_file(
 set(LSAN_SUPPRESSIONS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/lsan_suppress.supp")
 set(LSAN_ENV_VAR "LSAN_OPTIONS=suppressions=${LSAN_SUPPRESSIONS_FILE}")
 
-option(USE_ASAN_WIN "Enable asan on windows. If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
+option(USE_ASAN_WIN 
+  "Enable asan on windows. 
+  If enabled SPDLOG will crash (TODO) and memory_leak wont work" OFF)
 
 add_compile_definitions(
   $<$<CONFIG:Release>:NDEBUG>
@@ -38,6 +40,9 @@ target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
 
 find_package(piksel CONFIG REQUIRED)                                                                                                                                          
 target_link_libraries(boink PUBLIC piksel::piksel)
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(boink PRIVATE spdlog::spdlog)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -113,6 +118,7 @@ target_sources(boink
     src/ghost_mode.cc
     src/ghost_gui.cc
     src/constants.cc
+    src/logger.cc
 )
 
 target_include_directories(boink

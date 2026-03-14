@@ -3,6 +3,7 @@
 
 #include "boink/debugger/debugger.h"
 #include "boink/exception.h"
+#include "boink/logger.h"
 #include "boink/simulation/race.h"
 #include "boink/simulation/simulation.h"
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
@@ -189,6 +190,8 @@ int boink_init(bool debug_drawer_enable)
 
     return BOINK_ERR_INTERNAL;
   }
+
+  boink::Logger::init();
 
   if(debug_drawer_enable)
   {

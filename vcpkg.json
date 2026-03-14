@@ -2,7 +2,8 @@
   "dependencies": [
     "bullet3",
     "tinygltf",
-    "piksel"
+    "piksel",
+    "spdlog"
   ],
   "features": {
     "debug-tools": {
