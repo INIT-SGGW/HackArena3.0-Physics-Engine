@@ -1,9 +1,12 @@
 #include "boink/simulators/track/line.h"
 
+#include <LinearMath/btScalar.h>
 #include <algorithm>
 #include <cassert>
+#include <optional>
 #include <unordered_set>
 
+#include "boink/constants.h"
 #include "boink/exception.h"
 #include "boink/utility.h"
 
@@ -199,6 +202,58 @@ std::pair<size_t,btScalar> Line::getIthClosestIndex(
   }
 
   return {ith_closest_i,btSqrt(ith_closest_dist2)};
+}
+
+
+std::optional<btVector3> Line::getClosestPointInterpolated(
+    const btVector3& point) const
+{
+  auto [i_closest,_]=this->getClosestIndex(point);
+  const btVector3& closest=this->getPoint(i_closest);
+
+  // We now check if i_closet+-1 is the correct one.
+  for( int index : {-1,1})
+  {
+    int i_other=static_cast<int>(i_closest)+index;
+    if((i_other <0 || i_other >=(int)this->getPointsSize())&& !is_line_closed_)
+      continue;
+
+    i_other%=this->getPointsSize();
+    const btVector3& other=this->getPoint(i_other);
+
+    if((other-closest).length2()>g_Epsilon)
+    {
+      btVector3 interpolated_point=Line::getPointInterpolated(
+          other,
+          closest,
+          point);
+
+      if((other-interpolated_point).dot(closest-interpolated_point)<0)
+        return interpolated_point;
+    }
+  }
+
+  if(is_line_closed_)
+    btAssert(false && "Line points data are incorretly imported");
+
+  return std::nullopt;
+}
+
+btVector3 Line::getPointInterpolated(
+    const btVector3& a,
+    const btVector3& b,
+    const btVector3& point)
+{
+  btVector3 ab=b-a;
+  btScalar ab_len2=ab.length2();
+
+  btAssert(ab_len2>g_Epsilon);
+  if(ab_len2<g_Epsilon)
+    return a;
+
+  btScalar t=(point-a).dot(ab)/ab_len2;
+
+  return a+t*ab;
 }
 
 void Line::reverse()

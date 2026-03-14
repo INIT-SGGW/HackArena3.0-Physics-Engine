@@ -12,6 +12,7 @@
 #include <piksel/object.hh>
 
 #include "boink/constants.h"
+#include "boink/exception.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/utility.h"
@@ -102,14 +103,40 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   bounding_dimensions_=getBoundingDims(collision_shape_);
 
+  const auto& centerline=track_->getCenterline();
 
-  auto before_finish_point=
-    track_->getCenterline().getPoint(track_->getCenterline().getPointsSize()-1);
+  if(!centerline.isClosed())
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line should be closed");
 
-  lap_info_.curr_lap_coverage=track_->getCenterline().getLength()-g_Epsilon;
+  size_t n=centerline.getPointsSize();
+  if(n<2)
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line has too few points");
+
+  const btVector3& last=centerline.getPoint(n-1);
+  const btVector3& first=centerline.getPoint(0);
+
+  btVector3 segment=first-last;
+
+  if(segment.length2()<g_Epsilon)
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line cannot have dupliacted points");
+
+  // g_epsilon is too small when vehicle tilts a little
+  btVector3 before_finish_point=
+      last+ 0.99*segment;
+
+  lap_info_.curr_lap_coverage=
+      centerline.getCoverage(before_finish_point);
+
   btTransform transform;
   transform.setIdentity();
   transform.setOrigin(before_finish_point);
+
   this->setChassisWorldTransform(transform);
 }
 
@@ -160,7 +187,10 @@ void Vehicle::updateLapInfo(btScalar dt)
       // Only here we calculate the time
       btScalar curr_distance=track_length+v;
       btAssert(curr_distance>=0.f);
-      // First update old time
+
+      if(curr_distance<g_Epsilon)
+        curr_distance=g_Epsilon;
+
       lap_info_.curr_lap_time+=dt*(track_length-prev_coverage)/curr_distance;
 
       // Vehicle can ride this multiple times so we only save the first one
