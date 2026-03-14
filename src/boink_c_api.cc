@@ -192,6 +192,14 @@ int boink_init(bool debug_drawer_enable)
   }
 
   boink::Logger::init();
+  BOINK_INFO("C API version: ({}.{}.{})",
+      BOINK_C_API_VERSION_MAJOR,
+      BOINK_C_API_VERSION_MINOR,
+      BOINK_C_API_VERSION_PATCH);
+  BOINK_INFO("Engine version: ({}.{}.{})",
+      BOINK_VERSION_MAJOR,
+      BOINK_VERSION_MINOR,
+      BOINK_VERSION_PATCH);
 
   if(debug_drawer_enable)
   {
