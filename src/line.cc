@@ -156,6 +156,11 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
         btScalar d_closest=points_dist_[i_closest].second;
         btScalar d_other=points_dist_[i_other].second;
 
+        if(i_closest==0 && i_other==(int)getPointsSize()-1)
+          d_closest=getLength();
+        else if(i_other==0 && i_closest==getPointsSize()-1)
+          d_other=getLength();
+
         btScalar t=(interpolated_point-closest).dot(diff)/diff.length2();
 
         btScalar dist=d_closest + t*(d_other-d_closest);
