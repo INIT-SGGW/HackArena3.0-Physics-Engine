@@ -24,8 +24,10 @@ namespace boink
       Line left;
     };
   public:
+    Pitstop()=default;
     Pitstop(const GltfExtractor& extractor);
 
+    const Zone getZone(ZoneType type) const {return zones_.at(type);}
   private:
     static bool isInOrder(const Line& center,const Line& right);
     static Zone createZone(
@@ -35,9 +37,9 @@ namespace boink
     static constexpr std::string_view kPitstopNameDelim="_";
     static constexpr std::string_view kPitstopSegName="PITSTOP_ZONE";
 
-    static constexpr std::string_view kLeftSegName="LEFT";
-    static constexpr std::string_view kRightSegName="RIGHT";
-    static constexpr std::string_view kCenterSegName="CENTER";
+    static constexpr std::string_view kLeftSegName="LINE_LEFT";
+    static constexpr std::string_view kRightSegName="LINE_RIGHT";
+    static constexpr std::string_view kCenterSegName="LINE_CENTER";
 
     static const std::unordered_map<std::string_view,ZoneType> kZonesTypes;
     static const std::unordered_map<ZoneType,std::string_view> kZonesNames;

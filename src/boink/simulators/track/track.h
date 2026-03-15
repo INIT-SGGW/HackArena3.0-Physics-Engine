@@ -13,6 +13,7 @@
 #include "boink/simulators/track/line.h"
 #include "boink/simulators/track/ground.h"
 #include "boink/simulators/weather.h"
+#include "boink/simulators/track/pitstop.h"
 
 #include <memory>
 #include <string_view>
@@ -89,7 +90,6 @@ namespace boink
   private:
     static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
   private:
-    //static constexpr std::string_view TRACK_NAME="Asphalt";
     static constexpr std::string_view RIGHTLINE_NAME="LINE_RIGHT";
     static constexpr std::string_view LEFTLINE_NAME="LINE_LEFT";
     static constexpr std::string_view CENTERLINE_NAME="LINE_CENTER";
@@ -110,9 +110,7 @@ namespace boink
     Line rightline_;
     Line leftline_;
 
-    Line pitstop_centerline_;
-    Line pitstop_rightline_;
-    Line pitstop_leftline_;
+    Pitstop pitstop_;
 
     std::vector<SampleData> track_data_;
 

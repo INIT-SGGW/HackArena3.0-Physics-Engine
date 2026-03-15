@@ -42,6 +42,8 @@ namespace boink
     this->initPositions(extractor);
     this->createLines(extractor);
 
+    pitstop_=Pitstop(extractor);
+
     this->createTrackData();
     gui_=std::make_shared<TrackGui>(this);
   }
@@ -144,9 +146,9 @@ namespace boink
 
   void Track::createLines(const GltfExtractor& extractor)
   {
-    centerline_=Line::createLine(extractor,finish_line_,CENTERLINE_NAME);
-    rightline_=Line::createLine(extractor,finish_line_,RIGHTLINE_NAME);
-    leftline_=Line::createLine(extractor,finish_line_,LEFTLINE_NAME);
+    centerline_=Line::createLine(extractor,CENTERLINE_NAME,finish_line_);
+    rightline_=Line::createLine(extractor,RIGHTLINE_NAME,finish_line_);
+    leftline_=Line::createLine(extractor,LEFTLINE_NAME,finish_line_);
 
     if(
         !centerline_.isClosed() || 

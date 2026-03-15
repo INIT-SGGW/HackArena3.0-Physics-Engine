@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 13
+#define BOINK_C_API_VERSION_MINOR 14
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -236,10 +236,43 @@ typedef struct BoinkCenterlineSample {
   Real bank_rad;
 } BoinkCenterlineSample;
 
+typedef struct BoinkPitstopData{
+  /**
+   * Number of elements at `enter_centerline_samples`.
+   */
+  unsigned int enter_centerline_sample_count;
+  /**
+   * Pointer to `enter_centerline_sample_count` elements.
+   *
+   * Can be null only when `enter_centerline_sample_count == 0`.
+   */
+  const struct BoinkCenterlineSample *enter_centerline_samples;
+  /**
+   * Number of elements at `fix_centerline_samples`.
+   */
+  unsigned int fix_centerline_sample_count;
+  /**
+   * Pointer to `fix_centerline_sample_count` elements.
+   *
+   * Can be null only when `fix_centerline_sample_count == 0`.
+   */
+  const struct BoinkCenterlineSample *fix_centerline_samples;
+  /**
+   * Number of elements at `exit_centerline_samples`.
+   */
+  unsigned int exit_centerline_sample_count;
+  /**
+   * Pointer to `exit_centerline_sample_count` elements.
+   *
+   * Can be null only when `exit_centerline_sample_count == 0`.
+   */
+  const struct BoinkCenterlineSample *exit_centerline_samples;
+}BoinkPitstopData;
+
 /**
  * Represents static track geometry for one lap.
  *
- * The `map_id` and `centerline_samples` pointers are owned by the engine
+ * The `map_id`, `centerline_samples`, pointers are owned by the engine
  * and must not be freed or modified by the caller.
  * These pointers remain valid until `boink_destroy_race(h)` is called.
  */
@@ -266,6 +299,7 @@ typedef struct BoinkTrackData {
    * Can be null only when `centerline_sample_count == 0`.
    */
   const struct BoinkCenterlineSample *centerline_samples;
+  const struct BoinkPitstopData *pitstop_data;
 } BoinkTrackData;
 
 /**

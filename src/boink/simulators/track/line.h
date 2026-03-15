@@ -4,6 +4,7 @@
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -83,8 +84,8 @@ namespace boink
      */
     static Line createLine(
         const GltfExtractor& extractor,
-        const btVector3& first_point,
-        std::string_view name);
+        std::string_view name,
+        std::optional<btVector3> first_point=std::nullopt);
 
     /**
      * @brief 

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <optional>
 #include <unordered_set>
 #include <vector>
 #include <deque>
@@ -47,7 +48,7 @@ Line::Line(
       BOINK_WARN(
           "Distance between points smaller than epsilon. Index: {}", i);
     if(diff>kDesiredDistance)
-      BOINK_WARN(
+      BOINK_TRACE(
           "Distance between points greater than "
           "kDesiredDistance={} [m [m]]. Index: {}",kDesiredDistance, i);
 
@@ -67,7 +68,7 @@ Line::Line(
 
     line_length_=dist;
   }
-  BOINK_DEBUG("Line length: {}",line_length_);
+  BOINK_TRACE("Line length: {}",line_length_);
 
   for(size_t i=0;i<points_dist_.size();i++)
   {
@@ -231,8 +232,8 @@ const btVector3& Line::getPoint(size_t index) const
 
 Line Line::createLine(
     const GltfExtractor& extractor, 
-    const btVector3& first_point,
-    std::string_view name)
+    std::string_view name,
+    std::optional<btVector3> opt_first_point)
 {
   auto& line_node=extractor.getNode(name);
   if(line_node.type!=TINYGLTF_MODE_LINE)
@@ -328,6 +329,12 @@ Line Line::createLine(
   if(is_line_closed)
     strip.pop_back();
 
+  btVector3 first_point;
+  if(!opt_first_point.has_value())
+    first_point=vertices[strip.front()];
+  else
+    first_point=opt_first_point.value();
+
   auto it=std::min_element(strip.begin(),strip.end(),
       [&](unsigned int idx_a,unsigned int idx_b)
       {
@@ -337,6 +344,7 @@ Line Line::createLine(
         return len_a2<len_b2;
       }
   );
+
   if(it==strip.end())
     throw Exception(
         Exception::Type::UnsupportedFormatError,

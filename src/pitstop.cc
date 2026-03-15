@@ -1,6 +1,7 @@
 #include "boink/simulators/track/pitstop.h"
 
 #include "boink/constants.h"
+#include "boink/logger.h"
 
 #include <sstream>
 #include <unordered_map>
@@ -18,6 +19,15 @@ namespace boink
       if(!isInOrder(zones_[type].center,zones_[type].right))
         zones_[type].center.reverse();
     }
+
+    for(const auto& [type,zone]:zones_)
+    {
+      BOINK_TRACE("Zone type: {}",kZonesNames.at(type));
+      for(const auto& point:zone.center)
+      {
+        BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
+      }
+    }
   }
 
   // Function checks whether center line points are increasing in the forward
@@ -29,8 +39,7 @@ namespace boink
 
     auto dir=next_center_point-center_point;
 
-    auto right_point=right.getPoint( 
-        right.getClosestIndex(center_point).first);
+    auto right_point=right.getClosest(center_point)->first;
     auto right_dir=right_point-center_point;
 
     auto normal=right_dir.cross(dir);

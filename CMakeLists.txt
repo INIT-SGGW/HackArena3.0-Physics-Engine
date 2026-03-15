@@ -119,6 +119,7 @@ target_sources(boink
     src/ghost_gui.cc
     src/constants.cc
     src/logger.cc
+    src/pitstop.cc
 )
 
 target_include_directories(boink
