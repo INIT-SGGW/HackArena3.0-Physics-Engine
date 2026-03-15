@@ -95,7 +95,7 @@ namespace boink
 
   Track::SampleData Track::getClosestTrackSample(const btVector3& point) const
   {
-    size_t index=centerline_.getClosestIndex(point).first;
+    size_t index=std::distance(centerline_.begin(), centerline_.getClosest(point));
     
     btAssert(index<track_data_.size());
     if(index>track_data_.size())
@@ -165,8 +165,7 @@ namespace boink
 
       auto dir=next_center_point-center_point;
 
-      auto right_point=rightline_.getPoint( 
-          rightline_.getClosestIndex(center_point).first);
+      auto right_point=rightline_.getClosest(center_point)->first;
       auto right=right_point-center_point;
 
       auto normal=right.cross(dir);
@@ -293,7 +292,7 @@ namespace boink
 
     const auto& [center_point,dist]=centerline_.getPointAndDist(i);
     btVector3 right_point=
-      rightline_.getPoint(rightline_.getClosestIndex(center_point).first);
+      rightline_.getClosest(center_point)->first;
 
     sample.position=center_point;
     sample.coverage=dist;

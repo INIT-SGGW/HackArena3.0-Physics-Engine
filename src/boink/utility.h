@@ -64,5 +64,31 @@ namespace boink::math
       btVector3 a,
       btVector3 b,
       btScalar epsilon=1e-4);
+
 }
+
+template<>
+struct std::hash<btVector3>
+{
+  std::size_t operator()(const btVector3& v) const noexcept
+  {
+    size_t h_x=std::hash<btScalar>{}(v.x());
+    size_t h_y=std::hash<btScalar>{}(v.y());
+    size_t h_z=std::hash<btScalar>{}(v.z());
+
+    return h_x^(h_y<<1)^(h_z<<2);
+  }
+};
+
+template<>
+struct std::hash<std::pair<unsigned int, unsigned int>>
+{
+  std::size_t operator()(const std::pair<unsigned int,unsigned int>& v) const noexcept
+  {
+    size_t h_first=std::hash<unsigned int>{}(v.first);
+    size_t h_second=std::hash<unsigned int>{}(v.second);
+
+    return h_first^(h_second<<1);
+  }
+};
 

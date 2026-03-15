@@ -6,6 +6,7 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/logger.h"
 #include "spdlog/spdlog.h"
+#include "boink/fmt_btvector3.h"
 
 #include <memory>
 
