@@ -168,6 +168,9 @@ class Vehicle : public Simulator
 
     std::shared_ptr<const Track> track_;
 
+    /// <summary>
+    /// In radians.
+    /// </summary>
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     

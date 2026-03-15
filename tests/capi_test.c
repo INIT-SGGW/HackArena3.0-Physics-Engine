@@ -1,3 +1,4 @@
+// clang-format off
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
@@ -22,10 +23,10 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
 int main()
 {
 #ifdef WIN32
-  //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor_BIG.glb";
-  const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\Bolid_F1.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\HorizonTrack_04.glb";
+  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
+  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\HorizonTrack_04.glb";
+  /*const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\Bolid_F1.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\HorizonTrack_04.glb";*/
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
@@ -83,17 +84,17 @@ int main()
   model.center_of_mass.y = -0.4;
   model.center_of_mass.z = 0.;
   model.mass = 800.;
-  model.max_steer_angle = 90;
+  model.max_steer_angle = 20;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.4;
   model.wheel_radius = 0.36;
 
   uint64_t id0;
-  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
   uint64_t id1;
   if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
   {
@@ -112,26 +113,26 @@ int main()
   //  goto clear;
   //}
 
-  BoinkQuaternion vehicle_rot;
-  vehicle_rot.x = 0.;
-  vehicle_rot.y = 0.7;
-  vehicle_rot.z = 0.;
-  vehicle_rot.w = 0.7;
-  if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //BoinkQuaternion vehicle_rot;
+  //vehicle_rot.x = 0.;
+  //vehicle_rot.y = 0.7;
+  //vehicle_rot.z = 0.;
+  //vehicle_rot.w = 0.7;
+  //if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
 
   BoinkVec3 vehicle_pos;
-  vehicle_pos.x = 0.;
-  vehicle_pos.y = 13.;
-  vehicle_pos.z = 0.;
-  if ((code = boink_set_vehicle_position(handle, id0, &vehicle_pos)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //vehicle_pos.x = 0.;
+  //vehicle_pos.y = 13.;
+  //vehicle_pos.z = 0.;
+  //if ((code = boink_set_vehicle_position(handle, id0, &vehicle_pos)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
   vehicle_pos.x = 0.;
   vehicle_pos.y = 0.;
   vehicle_pos.z = 0.;
@@ -212,7 +213,7 @@ int main()
       runOnce2 = true;
     }
 
-    if(time>2.f)
+    /*if(time>2.f)
     {
       if ((code = boink_set_vehicle_random_pos(handle,id0)) != BOINK_OK)
       {
@@ -220,7 +221,7 @@ int main()
         goto clear;
       }
       time=0.f;
-    }
+    }*/
     time+=sim_time;
 
     struct BoinkVehicleState state;
@@ -235,12 +236,12 @@ int main()
 
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
-    BoinkGhostModeRuntimeState state_ghost;
+    /*BoinkGhostModeRuntimeState state_ghost;
     if ((code = boink_read_vehicle_ghost_mode_state(handle, id0, &state_ghost)) != BOINK_OK)
     {
       PRINT_ERROR();
       goto clear;
-    }
+    }*/
     uint64_t number;
     if ((code = boink_get_number_of_start_pos(handle,&number) != BOINK_OK))
     {

@@ -30,9 +30,9 @@ void VehicleController::update(piksel::Window& wnd, piksel::Camera& camera, floa
     vehicle_->setBrake(0.f);
 
   if (wnd.getKey(key_map_.at(Action::TurnLeft)) == piksel::Window::KeyState::Press)
-    vehicle_->setSteering(0.3f, Vehicle::TurnDirection::Left);
+    vehicle_->setSteering(0.5f, Vehicle::TurnDirection::Left);
   else if (wnd.getKey(key_map_.at(Action::TurnRight)) == piksel::Window::KeyState::Press)
-    vehicle_->setSteering(0.3f, Vehicle::TurnDirection::Right);
+    vehicle_->setSteering(0.5f, Vehicle::TurnDirection::Right);
   else
     vehicle_->setSteering(0.f, Vehicle::TurnDirection::Right);
 

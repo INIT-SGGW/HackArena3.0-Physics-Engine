@@ -64,7 +64,7 @@ int main()
   model.center_of_mass.y = -0.4;
   model.center_of_mass.z = 0.;
   model.mass = 800.;
-  model.max_steer_angle = 90;
+  model.max_steer_angle = 20;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.4;
   model.wheel_radius = 0.36;

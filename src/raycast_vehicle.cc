@@ -422,44 +422,32 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   m_forwardImpulse.resize(numWheel);
   m_sideImpulse.resize(numWheel);
 
-  btScalar raw_lateral_force = btScalar(0.f);
-  btScalar raw_traction_force = btScalar(0.f);
-
   auto total_drive_torque = updateDriveParts(timeStep);
+
+  // std::cout << "steer_val:  " << m_steeringValue << "\n";
 
   for (int wheel_idx = 0; wheel_idx < getNumWheels(); wheel_idx++)
   {
     WheelInfo& wheelInfo = m_wheelsInfo[wheel_idx];
     class btRigidBody* groundObject = (class btRigidBody*)wheelInfo.m_raycastInfo.m_groundObject;
-    m_sideImpulse[wheel_idx] = btScalar(0.);
-    m_forwardImpulse[wheel_idx] = btScalar(0.);
 
-    if (groundObject)
-    {
-      auto long_speed = btMax(btFabs(getWheelLongSpeed(wheelInfo)), btScalar(2.f));
-      auto lat_speed = getWheelLatSpeed(wheelInfo);
-      auto slip_angle = btAtan2(lat_speed, long_speed);
+    // @update m_axle and m_forwardWS
+    // its project axle to be always parallel to the ground, so the impulses are not applied up or down
+    const btTransform& wheelTrans = getWheelTransformWS(wheel_idx);
 
-      if (slip_angle < 0)
-        raw_lateral_force = wheelInfo.m_wheelsSuspensionForce * kSlipAngleToGrip.GetValue(-slip_angle);
-      else
-        raw_lateral_force = wheelInfo.m_wheelsSuspensionForce * -kSlipAngleToGrip.GetValue(slip_angle);
+    btMatrix3x3 wheelBasis0 = wheelTrans.getBasis();
+    m_axle[wheel_idx] = -btVector3(wheelBasis0[0][m_indexRightAxis], wheelBasis0[1][m_indexRightAxis],
+                                   wheelBasis0[2][m_indexRightAxis]);
 
-      const btTransform& wheelTrans = getWheelTransformWS(wheel_idx);
+    const btVector3& surfNormalWS = wheelInfo.m_raycastInfo.m_contactNormalWS;
+    btScalar proj = m_axle[wheel_idx].dot(surfNormalWS);
+    m_axle[wheel_idx] -= surfNormalWS * proj;
+    m_axle[wheel_idx] = m_axle[wheel_idx].normalize();
 
-      btMatrix3x3 wheelBasis0 = wheelTrans.getBasis();
-      m_axle[wheel_idx] = -btVector3(wheelBasis0[0][m_indexRightAxis], wheelBasis0[1][m_indexRightAxis],
-                                     wheelBasis0[2][m_indexRightAxis]);
+    m_forwardWS[wheel_idx] = surfNormalWS.cross(m_axle[wheel_idx]);
+    m_forwardWS[wheel_idx].normalize();
 
-      const btVector3& surfNormalWS = wheelInfo.m_raycastInfo.m_contactNormalWS;
-      btScalar proj = m_axle[wheel_idx].dot(surfNormalWS);
-      m_axle[wheel_idx] -= surfNormalWS * proj;
-      m_axle[wheel_idx] = m_axle[wheel_idx].normalize();
-
-      m_forwardWS[wheel_idx] = surfNormalWS.cross(m_axle[wheel_idx]);
-      m_forwardWS[wheel_idx].normalize();
-    }
-
+    // @wheels forces and angular speedes
     btScalar total_torque = 0.f;
     auto traction_torque = 0.f;
     auto drive_torque = 0.f;
@@ -503,20 +491,31 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
         wheelInfo.m_angSpeed += wheel_speed_diff;
     }
 
-    auto speed = 0.f;
     auto slip_ratio = 0.0f;
-    // calculating slip ratio and traction force
+    auto slip_angle = 0.f;
+    m_sideImpulse[wheel_idx] = btScalar(0.);
+    m_forwardImpulse[wheel_idx] = btScalar(0.);
     if (groundObject)
     {
-      speed = getWheelLongSpeed(wheelInfo);
-      if (btFabs(speed) < 0.00001f) speed = 0.f;
-      slip_ratio = 0.0f;
+      auto long_speed = getWheelLongSpeed(wheelInfo);
+      // @slip angle
+      auto speed_SA = btMax(btFabs(long_speed), btScalar(2.f));
+      auto lat_speed = getWheelLatSpeed(wheelInfo);
 
-      if (speed == 0 && m_throttle == 0)
+      if (btFabs(lat_speed) < 0.00001f) lat_speed = 0.f;
+      slip_angle = btAtan2(lat_speed, speed_SA);
+
+      // std::cout << "slip_angle:  " << slip_angle << "\n";
+
+      // @slip ratio
+      auto speed_SR = long_speed;
+      if (btFabs(speed_SR) < 0.00001f) speed_SR = 0.f;
+
+      if (speed_SR == 0 && m_throttle == 0)
         wheelInfo.m_traction_force = 0.0f;
       else
       {
-        if (speed == 0)
+        if (speed_SR == 0)
         {
           if (!wheelInfo.m_bIsFrontWheel)
           {
@@ -525,62 +524,65 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
             else if (m_gearbox.current_gear != Gear::Neutral)
               slip_ratio = 0.0001f;
           }
-          else
-            slip_ratio = 0.f;
         }
-        else if (btFabs(speed) < 2.9)
+        else if (btFabs(speed_SR) < 2.9)
         {
-          slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / 2.9;
+          slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed_SR) / 2.9;
         }
         else
         {
-          slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed) / btFabs(speed);
+          slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed_SR) / btFabs(speed_SR);
         }
+      }
 
-        if (slip_ratio < 0)
-          raw_traction_force = wheelInfo.m_wheelsSuspensionForce * -kSlipRatioToGrip.GetValue(-slip_ratio);
-        else
-          raw_traction_force = wheelInfo.m_wheelsSuspensionForce * kSlipRatioToGrip.GetValue(slip_ratio);
+      // if (wheelInfo.m_bIsFrontWheel)
+      //{
+      // std::cout << "drive_torque:  " << drive_torque << "\t";
+      // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
+      // std::cout << "total_torque: " << total_torque << "\t";
+      // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
+      // std::cout << "long_speed: " << speed_SR << "\t";
+      // std::cout << "lat_speed: " << lat_speed << "\t";
+      // std::cout << "slip_ratio: " << slip_ratio << "\t";
+      // std::cout << "slip_angle: " << slip_angle << "\t";
+      // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
+      // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
+      //}
+
+      // @longtudial and lateral grip distribution
+      btScalar lateral_force = btScalar(0.f);
+      btScalar traction_force = btScalar(0.f);
+
+      auto slip_ang_normalized = slip_angle / kSlipAnglePeak;
+      auto slip_ratio_normalized = slip_ratio / kSlipRatioPeak;
+
+      auto slip_vec_len =
+          btSqrt(slip_ang_normalized * slip_ang_normalized + slip_ratio_normalized * slip_ratio_normalized);
+
+      if (slip_vec_len > 0.f)
+      {
+        auto slip_ang_scaled = slip_vec_len * kSlipAnglePeak;
+        auto slip_ratio_scaled = slip_vec_len * kSlipRatioPeak;
+
+        auto lat_grip_base = kSlipAngleToGrip.GetValue(slip_ang_scaled);
+        auto long_grip_base = kSlipRatioToGrip.GetValue(slip_ratio_scaled);
+
+        auto lat_grip = lat_grip_base * (slip_ang_normalized / slip_vec_len);
+        auto long_grip = long_grip_base * (slip_ratio_normalized / slip_vec_len);
+
+        lateral_force = -lat_grip * wheelInfo.m_wheelsSuspensionForce;
+        traction_force = long_grip * wheelInfo.m_wheelsSuspensionForce;
 
         if (wheelInfo.m_bIsFrontWheel)
-          raw_traction_force = wheelInfo.m_traction_force +
-                               kSmoothingTractionForceFactor * (raw_traction_force - wheelInfo.m_traction_force);
+          traction_force = wheelInfo.m_traction_force +
+                           kSmoothingTractionForceFactor * (traction_force - wheelInfo.m_traction_force);
+        wheelInfo.m_traction_force = traction_force;
+
+        m_sideImpulse[wheel_idx] = lateral_force * timeStep;
+        m_forwardImpulse[wheel_idx] = traction_force * timeStep;
       }
-    }
-    else
-      wheelInfo.m_traction_force = 0.0f;
 
-    // if (wheelInfo.m_bIsFrontWheel)
-    //{
-    // std::cout << "drive_torque:  " << drive_torque << "\t";
-    // std::cout << "traction_torque: " << traction_torque << "\t";  // on old traction force
-    // std::cout << "total_torque: " << total_torque << "\t";
-    // std::cout << "ang_speed: " << wheelInfo.m_angSpeed << "\t";
-    // std::cout << "long_speed: " << speed << "\t";
-    // std::cout << "lat_speed: " << getWheelLatSpeed(wheelInfo) << "\t";
-    // std::cout << "slip_ratio: " << slip_ratio << "\t";
-    // std::cout << "suspension_force: " << wheelInfo.m_wheelsSuspensionForce << "\t";
-    // std::cout << "traction_force: " << wheelInfo.m_traction_force << "\n";
-    //}
-
-    m_forwardImpulse[wheel_idx] = btScalar(0.);
-
-    if (groundObject)
-    {
-      // i think that grip from peaks of slip ratio and slip angle is a little to big so here its a little smaller
-      auto max_force = wheelInfo.m_wheelsSuspensionForce * 1.5;
-      btVector3 raw_forces_vec = btVector3(raw_lateral_force, raw_traction_force, 0);
-
-      // std::cout << "max_force: " << max_force << "\t";
-      // std::cout << "force_vec_len: " << raw_forces_vec.length() << "\n";
-
-      if (raw_forces_vec.length() > max_force) raw_forces_vec = raw_forces_vec.normalized() * max_force;
-
-      wheelInfo.m_traction_force = raw_forces_vec.getY();
-      m_sideImpulse[wheel_idx] = raw_forces_vec.getX() * timeStep;
-      m_forwardImpulse[wheel_idx] = raw_forces_vec.getY() * timeStep;
-
-      // apply the impulses
+      // @apply the impulses
       btVector3 rel_pos = wheelInfo.m_raycastInfo.m_contactPointWS - m_chassisBody->getCenterOfMassPosition();
 
       /*std::cout << "side_imp: " << m_sideImpulse[wheel_idx] << "\t";
@@ -607,9 +609,11 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
         groundObject->applyImpulse(-sideImp, rel_pos2);
       }
     }
+    else
+      wheelInfo.m_traction_force = 0.0f;
   }
 
-  // feedback to engine
+  // @feedback to engine
   auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
                         m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
                        2;
@@ -624,7 +628,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   // std::cout << "rpm:  " << m_engine.rpm << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  //  std::cout << "\n";
+  //   std::cout << "\n";
 }
 
 void RaycastVehicle::setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)

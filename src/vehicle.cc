@@ -339,6 +339,9 @@ void Vehicle::setSteering(btScalar value, TurnDirection dir)
 
   // User should always set value to [0-1]
 
+  // only for debugging purpose, delete in future
+  vehicle_->m_steeringValue = radians;
+
   vehicle_->setSteeringValue(radians, (int)WheelPosition::FrontLeft);
   vehicle_->setSteeringValue(radians, (int)WheelPosition::FrontRight);
 }
