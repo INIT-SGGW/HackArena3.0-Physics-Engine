@@ -1,19 +1,19 @@
 #include "boink/simulators/track/line.h"
 
 #include <LinearMath/btScalar.h>
-#include <algorithm>
-#include <cassert>
-#include <iterator>
-#include <optional>
-#include <unordered_set>
-#include <vector>
-#include <deque>
 
 #include "boink/constants.h"
 #include "boink/exception.h"
 #include "boink/logger.h"
 #include "boink/utility.h"
 #include "boink/assert.h"
+
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <unordered_set>
+#include <vector>
+#include <deque>
 
 namespace boink {
 
@@ -229,74 +229,6 @@ const btVector3& Line::getPoint(size_t index) const
   return points_dist_.at(index).first;
 }
 
-std::pair<btVector3,btScalar> Line::getRayLineIntersection(
-    btVector3 ray_dir,
-    btVector3 ray_start,
-    btVector3 normal,
-    btScalar epsilon) const
-{
-  btScalar t_closest=FLT_MAX;
-  btVector3 point_closest;
-  for(size_t i=0;i<points_dist_.size()-1;i++)
-  {
-    auto ray_info=math::getRayLineInterscetion(
-        ray_dir,
-        ray_start,
-        normal,
-        points_dist_[i].first,
-        points_dist_[i+1].first,
-        epsilon);
-
-    if(!ray_info.has_value())
-      continue;
-
-    auto [point,t,u]=ray_info.value();
-
-    if(u<0.f||u>1.f)
-      continue;
-
-    if(t<0.f)
-      continue;
-
-    if(t<t_closest)
-    {
-      point_closest=point;
-      t_closest=t;
-    }
-  }
-
-  if(is_line_closed_)
-  {
-    auto ray_info=math::getRayLineInterscetion(
-        ray_dir,
-        ray_start,
-        normal,
-        points_dist_[points_dist_.size()-1].first,
-        points_dist_[0].first,
-        epsilon);
-
-    if(!ray_info.has_value())
-      return {point_closest,t_closest};
-
-    auto [point,t,u]=ray_info.value();
-
-    if(u<0.f||u>1.f)
-      return {point_closest,t_closest};
-
-    if(t<0.f)
-      return {point_closest,t_closest};
-
-    if(t<t_closest)
-    {
-      point_closest=point;
-      t_closest=t;
-    }
-  }
-
-  return {point_closest,t_closest};
-
-}
-
 Line Line::createLine(
     const GltfExtractor& extractor, 
     const btVector3& first_point,
@@ -319,7 +251,8 @@ Line Line::createLine(
   std::deque<unsigned int> strip;
   {
     // Convert to vertices to line pairs
-    std::unordered_set<std::pair<unsigned int,unsigned int>> segments;
+    std::unordered_set<std::pair<unsigned int,unsigned int>,SegmentHash> 
+      segments;
     for(size_t i=0;i+1<indices.size();i+=2)
     {
       unsigned int a=indices[i];

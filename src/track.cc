@@ -9,6 +9,7 @@
 #include "boink/gltf_extractor.h"
 #include "boink/gui/track_gui.h"
 #include "boink/constants.h"
+#include "boink/assert.h"
 
 #include <algorithm>
 #include <cctype>
@@ -54,14 +55,7 @@ namespace boink
   {
     size_t index=position-1;
 
-    if(index>=start_postions_.size())
-    {
-      std::stringstream ss;
-      ss<<"Position: "<<position<<" does not exist";
-      throw Exception(
-          Exception::Type::InvalidArgumentError,
-          ss.str());
-    }
+    BOINK_ASSERT(index<start_postions_.size());
 
     return start_postions_.at(index);
   }
@@ -74,17 +68,16 @@ namespace boink
     std::uniform_int_distribution<size_t> dist(0,centerline_.getPointsSize()-1);
     size_t random_index=dist(gen);
 
-    btAssert(random_index<track_data_.size());
-    if(random_index>track_data_.size())
+    BOINK_ASSERT(random_index<track_data_.size());
+    if(random_index>=track_data_.size())
       return centerline_.getPoint(random_index);
 
     const auto& sample=track_data_.at(random_index);
-    btAssert((sample.position-centerline_.getPoint(random_index)).length2()<g_Epsilon);
+    BOINK_ASSERT(
+        (sample.position-centerline_.getPoint(random_index)).length2()<g_Epsilon);
 
-    // TODO
     std::uniform_real_distribution<btScalar> real_dist(0.0f,1.f);
     btScalar random_left_width=real_dist(gen)*sample.left_width;
-    //btScalar random_left_width=0.0;
     btScalar random_right_width=real_dist(gen)*sample.right_width;
 
     btVector3 offset=sample.right*(random_right_width-random_left_width);
@@ -97,12 +90,13 @@ namespace boink
   {
     size_t index=std::distance(centerline_.begin(), centerline_.getClosest(point));
     
-    btAssert(index<track_data_.size());
-    if(index>track_data_.size())
+    BOINK_ASSERT(index<track_data_.size());
+    if(index>=track_data_.size())
       return track_data_.at(0);;
 
     const auto& sample=track_data_.at(index);
-    btAssert((sample.position-centerline_.getPoint(index)).length2()<g_Epsilon);
+    BOINK_ASSERT(
+        (sample.position-centerline_.getPoint(index)).length2()<g_Epsilon);
 
     return sample;
   }
@@ -130,10 +124,6 @@ namespace boink
     {
       if(node.vertices.size()==0 || node.indices.size()==0)
         continue;
-//#ifndef NDEBUG
-//      if(node.name!="COLLIDER_STATIC_GROUND_ASPHALT")
-//        continue;
-//#endif
 
       std::optional<Ground::Type> type=Track::resolveGroundTypeFromName(node.name);
 
@@ -157,6 +147,17 @@ namespace boink
     centerline_=Line::createLine(extractor,finish_line_,CENTERLINE_NAME);
     rightline_=Line::createLine(extractor,finish_line_,RIGHTLINE_NAME);
     leftline_=Line::createLine(extractor,finish_line_,LEFTLINE_NAME);
+
+    if(
+        !centerline_.isClosed() || 
+        !rightline_.isClosed() || 
+        !leftline_.isClosed())
+    {
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Center, right or left line is not closed line");
+    }
+
 
     // Check if centerline should be reveresed
     {
@@ -216,7 +217,7 @@ namespace boink
     // verify if there are all postions
     for(const auto& pair:postion_pairs)
     {
-      if(pair.first-1>pos_exist.size())
+      if(pair.first-1>=pos_exist.size())
         throw Exception(
             Exception::Type::UnsupportedFormatError,
             "Cannot be position greater from number of positions");
@@ -251,18 +252,14 @@ namespace boink
   {
     track_data_.reserve(centerline_.getPointsSize());
 
-    btAssert(centerline_.getPointsSize()>2);
-    btAssert(rightline_.getPointsSize()>2);
-    btAssert(leftline_.getPointsSize()>2);
+    BOINK_ASSERT(centerline_.getPointsSize()>2);
+    BOINK_ASSERT(rightline_.getPointsSize()>2);
+    BOINK_ASSERT(leftline_.getPointsSize()>2);
 
-    for(size_t i=0;i<centerline_.getPointsSize()-1;i++)
+    for(size_t i=0;i<centerline_.getPointsSize();i++)
       track_data_.push_back(this->generateSampleTrackData(i));
 
-    // For last element
-    track_data_.push_back(
-        this->generateSampleTrackData(centerline_.getPointsSize()-1));
-
-    // Calc curvature jebana
+    // Calc curvature 
     for(size_t i=0;i<track_data_.size();i++)
     {
       size_t prev=(i-1+track_data_.size())%track_data_.size();
@@ -306,7 +303,7 @@ namespace boink
     sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
     sample.right.normalize();
 
-    if(sample.tangent.dot(sample.right)>1e-5)
+    if(sample.tangent.dot(sample.right)>g_Epsilon)
     {
       std::stringstream ss;
       ss<<"For centerline point i=("<<i;
@@ -317,6 +314,7 @@ namespace boink
     }
 
     sample.normal=sample.right.cross(sample.tangent);
+    BOINK_ASSERT(sample.normal.length2()>g_Epsilon);
     sample.normal.normalize();
 
     if(sample.normal.dot(g_Up)<0.0)
@@ -329,10 +327,10 @@ namespace boink
           ss.str());
     }
 
-    sample.right_width=rightline_.getRayLineIntersection(
-        sample.right,center_point,sample.normal).second;
-    sample.left_width=leftline_.getRayLineIntersection(
-        -1*sample.right,center_point,sample.normal).second;
+    sample.right_width=(rightline_.getClosestPointInterpolated(
+        center_point).first-center_point).length();
+    sample.left_width=(leftline_.getClosestPointInterpolated(
+        center_point).first-center_point).length();
 
     sample.grade=btAsin(sample.tangent.dot(g_Up));
 
