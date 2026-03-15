@@ -1,4 +1,5 @@
 #include "boink/logger.h"
+#include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 
 namespace boink
@@ -11,7 +12,11 @@ namespace boink
       file_sink_->set_pattern("[%Y-%m-%d %H:%M:%S] [BOINK] [%^%l%$] [%s:%#] %v");
 
       console_sink_ = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+#ifndef NDEBUG
+      console_sink_->set_level(spdlog::level::debug);
+#else
       console_sink_->set_level(spdlog::level::info);
+#endif 
       console_sink_->set_pattern("[%H:%M:%S] [BOINK] [%^%l%$] [%s:%#] %v");
 
       std::vector<spdlog::sink_ptr> sinks {console_sink_, file_sink_};
