@@ -80,8 +80,7 @@ struct std::hash<btVector3>
   }
 };
 
-template<>
-struct std::hash<std::pair<unsigned int, unsigned int>>
+struct SegmentHash
 {
   std::size_t operator()(const std::pair<unsigned int,unsigned int>& v) const noexcept
   {
