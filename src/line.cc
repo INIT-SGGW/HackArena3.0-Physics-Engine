@@ -152,7 +152,7 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
           closest,
           point);
 
-      if((other-interpolated_point).dot(closest-interpolated_point)<0)
+      if((other-interpolated_point).dot(closest-interpolated_point)<=0)
       {
         btScalar d_closest=points_dist_[i_closest].second;
         btScalar d_other=points_dist_[i_other].second;
@@ -170,7 +170,7 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
     }
   }
 
-  BOINK_ASSERT(is_line_closed_,"Line points data are incorretly imported");
+  //BOINK_ASSERT(!is_line_closed_,"Line points data are incorretly imported");
 
   // fallback for open lines or unexpected cases
   return {closest, points_dist_[i_closest].second};

@@ -120,6 +120,7 @@ target_sources(boink
     src/constants.cc
     src/logger.cc
     src/pitstop.cc
+    src/road.cc
 )
 
 target_include_directories(boink

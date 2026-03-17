@@ -1,7 +1,7 @@
 #pragma once
 
 #include "boink/gltf_extractor.h"
-#include "boink/simulators/track/line.h"
+#include "boink/simulators/track/road.h"
 
 #include <unordered_map>
 
@@ -10,27 +10,20 @@ namespace boink
   class Pitstop
   {
   public:
-    enum class ZoneType
+    enum class Zone
     {
       Enter,
       Fix,
       Exit,
       Count
     };
-    struct Zone
-    {
-      Line right;
-      Line center;
-      Line left;
-    };
   public:
     Pitstop()=default;
     Pitstop(const GltfExtractor& extractor);
 
-    const Zone getZone(ZoneType type) const {return zones_.at(type);}
+    const Road& getZone(Zone type) const {return zones_.at(type);}
   private:
-    static bool isInOrder(const Line& center,const Line& right);
-    static Zone createZone(
+    static Road createZone(
         const GltfExtractor& extractor,
         const std::string& prefix);
   private:
@@ -41,9 +34,9 @@ namespace boink
     static constexpr std::string_view kRightSegName="LINE_RIGHT";
     static constexpr std::string_view kCenterSegName="LINE_CENTER";
 
-    static const std::unordered_map<std::string_view,ZoneType> kZonesTypes;
-    static const std::unordered_map<ZoneType,std::string_view> kZonesNames;
+    static const std::unordered_map<std::string_view,Zone> kZonesTypes;
+    static const std::unordered_map<Zone,std::string_view> kZonesNames;
   private:
-    std::unordered_map<ZoneType,Zone> zones_;
+    std::unordered_map<Zone,Road> zones_;
   };
 }

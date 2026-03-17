@@ -10,10 +10,10 @@
 
 #include "boink/gltf_extractor.h"
 #include "boink/simulators/simulator.h"
-#include "boink/simulators/track/line.h"
 #include "boink/simulators/track/ground.h"
 #include "boink/simulators/weather.h"
 #include "boink/simulators/track/pitstop.h"
+#include "boink/simulators/track/road.h"
 
 #include <memory>
 #include <string_view>
@@ -28,24 +28,6 @@ namespace boink
   {
   public:
     friend class TrackGui;
-  public:
-    struct SampleData
-    {
-      btScalar coverage;
-      btVector3 position;
-
-      btVector3 tangent;
-      btVector3 normal;
-      btVector3 right;
-
-      btScalar left_width;
-      btScalar right_width;
-
-      btScalar curvature;
-      // minus downhill postivie uphill -90 to +90
-      btScalar grade;
-      btScalar bank;
-    };
   public:
     Track(
         std::string_view filename,
@@ -62,31 +44,19 @@ namespace boink
 
     const btTransform& getWorldTransform() const {return transform_;}
 
-    const Line& getCenterline() const {return centerline_;}
+    const Road& getRoad() const {return road_;}
     std::string_view getFilename() const { return filename_;}
-
-    const std::vector<SampleData>& getTrackData() const {return track_data_;}
-    std::vector<SampleData>& getTrackData() {return track_data_;}
 
     size_t getNumberOfStartingPositions() const {return start_postions_.size();}
     btVector3 getStartingPosition(size_t position) const;
     btVector3 getFinishLine() const {return finish_line_;}
 
-    btVector3 getOnTrackRandomPosition() const;
-
-    SampleData getClosestTrackSample(const btVector3& point) const;
-
     std::tuple<int,btScalar,Simulator::ID> getBestLapInfo();
   private:
     void initSurfaceInfos();
     void initGrounds(const GltfExtractor& extractor);
-    void createLines(const GltfExtractor& extractor);
     void initPositions(const GltfExtractor& extractor);
     void initFinishLine(const GltfExtractor& extractor);
-
-    void createTrackData();
-    SampleData generateSampleTrackData(size_t i) const;
-
   private:
     static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
   private:
@@ -106,13 +76,8 @@ namespace boink
     std::vector<btVector3> start_postions_;
     btVector3 finish_line_;
 
-    Line centerline_;
-    Line rightline_;
-    Line leftline_;
-
+    Road road_;
     Pitstop pitstop_;
-
-    std::vector<SampleData> track_data_;
 
     btTransform transform_=btTransform::getIdentity();
     std::string filename_;

@@ -81,7 +81,7 @@ static void set_last_error(const char* function, const char* return_code_str,con
 static const char* returnCodeStr(int code);
 static bool isVehicleFullyOnTrack(
     const btVector3& point,
-    const boink::Track::SampleData& sample,
+    const boink::Road& road,
     const boink::Vehicle::BoundingBox& box,
     const btVector3& offset,
     const btQuaternion& orientation);
@@ -326,27 +326,31 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   //  return BOINK_ERR_INTERNAL;
   //}
 
-  auto& track_data=p_race->getTrack()->getTrackData();
+  const auto& road=p_race->getTrack()->getRoad();
+  const auto& track_data=road.getRoadData();
 
   if(p_race->getUserPtr()==nullptr)
   {
     BoinkCenterlineSample* samples=new BoinkCenterlineSample[track_data.size()];
     for(size_t i=0;i<track_data.size();i++)
     {
+      const btVector3& position=road.getPoint(i);
+      btScalar coverage=road.getCoverage(position);
+
       samples[i].bank_rad=track_data[i].bank;
       samples[i].curvature_1pm=track_data[i].curvature;
       samples[i].grade_rad=track_data[i].grade;
       samples[i].left_width_m=track_data[i].left_width;
       samples[i].right_width_m=track_data[i].right_width;
-      samples[i].s_m=track_data[i].coverage;
+      samples[i].s_m=coverage;
 
       samples[i].normal.x=track_data[i].normal.getX();
       samples[i].normal.y=track_data[i].normal.getY();
       samples[i].normal.z=track_data[i].normal.getZ();
 
-      samples[i].position.x=track_data[i].position.getX();
-      samples[i].position.y=track_data[i].position.getY();
-      samples[i].position.z=track_data[i].position.getZ();
+      samples[i].position.x=position.getX();
+      samples[i].position.y=position.getY();
+      samples[i].position.z=position.getZ();
 
       samples[i].right.x=track_data[i].right.getX();
       samples[i].right.y=track_data[i].right.getY();
@@ -361,11 +365,11 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
 
   out_track_data->map_id=p_race->getTrack()->getFilename().data();
   out_track_data->version=0;
-  out_track_data->lap_length_m=p_race->getTrack()->getCenterline().getLength();
+  out_track_data->lap_length_m=p_race->getTrack()->getRoad().getLength();
   out_track_data->centerline_samples=
     reinterpret_cast<BoinkCenterlineSample*>(p_race->getUserPtr());
   out_track_data->centerline_sample_count= (unsigned int)
-    p_race->getTrack()->getTrackData().size();
+    p_race->getTrack()->getRoad().getSize();
 
   return BOINK_OK;
 }
@@ -584,9 +588,11 @@ int boink_set_vehicle_before_point(
   
   btVector3 bt_point(point->x,point->y,point->z);
 
-  btVector3 bt_forward=p_race->getTrack()->getClosestTrackSample(bt_point).tangent;
+  btVector3 bt_forward=
+    p_race->
+    getTrack()->
+    getRoad().getClosestMetrics(bt_point).tangent;
   boink::Vehicle::BoundingBox bounding_dims=vehicle->getBoundingDims();
-
 
   btVector3 axis_rot=boink::g_Forward.cross(bt_forward);
   btScalar rot_angle=boink::g_Forward.angle(bt_forward);
@@ -669,8 +675,9 @@ int boink_set_vehicle_random_pos(BoinkHandle handle,uint64_t vehicle_id)
   std::uniform_real_distribution<btScalar> dist(0,2*SIMD_PI);
 
 repeat:
-  btVector3 bt_random_pos=p_race->getTrack()->getOnTrackRandomPosition();
-  auto sample=p_race->getTrack()->getClosestTrackSample(bt_random_pos);
+  const auto& road=p_race->getTrack()->getRoad();
+  btVector3 bt_random_pos=road.getRandomPosition();
+  auto sample=road.getClosestMetrics(bt_random_pos);
   btScalar angle=dist(gen);
 
   btQuaternion align;
@@ -682,7 +689,7 @@ repeat:
 
   btVector3 offset=-1*vehicle->getCenterOfMassCS();
   offset.setY(0);
-  if(!isVehicleFullyOnTrack(bt_random_pos,sample,vehicle->getBoundingDims(),
+  if(!isVehicleFullyOnTrack(bt_random_pos,road,vehicle->getBoundingDims(),
         offset,final_rot))
     goto repeat;
 
@@ -747,7 +754,10 @@ int boink_set_vehicle_at_start_pos(
   HANDLE_EXCEPTIONS(
     bt_start_pos=p_race->getTrack()->getStartingPosition(position_index));
 
-  btVector3 bt_forward=p_race->getTrack()->getClosestTrackSample(bt_start_pos).tangent;
+  btVector3 bt_forward=
+    p_race->
+    getTrack()->
+    getRoad().getClosestMetrics(bt_start_pos).tangent;
   boink::Vehicle::BoundingBox bounding_dims=vehicle->getBoundingDims();
 
   btScalar half_depth=(bounding_dims.top_left-bounding_dims.bottom_left).length()/2.f;
@@ -1169,14 +1179,16 @@ const char* returnCodeStr(int code)
 
 bool isVehicleFullyOnTrack(
     const btVector3& point,
-    const boink::Track::SampleData& sample,
+    const boink::Road& road,
     const boink::Vehicle::BoundingBox& box,
     const btVector3& offset,
     const btQuaternion& orientation)
 {
-  // TODO it is not accutally fully precise but i dont care at this point
 
-  btVector3 help=(point-sample.position);
+  const auto& sample=road.getClosestMetrics(point);
+  const auto& position_on_track=road.getInterpolatedPoint(point);
+
+  btVector3 help=(point-position_on_track);
   if(help.length2()<boink::g_Epsilon)
     return true;
   help.normalize();
@@ -1185,16 +1197,16 @@ bool isVehicleFullyOnTrack(
     help.dot(sample.right)>0?sample.right_width:sample.left_width;
 
   btVector3 rotated_box_point=quatRotate(orientation,box.bottom_left+offset);
-  if((sample.position-(point+rotated_box_point)).length()>distance)
+  if((position_on_track-(point+rotated_box_point)).length()>distance)
     return false;
   rotated_box_point=quatRotate(orientation,box.bottom_right+offset);
-  if((sample.position-(point+rotated_box_point)).length()>distance)
+  if((position_on_track-(point+rotated_box_point)).length()>distance)
     return false;
   rotated_box_point=quatRotate(orientation,box.top_left+offset);
-  if((sample.position-(point+rotated_box_point)).length()>distance)
+  if((position_on_track-(point+rotated_box_point)).length()>distance)
     return false;
   rotated_box_point=quatRotate(orientation,box.top_right+offset);
-  if((sample.position-(point+rotated_box_point)).length()>distance)
+  if((position_on_track-(point+rotated_box_point)).length()>distance)
     return false;
   
   return true;

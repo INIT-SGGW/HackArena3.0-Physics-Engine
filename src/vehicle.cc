@@ -103,21 +103,21 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   bounding_dimensions_=getBoundingDims(collision_shape_);
 
-  const auto& centerline=track_->getCenterline();
+  const auto& road=track_->getRoad();
 
-  if(!centerline.isClosed())
+  if(!road.isClosed())
       throw Exception(
           Exception::Type::InternalError,
-          "Center line should be closed");
+          "Main road should be closed");
 
-  size_t n=centerline.getPointsSize();
+  size_t n=road.getSize();
   if(n<2)
       throw Exception(
           Exception::Type::InternalError,
           "Center line has too few points");
 
-  const btVector3& last=centerline.getPoint(n-1);
-  const btVector3& first=centerline.getPoint(0);
+  const btVector3& last=road.getPoint(n-1);
+  const btVector3& first=road.getPoint(0);
 
   btVector3 segment=first-last;
 
@@ -131,7 +131,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       last+ 0.99*segment;
 
   lap_info_.curr_lap_coverage=
-      centerline.getCoverage(before_finish_point);
+      road.getCoverage(before_finish_point);
 
   btTransform transform;
   transform.setIdentity();
@@ -168,13 +168,13 @@ void Vehicle::update(btScalar dt)
 
 void Vehicle::updateLapInfo(btScalar dt)
 {
-  btScalar track_length = track_->getCenterline().getLength();
+  btScalar track_length = track_->getRoad().getLength();
 
   int curr_lap= lap_info_.current_lap;
 
   const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
   btScalar prev_coverage = lap_info_.curr_lap_coverage;
-  btScalar curr_coverage = track_->getCenterline().getCoverage(vehicle_pos);
+  btScalar curr_coverage = track_->getRoad().getCoverage(vehicle_pos);
 
   btScalar v = curr_coverage - prev_coverage;
   if (btFabs(v) > track_length / 2.)
@@ -512,7 +512,7 @@ void Vehicle::reset()
 
   // After tp we cannot give vehicle better postion only worse
   btScalar new_coverage=
-    track_->getCenterline().
+    track_->getRoad().
     getCoverage(this->getChassisWorldTransform().getOrigin());
 
   if(new_coverage>lap_info_.curr_lap_coverage)
