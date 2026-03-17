@@ -19,6 +19,10 @@
 namespace boink
 {
 // TODO
+btScalar WheelInfo::TyreInfo::heatingConst = btScalar(0.000005f);
+btScalar WheelInfo::TyreInfo::coolingConst = btScalar(0.001f);
+btScalar WheelInfo::TyreInfo::wearRate = btScalar(0.0000001f);
+
 btScalar WheelInfo::TyreInfo::s_softWearRatePerMin = btScalar(0.05);
 btScalar WheelInfo::TyreInfo::s_hardWearRatePerMin = s_softWearRatePerMin;
 btScalar WheelInfo::TyreInfo::s_wetWearRatePerMin = s_softWearRatePerMin;

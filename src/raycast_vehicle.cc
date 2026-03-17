@@ -23,7 +23,7 @@
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btVector3.h>
 
-// #include <iostream>
+#include <iostream>
 
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/track/ground.h"
@@ -511,6 +511,8 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       auto speed_SR = long_speed;
       if (btFabs(speed_SR) < 0.00001f) speed_SR = 0.f;
 
+      auto slip_velocity = wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed_SR;
+
       if (speed_SR == 0 && m_throttle == 0)
         wheelInfo.m_traction_force = 0.0f;
       else
@@ -527,11 +529,11 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
         }
         else if (btFabs(speed_SR) < 2.9)
         {
-          slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed_SR) / 2.9;
+          slip_ratio = slip_velocity / 2.9;
         }
         else
         {
-          slip_ratio = (wheelInfo.m_angSpeed * wheelInfo.m_wheelSimRadius - speed_SR) / btFabs(speed_SR);
+          slip_ratio = slip_velocity / btFabs(speed_SR);
         }
       }
 
@@ -553,19 +555,28 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       btScalar lateral_force = btScalar(0.f);
       btScalar traction_force = btScalar(0.f);
 
-      auto slip_ang_normalized = slip_angle / kSlipAnglePeak;
-      auto slip_ratio_normalized = slip_ratio / kSlipRatioPeak;
+      auto temp_grip_coeff = kTempToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
+      auto temp_stiff_coeff = kTempToStiffCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
+      auto wear_grip_coeff = kWearToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_health);
+
+      auto curr_peak_lat = kSlipAnglePeak / temp_stiff_coeff;
+      auto curr_peak_long = kSlipRatioPeak / temp_stiff_coeff;
+
+      auto slip_ang_normalized = slip_angle / curr_peak_lat;
+      auto slip_ratio_normalized = slip_ratio / curr_peak_long;
 
       auto slip_vec_len =
           btSqrt(slip_ang_normalized * slip_ang_normalized + slip_ratio_normalized * slip_ratio_normalized);
+
+      // std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
 
       if (slip_vec_len > 0.f)
       {
         auto slip_ang_scaled = slip_vec_len * kSlipAnglePeak;
         auto slip_ratio_scaled = slip_vec_len * kSlipRatioPeak;
 
-        auto lat_grip_base = kSlipAngleToGrip.GetValue(slip_ang_scaled);
-        auto long_grip_base = kSlipRatioToGrip.GetValue(slip_ratio_scaled);
+        auto lat_grip_base = kSlipAngleToGrip.GetValue(slip_ang_scaled) * temp_grip_coeff * wear_grip_coeff;
+        auto long_grip_base = kSlipRatioToGrip.GetValue(slip_ratio_scaled) * temp_grip_coeff * wear_grip_coeff;
 
         auto lat_grip = lat_grip_base * (slip_ang_normalized / slip_vec_len);
         auto long_grip = long_grip_base * (slip_ratio_normalized / slip_vec_len);
@@ -581,6 +592,26 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
         m_sideImpulse[wheel_idx] = lateral_force * timeStep;
         m_forwardImpulse[wheel_idx] = traction_force * timeStep;
       }
+
+      // @temperature
+      auto lat_power = btFabs(lateral_force * lat_speed);
+      auto long_power = btFabs(traction_force * slip_velocity);
+
+      auto power = lat_power * 0.7 + long_power;
+      auto heat_generated = power * WheelInfo::TyreInfo::heatingConst;
+      auto speed_factor = btMax(5.f, getWheelContactVel(wheelInfo).length());  // minimal value when car is stopped
+      auto heat_lost = (wheelInfo.m_tyreInfo.m_tempCelsius - kAirTemperature) * WheelInfo::TyreInfo::coolingConst *
+                       speed_factor * timeStep;
+      wheelInfo.m_tyreInfo.m_tempCelsius += heat_generated - heat_lost;
+
+      std::cout << "temperature: " << wheelInfo.m_tyreInfo.m_tempCelsius << "\t";
+
+      // @ wear
+      power = lat_power + long_power;
+      wheelInfo.m_tyreInfo.m_health -= power * WheelInfo::TyreInfo::wearRate * timeStep;
+      if (wheelInfo.m_tyreInfo.m_health < 0.f) wheelInfo.m_tyreInfo.m_health = 0.f;
+
+      std::cout << "wear: " << wheelInfo.m_tyreInfo.m_health << "\t";
 
       // @apply the impulses
       btVector3 rel_pos = wheelInfo.m_raycastInfo.m_contactPointWS - m_chassisBody->getCenterOfMassPosition();
@@ -628,7 +659,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   // std::cout << "rpm:  " << m_engine.rpm << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  //   std::cout << "\n";
+  std::cout << "\n";
 }
 
 void RaycastVehicle::setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)

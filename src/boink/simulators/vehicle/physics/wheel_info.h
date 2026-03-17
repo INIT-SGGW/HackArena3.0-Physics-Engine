@@ -63,6 +63,10 @@ struct WheelInfo
     btScalar m_health = btScalar(1.0);
     btScalar m_tempCelsius = btScalar(90.0);
 
+    static btScalar heatingConst;  // how fast energy is converted to heat
+    static btScalar coolingConst;  // how fast tyre cools down
+    static btScalar wearRate;      // how fast tyre wears down
+
     static btScalar s_softWearRatePerMin;
     static btScalar s_hardWearRatePerMin;
     static btScalar s_wetWearRatePerMin;
