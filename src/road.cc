@@ -33,6 +33,7 @@ namespace boink
       auto normal=right.cross(dir);
       if(normal.dot(g_Up)<0)
       {
+        BOINK_TRACE("Reversing");
         centerline_.reverse();
         dir*=-1;
       }
@@ -42,14 +43,21 @@ namespace boink
       auto right_dir=next_right_point-right_point;
       
       if(right_dir.dot(dir)<0.f)
+      {
+        BOINK_TRACE("Reversing");
         rightline_.reverse();
+      }
 
       auto left_point=leftline_.getPoint(0);
       auto next_left_point=leftline_.getPoint(1);
       auto left_dir=next_left_point-left_point;
       
       if(left_dir.dot(dir)<0.f)
+      {
+
+        BOINK_TRACE("Reversing");
         leftline_.reverse();
+      }
     }
 
     if(
@@ -71,7 +79,6 @@ namespace boink
           "Road data and centerline points sizes do not match");
   }
 
-
   const btVector3 Road::getPoint(size_t index,Side side) const
   {
     const Line& line=getLine(side);
@@ -81,10 +88,10 @@ namespace boink
     return line.getPoint(index);
   }
 
-  const btVector3 Road::getInterpolatedPoint(const btVector3& point,Side side) const
+  const btVector3 Road::getInterpolatedPoint1(const btVector3& point,Side side) const
   {
     const Line& line=getLine(side);
-    btVector3 interpolated=line.getClosestPointInterpolated(point).first;
+    btVector3 interpolated=line.getClosestPointInterpolated1(point).first;
 
     return interpolated;
   }
@@ -181,7 +188,7 @@ namespace boink
     sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
     sample.right.normalize();
 
-    if(sample.tangent.dot(sample.right)>g_Epsilon)
+    if(btFabs(sample.tangent.dot(sample.right))>g_Epsilon)
     {
       std::stringstream ss;
       ss<<"For centerline point i=("<<i;
@@ -205,10 +212,11 @@ namespace boink
           ss.str());
     }
 
-    sample.right_width=(rightline_.getClosestPointInterpolated(
-        center_point).first-center_point).length();
-    sample.left_width=(leftline_.getClosestPointInterpolated(
-        center_point).first-center_point).length();
+    sample.right_width=rightline_.getRayLineIntersection(
+        sample.right,center_point,sample.normal).second;
+
+    sample.left_width=leftline_.getRayLineIntersection(
+        -1*sample.right,center_point,sample.normal).second;
 
     sample.grade=btAsin(sample.tangent.dot(g_Up));
 

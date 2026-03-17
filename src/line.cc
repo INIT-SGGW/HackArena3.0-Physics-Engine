@@ -6,7 +6,6 @@
 #include "boink/exception.h"
 #include "boink/logger.h"
 #include "boink/utility.h"
-#include "boink/assert.h"
 
 #include <algorithm>
 #include <cassert>
@@ -78,7 +77,7 @@ Line::Line(
 }
 
 btScalar Line::getCoverage(const btVector3& point) const {
-  return this->getClosestPointInterpolated(point).second;
+  return this->getClosestPointInterpolated1(point).second;
 }
 
 std::vector<std::pair<btVector3,btScalar>>::const_iterator Line::getClosest(
@@ -128,7 +127,7 @@ std::vector<std::pair<btVector3,btScalar>>::const_iterator Line::getIthClosest(
 }
 
 
-std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
+std::pair<btVector3,btScalar> Line::getClosestPointInterpolated1(
     const btVector3& point) const
 {
   size_t i_closest=std::distance(points_dist_.begin(),getClosest(point));
@@ -170,9 +169,9 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
     }
   }
 
-  //BOINK_ASSERT(!is_line_closed_,"Line points data are incorretly imported");
 
   // fallback for open lines or unexpected cases
+  // and sharp turns when point is on the outside
   return {closest, points_dist_[i_closest].second};
 }
 
@@ -195,17 +194,16 @@ btVector3 Line::getPointInterpolated(
 
 void Line::reverse()
 {
-  if(!isClosed())
-    BOINK_ASSERT(
-        "Reversing open line");
-
   std::reverse(points_dist_.begin(),points_dist_.end());
   
-  auto last_data=points_dist_[points_dist_.size()-1];
-  points_dist_.pop_back();
-  points_dist_.insert(points_dist_.begin(),last_data);
+  if(isClosed())
+  {
+    auto last_data=points_dist_[points_dist_.size()-1];
+    points_dist_.pop_back();
+    points_dist_.insert(points_dist_.begin(),last_data);
+  }
 
-  // and know we neeed to update distance :(
+  // and now we neeed to update distance :(
   btScalar length=0.0f;
   btVector3 prev=points_dist_[0].first;
   for(size_t i=0;i<points_dist_.size();i++)
@@ -228,6 +226,79 @@ const btVector3& Line::getPoint(size_t index) const
 {
   btAssert(index<points_dist_.size());
   return points_dist_.at(index).first;
+}
+
+std::pair<btVector3,btScalar> Line::getRayLineIntersection(
+    btVector3 ray_dir,
+    btVector3 ray_start,
+    btVector3 normal) const
+{
+  btScalar t_closest=FLT_MAX;
+  btVector3 point_closest;
+  bool found=false;
+  for(size_t i=0;i<points_dist_.size()-1;i++)
+  {
+    auto ray_info=math::getRayLineInterscetion(
+        ray_dir,
+        ray_start,
+        normal,
+        points_dist_[i].first,
+        points_dist_[i+1].first,
+        g_Epsilon);
+
+    if(!ray_info.has_value())
+      continue;
+
+    auto [point,t,u]=ray_info.value();
+
+    if(u<0.f||u>1.f)
+      continue;
+
+    if(t<0.f)
+      continue;
+
+    if(t<t_closest)
+    {
+      point_closest=point;
+      t_closest=t;
+      found=true;
+    }
+  }
+
+  if(is_line_closed_)
+  {
+    auto ray_info=math::getRayLineInterscetion(
+        ray_dir,
+        ray_start,
+        normal,
+        points_dist_[points_dist_.size()-1].first,
+        points_dist_[0].first,
+        g_Epsilon);
+
+    if(!ray_info.has_value())
+      return {point_closest,t_closest};
+
+    auto [point,t,u]=ray_info.value();
+
+    if(u<0.f||u>1.f)
+      return {point_closest,t_closest};
+
+    if(t<0.f)
+      return {point_closest,t_closest};
+
+    if(t<t_closest)
+    {
+      point_closest=point;
+      t_closest=t;
+      found=true;
+    }
+  }
+
+  if(found)
+    return {point_closest,t_closest};
+  else
+    return {ray_start,0};
+
 }
 
 Line Line::createLine(

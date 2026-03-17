@@ -1,5 +1,6 @@
 #include "boink/simulators/track/pitstop.h"
 
+#include "boink/exception.h"
 #include "boink/logger.h"
 
 #include <sstream>
@@ -15,11 +16,22 @@ namespace boink
       ss<<kPitstopSegName<<kPitstopNameDelim<<name;
       zones_[type]=createZone(extractor,ss.str());
 
-      BOINK_TRACE("Zone type: {}",kZonesNames.at(type));
+      if(zones_[type].isClosed())
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Pitstop line retured is not open");
+
+      BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"center");
       for(const auto& point:getZone(type).getLine(Road::Side::Center).getPointsAndDist())
-      {
         BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
-      }
+
+      BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"left");
+      for(const auto& point:getZone(type).getLine(Road::Side::Left).getPointsAndDist())
+        BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
+
+      BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"right");
+      for(const auto& point:getZone(type).getLine(Road::Side::Right).getPointsAndDist())
+        BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
     }
 
   }
@@ -42,7 +54,7 @@ namespace boink
     Line right=Line::createLine(extractor,ss.str());
     ss.str("");
 
-    return Road(center,right,left);
+    return Road(std::move(center),std::move(right),std::move(left));
   }
 
   const std::unordered_map<std::string_view,Pitstop::Zone> Pitstop::kZonesTypes=

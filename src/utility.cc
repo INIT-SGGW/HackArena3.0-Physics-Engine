@@ -160,7 +160,7 @@ namespace boink::math
 
     // Calculate plane
     btVector3 arbitrary_vec=
-      normal.y()>0.9?
+      btFabs(normal.y())>0.9?
       btVector3{1.f,0.f,0.f}:btVector3{0.f,1.f,0.f};
     
     btVector3 local_x=normal.cross(arbitrary_vec).normalize();
@@ -170,6 +170,9 @@ namespace boink::math
     btVector3 local_ray_dir(ray_dir.dot(local_x),ray_dir.dot(local_y),0.f);
     btAssert(local_ray_dir.length()>1.f-epsilon &&
         local_ray_dir.length()<1.f+epsilon);
+
+    if(local_ray_dir.length2() <epsilon*epsilon)
+      return std::nullopt;
 
     btVector3 local_ray_start(vec3toLocalvec2(ray_start,local_x,local_y,ray_start));
     btVector3 local_a(vec3toLocalvec2(a,local_x,local_y,ray_start));
@@ -188,7 +191,7 @@ namespace boink::math
     btScalar u=(local_ray_dir.x()*v.y()-local_ray_dir.y()*v.x())/cross_2d;
 
     btVector3 intersection_point=
-      local_ray_start+t*local_ray_dir;
+      a+u*(b-a);
     
     return {{intersection_point,t,u}};
   }

@@ -252,12 +252,49 @@ namespace boink
             pos+sample.right*-sample.left_width,
             {0.5,0.0,0.0});
       }
+      const Line& line=const_cast<const Road&>(road_).getLine(Road::Side::Right);
+      for(size_t i=0;i<line.getPointsSize();i++)
+      {
+        const auto& point=line.getPoint(i);
+        size_t i_next=(i+1)%line.getPointsSize();
+        p_renderer->drawLine(
+          point+offset,
+          offset+line.getPoint(i_next),
+          {1,1,1});
+      }
+      const Line& line1=const_cast<const Road&>(road_).getLine(Road::Side::Left);
+      for(size_t i=0;i<line1.getPointsSize();i++)
+      {
+        const auto& point=line1.getPoint(i);
+        size_t i_next=(i+1)%line1.getPointsSize();
+        p_renderer->drawLine(
+          point+offset,
+          offset+line1.getPoint(i_next),
+          {1,1,1});
+      }
+
     }
 
     // Pitstop
     {
       for(int zone_type=0;zone_type<(int)Pitstop::Zone::Count;zone_type++)
       {
+        btVector3 zone_color;
+        switch((Pitstop::Zone)zone_type)
+        {
+          case Pitstop::Zone::Enter:
+            zone_color={0,1,0};
+            break;
+          case Pitstop::Zone::Fix:
+            zone_color={0,0,1};
+            break;
+          case Pitstop::Zone::Exit:
+            zone_color={1,0,0};
+            break;
+          default:
+            zone_color={1,1,1};
+            break;
+        }
         const auto& zone=pitstop_.getZone((Pitstop::Zone)zone_type);
         const auto& samples=zone.getRoadData();
         auto offset=this->getWorldTransform().getOrigin();
@@ -279,6 +316,31 @@ namespace boink
               pos,
               pos+sample.right*-sample.left_width,
               {0.25,0.0,0.0});
+
+          if(i+1!=samples.size())
+            p_renderer->drawLine(
+              pos,
+              offset+zone.getPoint(i+1),
+              zone_color);
+        }
+
+        const Line& line=const_cast<const Road&>(zone).getLine(Road::Side::Right);
+        for(size_t i=0;i<line.getPointsSize()-1;i++)
+        {
+          const auto& point=line.getPoint(i);
+          p_renderer->drawLine(
+            point+offset,
+            offset+line.getPoint(i+1),
+            {1,1,1});
+        }
+        const Line& line1=const_cast<const Road&>(zone).getLine(Road::Side::Left);
+        for(size_t i=0;i<line1.getPointsSize()-1;i++)
+        {
+          const auto& point=line1.getPoint(i);
+          p_renderer->drawLine(
+            point+offset,
+            offset+line1.getPoint(i+1),
+            {1,1,1});
         }
       }
     }

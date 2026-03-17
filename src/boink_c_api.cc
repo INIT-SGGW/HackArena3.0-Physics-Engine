@@ -15,6 +15,7 @@
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/version.h"
 #include "boink/constants.h"
+#include "boink/assert.h"
 
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btScalar.h>
@@ -1186,13 +1187,14 @@ bool isVehicleFullyOnTrack(
 {
 
   const auto& sample=road.getClosestMetrics(point);
-  const auto& position_on_track=road.getInterpolatedPoint(point);
+  const auto& position_on_track=road.getInterpolatedPoint1(point);
 
   btVector3 help=(point-position_on_track);
   if(help.length2()<boink::g_Epsilon)
     return true;
   help.normalize();
 
+  BOINK_ASSERT(false,"Fix width with interpolated point");
   btScalar distance=
     help.dot(sample.right)>0?sample.right_width:sample.left_width;
 

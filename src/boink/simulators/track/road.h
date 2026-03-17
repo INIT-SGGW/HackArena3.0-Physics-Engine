@@ -38,7 +38,7 @@ namespace boink
     std::vector<Metrics>& getRoadData() {return road_data_;}
 
     const btVector3 getPoint(size_t index,Side side=Side::Center) const;
-    const btVector3 getInterpolatedPoint(const btVector3& point,Side side=Side::Center) const;
+    const btVector3 getInterpolatedPoint1(const btVector3& point,Side side=Side::Center) const;
     btVector3 getRandomPosition(Side side=Side::Center) const;
 
     size_t getSize() const {return road_data_.size();}
