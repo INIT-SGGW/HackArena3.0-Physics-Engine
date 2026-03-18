@@ -1,8 +1,9 @@
 #pragma once
 
-#include "boink/gltf_extractor.h"
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
+
+#include "boink/gltf_extractor.h"
 
 #include <optional>
 #include <utility>
@@ -70,7 +71,7 @@ namespace boink
     size_t getPointsSize() const { return points_dist_.size();}
 
     // Point of intersection and distance form ray_start to point of intersection
-    std::pair<btVector3,btScalar> getRayLineIntersection(
+    std::optional<std::pair<btVector3,btScalar>> getRayLineIntersection(
       btVector3 ray_dir,
       btVector3 ray_start,
       btVector3 normal) const;

@@ -15,7 +15,6 @@
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/version.h"
 #include "boink/constants.h"
-#include "boink/assert.h"
 
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btScalar.h>
@@ -80,12 +79,6 @@ static thread_local std::string g_last_error="";
 
 static void set_last_error(const char* function, const char* return_code_str,const char* opt_desc);
 static const char* returnCodeStr(int code);
-static bool isVehicleFullyOnTrack(
-    const btVector3& point,
-    const boink::Road& road,
-    const boink::Vehicle::BoundingBox& box,
-    const btVector3& offset,
-    const btQuaternion& orientation);
 
 int boink_get_c_api_version(unsigned int *out_major,
                                  unsigned int *out_minor,
@@ -593,7 +586,7 @@ int boink_set_vehicle_before_point(
     p_race->
     getTrack()->
     getRoad().getClosestMetrics(bt_point).tangent;
-  boink::Vehicle::BoundingBox bounding_dims=vehicle->getBoundingDims();
+  boink::BoundingBox bounding_dims=vehicle->getBoundingDims();
 
   btVector3 axis_rot=boink::g_Forward.cross(bt_forward);
   btScalar rot_angle=boink::g_Forward.angle(bt_forward);
@@ -690,8 +683,11 @@ repeat:
 
   btVector3 offset=-1*vehicle->getCenterOfMassCS();
   offset.setY(0);
-  if(!isVehicleFullyOnTrack(bt_random_pos,road,vehicle->getBoundingDims(),
-        offset,final_rot))
+  if(!road.isObjectOnRoad(
+        bt_random_pos,
+        final_rot,
+        offset,
+        vehicle->getBoundingDims()))
     goto repeat;
 
   btTransform bt_transform = vehicle->getChassisWorldTransform();
@@ -759,7 +755,7 @@ int boink_set_vehicle_at_start_pos(
     p_race->
     getTrack()->
     getRoad().getClosestMetrics(bt_start_pos).tangent;
-  boink::Vehicle::BoundingBox bounding_dims=vehicle->getBoundingDims();
+  boink::BoundingBox bounding_dims=vehicle->getBoundingDims();
 
   btScalar half_depth=(bounding_dims.top_left-bounding_dims.bottom_left).length()/2.f;
   bt_start_pos=bt_forward*half_depth+bt_start_pos;
@@ -1176,42 +1172,6 @@ const char* returnCodeStr(int code)
         default:
             return "Unknown return code string";
     }
-}
-
-bool isVehicleFullyOnTrack(
-    const btVector3& point,
-    const boink::Road& road,
-    const boink::Vehicle::BoundingBox& box,
-    const btVector3& offset,
-    const btQuaternion& orientation)
-{
-
-  const auto& sample=road.getClosestMetrics(point);
-  const auto& position_on_track=road.getInterpolatedPoint1(point);
-
-  btVector3 help=(point-position_on_track);
-  if(help.length2()<boink::g_Epsilon)
-    return true;
-  help.normalize();
-
-  BOINK_ASSERT(false,"Fix width with interpolated point");
-  btScalar distance=
-    help.dot(sample.right)>0?sample.right_width:sample.left_width;
-
-  btVector3 rotated_box_point=quatRotate(orientation,box.bottom_left+offset);
-  if((position_on_track-(point+rotated_box_point)).length()>distance)
-    return false;
-  rotated_box_point=quatRotate(orientation,box.bottom_right+offset);
-  if((position_on_track-(point+rotated_box_point)).length()>distance)
-    return false;
-  rotated_box_point=quatRotate(orientation,box.top_left+offset);
-  if((position_on_track-(point+rotated_box_point)).length()>distance)
-    return false;
-  rotated_box_point=quatRotate(orientation,box.top_right+offset);
-  if((position_on_track-(point+rotated_box_point)).length()>distance)
-    return false;
-  
-  return true;
 }
 
 BoinkVec3 bt2boink(btVector3 bt_vec)

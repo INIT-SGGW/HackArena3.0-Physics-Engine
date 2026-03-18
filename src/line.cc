@@ -228,77 +228,58 @@ const btVector3& Line::getPoint(size_t index) const
   return points_dist_.at(index).first;
 }
 
-std::pair<btVector3,btScalar> Line::getRayLineIntersection(
+std::optional<std::pair<btVector3,btScalar>> Line::getRayLineIntersection(
     btVector3 ray_dir,
     btVector3 ray_start,
     btVector3 normal) const
 {
+  size_t N=this->getPointsSize();
+  
+  if (N<2)
+    return std::nullopt;
+
   btScalar t_closest=FLT_MAX;
   btVector3 point_closest;
   bool found=false;
-  for(size_t i=0;i<points_dist_.size()-1;i++)
+
+  size_t num_segments=is_line_closed_?N:(N-1);
+
+  for (size_t i=0; i<num_segments;++i)
   {
-    auto ray_info=math::getRayLineInterscetion(
+    size_t idx0=i;
+    size_t idx1=(i+1)%N;
+
+    auto ray_info = math::getRayLineInterscetion(
         ray_dir,
         ray_start,
         normal,
-        points_dist_[i].first,
-        points_dist_[i+1].first,
+        points_dist_[idx0].first,
+        points_dist_[idx1].first,
         g_Epsilon);
 
-    if(!ray_info.has_value())
+    if (!ray_info.has_value())
       continue;
 
-    auto [point,t,u]=ray_info.value();
+    auto[point,t,u] = ray_info.value();
 
-    if(u<0.f||u>1.f)
+    if (u<0.f || u>1.f)
       continue;
 
-    if(t<0.f)
+    if (t<0.f)
       continue;
 
-    if(t<t_closest)
+    if (t<t_closest)
     {
-      point_closest=point;
-      t_closest=t;
-      found=true;
+      point_closest = point;
+      t_closest = t;
+      found = true;
     }
   }
 
-  if(is_line_closed_)
-  {
-    auto ray_info=math::getRayLineInterscetion(
-        ray_dir,
-        ray_start,
-        normal,
-        points_dist_[points_dist_.size()-1].first,
-        points_dist_[0].first,
-        g_Epsilon);
+  if (!found)
+    return std::nullopt;
 
-    if(!ray_info.has_value())
-      return {point_closest,t_closest};
-
-    auto [point,t,u]=ray_info.value();
-
-    if(u<0.f||u>1.f)
-      return {point_closest,t_closest};
-
-    if(t<0.f)
-      return {point_closest,t_closest};
-
-    if(t<t_closest)
-    {
-      point_closest=point;
-      t_closest=t;
-      found=true;
-    }
-  }
-
-  if(found)
-    return {point_closest,t_closest};
-  else
-    return {ray_start,0};
-
+  return {{point_closest,t_closest}};
 }
 
 Line Line::createLine(

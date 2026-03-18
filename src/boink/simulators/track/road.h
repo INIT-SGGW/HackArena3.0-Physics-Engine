@@ -1,8 +1,9 @@
 #pragma once
 
-#include "boink/simulators/track/line.h"
-
 #include <vector>
+
+#include "boink/simulators/track/line.h"
+#include "boink/bounding_box.h"
 
 namespace boink
 {
@@ -53,6 +54,13 @@ namespace boink
 
     bool isClosed() const {return is_road_closed_;}
     const Line& getLine(Side side) const;
+
+    bool isObjectOnRoad(
+        const btVector3& position,
+        const btQuaternion& orientation,
+        const btVector3& offset,
+        const BoundingBox& box,
+        bool max_lines=false) const;
   private:
     void createRoadData();
     Metrics generateMetrics(size_t i) const;

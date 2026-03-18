@@ -126,7 +126,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
           Exception::Type::InternalError,
           "Center line cannot have dupliacted points");
 
-  // g_epsilon is too small when vehicle tilts a little
+  // g_Epsilon is too small when vehicle tilts a little
   btVector3 before_finish_point=
       last+ 0.99*segment;
 
@@ -463,7 +463,7 @@ std::unique_ptr<btRigidBody> Vehicle::createRigidbody(btCompoundShape* col_shape
   return body;
 }
 
-Vehicle::BoundingBox Vehicle::getBoundingDims(
+BoundingBox Vehicle::getBoundingDims(
     std::shared_ptr<btCollisionShape> col_shape)
 {
   btVector3 aabb_min;
@@ -519,6 +519,36 @@ void Vehicle::reset()
     lap_info_.current_lap--;
 
   lap_info_.curr_lap_coverage=new_coverage;
+}
+
+bool Vehicle::isVehicleOnTrack(bool max_lines) const
+{
+  btTransform trans=this->getChassisWorldTransform();
+  btVector3 offset=-center_of_mass_;
+  offset.setY(0);
+
+  return track_->getRoad().isObjectOnRoad(
+      trans.getOrigin(),
+      trans.getRotation(),
+      offset,
+      bounding_dimensions_,
+      max_lines);
+}
+
+bool Vehicle::isVehicleInPitstop(Pitstop::Zone zone,bool max_lines) const
+{
+  const Road& road=track_->getPitstop().getZone(zone);
+
+  btTransform trans=this->getChassisWorldTransform();
+  btVector3 offset=-center_of_mass_;
+  offset.setY(0);
+
+  return road.isObjectOnRoad(
+      trans.getOrigin(),
+      trans.getRotation(),
+      offset,
+      bounding_dimensions_,
+      max_lines);
 }
 
 }  // namespace boink

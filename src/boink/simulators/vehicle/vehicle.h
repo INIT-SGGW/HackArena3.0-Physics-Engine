@@ -21,6 +21,7 @@
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/ghost_mode.h"
 #include "boink/simulators/vehicle/lap_info.h"
+#include "boink/bounding_box.h"
 
 namespace boink
 {
@@ -39,14 +40,6 @@ class Vehicle : public Simulator
       btVector3 center_of_mass;
       RaycastVehicle::VehicleTuning tuning;
       WheelInfo::TyreType tyre_type;
-    };
-
-    struct BoundingBox
-    {
-      btVector3 top_left;
-      btVector3 top_right;
-      btVector3 bottom_left;
-      btVector3 bottom_right;
     };
     
     enum class TurnDirection
@@ -141,6 +134,9 @@ class Vehicle : public Simulator
      * @brief Resets all speeds, forces, interpolation of a vehicle.
      */
     void reset();
+
+    bool isVehicleOnTrack(bool max_lines=false) const;
+    bool isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
   private:
     void updateLapInfo(btScalar dt);
   private:
@@ -171,8 +167,6 @@ class Vehicle : public Simulator
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     
-    //int laps_completed_;
-    //btScalar curr_lap_dist_point_;
     LapInfo lap_info_;
 
     GhostModeInfo ghost_info_;

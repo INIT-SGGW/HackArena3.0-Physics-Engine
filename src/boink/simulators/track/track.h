@@ -45,6 +45,7 @@ namespace boink
     const btTransform& getWorldTransform() const {return transform_;}
 
     const Road& getRoad() const {return road_;}
+    const Pitstop& getPitstop() const {return pitstop_;}
     std::string_view getFilename() const { return filename_;}
 
     size_t getNumberOfStartingPositions() const {return start_postions_.size();}

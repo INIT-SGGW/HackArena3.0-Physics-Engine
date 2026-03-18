@@ -33,7 +33,6 @@ namespace boink
       auto normal=right.cross(dir);
       if(normal.dot(g_Up)<0)
       {
-        BOINK_TRACE("Reversing");
         centerline_.reverse();
         dir*=-1;
       }
@@ -43,21 +42,14 @@ namespace boink
       auto right_dir=next_right_point-right_point;
       
       if(right_dir.dot(dir)<0.f)
-      {
-        BOINK_TRACE("Reversing");
         rightline_.reverse();
-      }
 
       auto left_point=leftline_.getPoint(0);
       auto next_left_point=leftline_.getPoint(1);
       auto left_dir=next_left_point-left_point;
       
       if(left_dir.dot(dir)<0.f)
-      {
-
-        BOINK_TRACE("Reversing");
         leftline_.reverse();
-      }
     }
 
     if(
@@ -142,6 +134,45 @@ namespace boink
     return sample;
   }
 
+  bool Road::isObjectOnRoad(
+      const btVector3& position,
+      const btQuaternion& orientation,
+      const btVector3& offset,
+      const BoundingBox& box,
+      bool max_lines) const
+  {
+    BOINK_WARN("Max lines boolean not implemented");
+    (void) max_lines;
+    const auto& sample=this->getClosestMetrics(position);
+    const auto& position_on_track=this->getInterpolatedPoint1(position);
+
+    btVector3 help=(position-position_on_track);
+    if(help.length2()<boink::g_Epsilon)
+      return true;
+    help.normalize();
+
+    //BOINK_ASSERT(false,"Fix width with interpolated point");
+    btScalar distance=
+      help.dot(sample.right)>0?sample.right_width:sample.left_width;
+
+    btVector3 rotated_box_point;
+
+    rotated_box_point=quatRotate(orientation,box.bottom_left+offset);
+    if((position_on_track-(position+rotated_box_point)).length()>distance)
+      return false;
+    rotated_box_point=quatRotate(orientation,box.bottom_right+offset);
+    if((position_on_track-(position+rotated_box_point)).length()>distance)
+      return false;
+    rotated_box_point=quatRotate(orientation,box.top_left+offset);
+    if((position_on_track-(position+rotated_box_point)).length()>distance)
+      return false;
+    rotated_box_point=quatRotate(orientation,box.top_right+offset);
+    if((position_on_track-(position+rotated_box_point)).length()>distance)
+      return false;
+    
+    return true;
+  }
+
   void Road::createRoadData()
   {
     road_data_.reserve(centerline_.getPointsSize());
@@ -212,11 +243,12 @@ namespace boink
           ss.str());
     }
 
+    std::pair<btVector3,btScalar> dummy={{0,0,0},0};
     sample.right_width=rightline_.getRayLineIntersection(
-        sample.right,center_point,sample.normal).second;
+        sample.right,center_point,sample.normal).value_or(dummy).second;
 
     sample.left_width=leftline_.getRayLineIntersection(
-        -1*sample.right,center_point,sample.normal).second;
+        -1*sample.right,center_point,sample.normal).value_or(dummy).second;
 
     sample.grade=btAsin(sample.tangent.dot(g_Up));
 
