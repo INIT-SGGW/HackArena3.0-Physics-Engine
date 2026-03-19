@@ -158,22 +158,22 @@ typedef enum BoinkPitstopZone {
   /**
    * Vehicle is not in any pitstop zone.
    */
-  BOINK_PITSTOP_ZONE_NONE = (1 << 0),
+  BOINK_PITSTOP_ZONE_NONE = (0),
 
   /**
    * Vehicle is in the pit entry zone.
    */
-  BOINK_PITSTOP_ZONE_ENTER = (1 << 1),
+  BOINK_PITSTOP_ZONE_ENTER = (1 << 0),
 
   /**
    * Vehicle is in the pit repair zone.
    */
-  BOINK_PITSTOP_ZONE_FIX = (1 << 2),
+  BOINK_PITSTOP_ZONE_FIX = (1 << 1),
 
   /**
    * Vehicle is in the pit exit zone.
    */
-  BOINK_PITSTOP_ZONE_EXIT = (1 << 3),
+  BOINK_PITSTOP_ZONE_EXIT = (1 << 2),
 } BoinkPitstopZone;
 
 /**

@@ -15,6 +15,7 @@
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/version.h"
 #include "boink/constants.h"
+#include "boink/assert.h"
 
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btScalar.h>
@@ -1243,6 +1244,8 @@ int boink_get_vehicle_pitstop_zone(
     total_wheels_num+=wheels_num;
     zone=(BoinkPitstopZone)(zone|BOINK_PITSTOP_ZONE_EXIT);
   }
+
+  BOINK_ASSERT(!(zone==BOINK_PITSTOP_ZONE_NONE && total_wheels_num!=0));
 
   *out_zone=zone;
   *out_wheels_num=total_wheels_num;
