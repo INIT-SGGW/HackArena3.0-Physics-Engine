@@ -95,6 +95,8 @@ class Vehicle : public Simulator
     btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
+    btVector3 getVehicleDirection() const;
+
     btScalar getSpeed() const;
     btScalar getMass() const;
     btVector3 getCenterOfMassCS() const;
@@ -135,10 +137,11 @@ class Vehicle : public Simulator
      */
     void reset();
 
-    bool isVehicleOnTrack(bool max_lines=false) const;
-    bool isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
+    Road::Overlap isVehicleOnTrack(bool max_lines=false) const;
+    Road::Overlap isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
   private:
     void updateLapInfo(btScalar dt);
+    void updatePitstop(btScalar dt);
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -150,6 +153,9 @@ class Vehicle : public Simulator
         btScalar mass);
 
     static BoundingBox getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
+  private:
+    static constexpr btScalar kMaxFixZoneSpeed=15.f;
+    static constexpr btScalar kPitstopBrakingForce=50000.f;
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;

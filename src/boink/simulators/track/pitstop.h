@@ -22,6 +22,9 @@ namespace boink
     Pitstop(const GltfExtractor& extractor);
 
     const Road& getZone(Zone type) const {return zones_.at(type);}
+  public:
+    static std::string_view getZoneName(Zone type)
+    {return kZonesNames.at(type);}
   private:
     static Road createZone(
         const GltfExtractor& extractor,

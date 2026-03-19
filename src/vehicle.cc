@@ -7,6 +7,7 @@
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <LinearMath/btDefaultMotionState.h>
 
+#include <LinearMath/btQuaternion.h>
 #include <cassert>
 #include <memory>
 #include <piksel/object.hh>
@@ -17,6 +18,7 @@
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/utility.h"
 #include "boink/collision_group.h"
+#include "boink/logger.h"
 
 namespace boink
 {
@@ -110,7 +112,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
           Exception::Type::InternalError,
           "Main road should be closed");
 
-  size_t n=road.getSize();
+  size_t n=road.getSize(Road::Side::Center);
   if(n<2)
       throw Exception(
           Exception::Type::InternalError,
@@ -143,18 +145,15 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 Vehicle::~Vehicle() noexcept
 {
   if (vehicle_)
-  {
     world_->removeAction(vehicle_.get());
-  }
 
-  if (rigidbody_) world_->removeRigidBody(rigidbody_.get());
+  if (rigidbody_) 
+    world_->removeRigidBody(rigidbody_.get());
 
   if (collision_shape_)
   {
     for (int i = 0; i < collision_shape_->getNumChildShapes(); i++)
-    {
       delete collision_shape_->getChildShape(i);
-    }
   }
 }
 
@@ -164,6 +163,8 @@ void Vehicle::update(btScalar dt)
 
   ghost_sim_.update(dt);
   ghost_info_.enabled=ghost_sim_.isInGhostMode();
+
+  this->updatePitstop(dt);
 }
 
 void Vehicle::updateLapInfo(btScalar dt)
@@ -211,6 +212,20 @@ void Vehicle::updateLapInfo(btScalar dt)
 
   lap_info_.current_lap = curr_lap;
   lap_info_.curr_lap_coverage = curr_coverage;
+}
+
+void Vehicle::updatePitstop(btScalar dt)
+{
+  if(Road::Overlap::Full==this->isVehicleInPitstop(Pitstop::Zone::Fix))
+  {
+
+    btVector3 vel=rigidbody_->getLinearVelocity();
+    if(vel.length2()>kMaxFixZoneSpeed*kMaxFixZoneSpeed)
+    {
+      btVector3 brake_dir=-vel.normalized();
+      rigidbody_->applyCentralImpulse(brake_dir*kPitstopBrakingForce*dt);
+    }
+  }
 }
 
 void Vehicle::updateRender(Renderer* renderer)
@@ -320,6 +335,13 @@ btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
 }
 
 const btTransform& Vehicle::getCenterOfMassTransform() const { return rigidbody_->getCenterOfMassTransform(); }
+
+btVector3 Vehicle::getVehicleDirection() const
+{
+  btQuaternion quat=getChassisWorldTransform().getRotation();
+  
+  return quatRotate(quat,g_Forward).normalized();
+}
 
 btScalar Vehicle::getSpeed() const { return rigidbody_->getLinearVelocity().length(); }
 
@@ -521,11 +543,10 @@ void Vehicle::reset()
   lap_info_.curr_lap_coverage=new_coverage;
 }
 
-bool Vehicle::isVehicleOnTrack(bool max_lines) const
+Road::Overlap Vehicle::isVehicleOnTrack(bool max_lines) const
 {
   btTransform trans=this->getChassisWorldTransform();
-  btVector3 offset=-center_of_mass_;
-  offset.setY(0);
+  btVector3 offset=center_of_mass_;
 
   return track_->getRoad().isObjectOnRoad(
       trans.getOrigin(),
@@ -535,13 +556,12 @@ bool Vehicle::isVehicleOnTrack(bool max_lines) const
       max_lines);
 }
 
-bool Vehicle::isVehicleInPitstop(Pitstop::Zone zone,bool max_lines) const
+Road::Overlap Vehicle::isVehicleInPitstop(Pitstop::Zone zone,bool max_lines) const
 {
   const Road& road=track_->getPitstop().getZone(zone);
 
   btTransform trans=this->getChassisWorldTransform();
-  btVector3 offset=-center_of_mass_;
-  offset.setY(0);
+  btVector3 offset=center_of_mass_;
 
   return road.isObjectOnRoad(
       trans.getOrigin(),

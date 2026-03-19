@@ -136,6 +136,7 @@ include(CTest)
 
 set(TEST_SOURCES_C
   capi_test
+  capi_test2
   capi_without_debugger_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)

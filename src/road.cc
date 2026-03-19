@@ -4,6 +4,7 @@
 #include "boink/constants.h"
 #include "boink/assert.h"
 
+#include <LinearMath/btQuaternion.h>
 #include <random>
 
 namespace boink
@@ -134,43 +135,106 @@ namespace boink
     return sample;
   }
 
-  bool Road::isObjectOnRoad(
+  Road::Overlap Road::isObjectOnRoad(
       const btVector3& position,
       const btQuaternion& orientation,
       const btVector3& offset,
       const BoundingBox& box,
       bool max_lines) const
   {
-    BOINK_WARN("Max lines boolean not implemented");
     (void) max_lines;
-    const auto& sample=this->getClosestMetrics(position);
-    const auto& position_on_track=this->getInterpolatedPoint1(position);
 
-    btVector3 help=(position-position_on_track);
-    if(help.length2()<boink::g_Epsilon)
-      return true;
-    help.normalize();
+    static bool warn=false;
+    if(!warn)
+    {
+      BOINK_WARN("Max lines boolean not implemented");
+      warn=true;
+    }
 
-    //BOINK_ASSERT(false,"Fix width with interpolated point");
-    btScalar distance=
-      help.dot(sample.right)>0?sample.right_width:sample.left_width;
+    btVector3 corners[4]={
+      offset+box.bottom_left,
+      offset+box.bottom_right,
+      offset+box.top_left,
+      offset+box.top_right
+    };
 
-    btVector3 rotated_box_point;
+    bool wheel_overlaps[4]={
+      true,
+      true,
+      true,
+      true
+    };
 
-    rotated_box_point=quatRotate(orientation,box.bottom_left+offset);
-    if((position_on_track-(position+rotated_box_point)).length()>distance)
-      return false;
-    rotated_box_point=quatRotate(orientation,box.bottom_right+offset);
-    if((position_on_track-(position+rotated_box_point)).length()>distance)
-      return false;
-    rotated_box_point=quatRotate(orientation,box.top_left+offset);
-    if((position_on_track-(position+rotated_box_point)).length()>distance)
-      return false;
-    rotated_box_point=quatRotate(orientation,box.top_right+offset);
-    if((position_on_track-(position+rotated_box_point)).length()>distance)
-      return false;
-    
-    return true;
+    for(int i=0;i<4;i++)
+    {
+      btVector3 world_corner=position+quatRotate(orientation,corners[i]);
+      btVector3 point_interpolated=getInterpolatedPoint1(world_corner);
+
+      size_t sample_index=
+        std::distance(centerline_.begin(), centerline_.getClosest(world_corner));
+      const auto& sample=road_data_[sample_index];
+
+      btVector3 rel_pos=world_corner-point_interpolated;
+      btScalar lateral_dist=rel_pos.dot(sample.right);
+
+      if(lateral_dist>0)
+      {
+        if(lateral_dist>sample.right_width)
+        {
+          wheel_overlaps[i]=false;
+          continue;
+        }
+      }
+      else
+      {
+        if(-lateral_dist>sample.left_width)
+        {
+          wheel_overlaps[i]=false;
+          continue;
+        }
+      }
+
+      if(!is_road_closed_)
+      {
+        if(sample_index==0)
+        {
+          btVector3 first_point=getPoint(sample_index);
+          btVector3 rel_pos_f=world_corner-first_point;
+          const auto& sample_first=sample;
+
+          if(rel_pos_f.dot(sample_first.tangent)<0)
+          {
+            wheel_overlaps[i]=false;
+            continue;
+          }
+        }
+        else if(sample_index==getSize(Side::Center)-1)
+        {
+          btVector3 last_point=getPoint(sample_index);
+          btVector3 rel_pos_f=world_corner-last_point;
+          const auto& last_first=sample;
+
+          if(rel_pos_f.dot(last_first.tangent)>0)
+          {
+            wheel_overlaps[i]=false;
+            continue;
+          }
+        }
+      }
+    }
+
+    bool anyTrue=false;
+    bool anyFalse=false;
+
+    for (bool v:wheel_overlaps) {
+      anyTrue|=v;
+      anyFalse|=!v;
+
+      if (anyTrue && anyFalse)
+          return Overlap::Partial;
+    }
+
+    return anyTrue ? Overlap::Full : Overlap::None;
   }
 
   void Road::createRoadData()
@@ -191,6 +255,46 @@ namespace boink
       throw Exception(
           Exception::Type::InternalError,
           "After read track_data and center line points sizes does not match");
+
+    if(!is_road_closed_)
+    {
+      // Edge line can be too short and algorthm can think that the width there is
+      // zero
+      for(size_t i=0;i<road_data_.size();i++)
+      {
+        if(road_data_[i].left_width==0)
+        {
+          btScalar left_width_neighbour=
+            i+1<road_data_.size()?
+            road_data_[i+1].left_width:
+            road_data_[i-1].left_width;
+
+          if(left_width_neighbour==0)
+            throw Exception(
+                Exception::Type::UnsupportedFormatError,
+                "The edge lines for open lines must be longer on the ends than center"
+                " line");
+
+          road_data_[i].left_width=left_width_neighbour;
+        }
+
+        if(road_data_[i].right_width==0)
+        {
+          btScalar right_width_neighbour=
+            i+1<road_data_.size()?
+            road_data_[i+1].right_width:
+            road_data_[i-1].right_width;
+
+          if(right_width_neighbour==0)
+            throw Exception(
+                Exception::Type::UnsupportedFormatError,
+                "The edge lines for open lines must be longer on the ends than center"
+                " line");
+
+          road_data_[i].right_width=right_width_neighbour;
+        }
+      }
+    }
   }
 
   Road::Metrics Road::generateMetrics(size_t i) const

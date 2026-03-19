@@ -25,6 +25,13 @@ namespace boink
       btScalar bank;
     };
 
+    enum class Overlap
+    {
+      None,
+      Partial,
+      Full
+    };
+
     enum class Side
     {
       Center,
@@ -42,7 +49,7 @@ namespace boink
     const btVector3 getInterpolatedPoint1(const btVector3& point,Side side=Side::Center) const;
     btVector3 getRandomPosition(Side side=Side::Center) const;
 
-    size_t getSize() const {return road_data_.size();}
+    size_t getSize(Side side) const {return getLine(side).getPointsSize();}
     btScalar getLength(Side side=Side::Center) const
     {return getLine(side).getLength();}
 
@@ -55,7 +62,7 @@ namespace boink
     bool isClosed() const {return is_road_closed_;}
     const Line& getLine(Side side) const;
 
-    bool isObjectOnRoad(
+    Overlap isObjectOnRoad(
         const btVector3& position,
         const btQuaternion& orientation,
         const btVector3& offset,

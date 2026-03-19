@@ -363,7 +363,7 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   out_track_data->centerline_samples=
     reinterpret_cast<BoinkCenterlineSample*>(p_race->getUserPtr());
   out_track_data->centerline_sample_count= (unsigned int)
-    p_race->getTrack()->getRoad().getSize();
+    p_race->getTrack()->getRoad().getSize(boink::Road::Side::Center);
 
   return BOINK_OK;
 }
@@ -681,9 +681,8 @@ repeat:
 
   btQuaternion final_rot = yaw * align;
 
-  btVector3 offset=-1*vehicle->getCenterOfMassCS();
-  offset.setY(0);
-  if(!road.isObjectOnRoad(
+  btVector3 offset=vehicle->getCenterOfMassCS();
+  if(boink::Road::Overlap::None==road.isObjectOnRoad(
         bt_random_pos,
         final_rot,
         offset,
