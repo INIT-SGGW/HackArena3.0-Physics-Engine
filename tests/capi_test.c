@@ -23,9 +23,9 @@ int main()
 {
 #ifdef WIN32
   //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\Przemkowytor_BIG.glb";
+  //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
   const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\Bolid_F1.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\HorizonTrack_04.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";
 #else
   const char* vehicle_filename = "Bolid_F1.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
