@@ -150,6 +150,33 @@ typedef enum BoinkGhostModeBlocker {
 } BoinkGhostModeBlocker;
 
 /**
+ * Active pitstop zones the vehicle can be in.
+ *
+ * Values are intended to represent the current pitstop phase.
+ */
+typedef enum BoinkPitstopZone {
+  /**
+   * Vehicle is not in any pitstop zone.
+   */
+  BOINK_PITSTOP_ZONE_NONE = (1 << 0),
+
+  /**
+   * Vehicle is in the pit entry zone.
+   */
+  BOINK_PITSTOP_ZONE_ENTER = (1 << 1),
+
+  /**
+   * Vehicle is in the pit repair zone.
+   */
+  BOINK_PITSTOP_ZONE_FIX = (1 << 2),
+
+  /**
+   * Vehicle is in the pit exit zone.
+   */
+  BOINK_PITSTOP_ZONE_EXIT = (1 << 3),
+} BoinkPitstopZone;
+
+/**
  * Represents an opaque engine handle.
  *
  * The pointer refers to an internal race or engine instance allocated
@@ -453,6 +480,14 @@ typedef struct BoinkVehicleState {
    *   [3] = rear-right
    */
   Real wheel_speeds[4];
+  /**
+   * Orientation of the vehicle wheels as a quaternion (x, y, z, w).
+   *
+   * Index mapping:
+   *   [0] = front-left
+   *   [1] = front-right
+   */
+  struct BoinkQuaternion front_wheel_orientation[2];
 } BoinkVehicleState;
 
 /**
@@ -1144,6 +1179,27 @@ BOINK_API int boink_set_ghost_mode_settings(BoinkHandle h,
  * - Another error code for other failures.
  */
 BOINK_API int boink_disable_ghost_mode(BoinkHandle h);
+
+/**
+ * Reads current pitstop zones and wheel count in pitstop for the specified vehicle.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle whose pitstop zone is requested.
+ * - `out_zone` - non-null pointer that receives the current pitstop zone.
+ * - `out_wheels_num` - non-null pointer that receives 
+ *   number of wheels in pitstop zones.
+ *
+ * Returns:
+ * - `BOINK_OK` on success and writes the zone to `*out_zone`.
+ * - `BOINK_ERR_INVALID_ARG` if `out_zone` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_get_vehicle_pitstop_zone(BoinkHandle h,
+                                             uint64_t vehicle_id,
+                                             enum BoinkPitstopZone *out_zone,
+                                             int *out_wheels_num);
 
 #ifdef __cplusplus
 }  // extern "C"

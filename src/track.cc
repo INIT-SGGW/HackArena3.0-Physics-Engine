@@ -51,9 +51,8 @@ namespace boink
     }
 
     pitstop_=Pitstop(extractor);
-    for(int zone_type=0;zone_type<(int)Pitstop::Zone::Count;zone_type++)
+    for(const auto& [type,zone]: pitstop_.getZones())
     {
-      const auto& zone=pitstop_.getZone((Pitstop::Zone)zone_type);
       if(zone.isClosed())
         throw Exception(
             Exception::Type::UnsupportedFormatError,
@@ -277,7 +276,7 @@ namespace boink
 
     // Pitstop
     {
-      for(int zone_type=0;zone_type<(int)Pitstop::Zone::Count;zone_type++)
+      for(const auto& [zone_type,_]:pitstop_.getZones())
       {
         btVector3 zone_color;
         switch((Pitstop::Zone)zone_type)

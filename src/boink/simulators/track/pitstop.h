@@ -10,21 +10,27 @@ namespace boink
   class Pitstop
   {
   public:
-    enum class Zone
+    enum class Zone : int
     {
-      Enter,
-      Fix,
-      Exit,
-      Count
+      None=1<<0,
+      Enter=1<<1,
+      Fix=1<<2,
+      Exit=1<<3,
     };
   public:
     Pitstop()=default;
     Pitstop(const GltfExtractor& extractor);
 
-    const Road& getZone(Zone type) const {return zones_.at(type);}
+    const Road& getZone(Zone type) const;
+    const auto& getZones() const {return zones_;}
   public:
     static std::string_view getZoneName(Zone type)
-    {return kZonesNames.at(type);}
+    {
+      if(type==Zone::None)
+        return "Unknown";
+
+      return kZonesNames.at(type);
+    }
   private:
     static Road createZone(
         const GltfExtractor& extractor,

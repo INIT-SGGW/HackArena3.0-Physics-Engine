@@ -8,7 +8,6 @@
 #include <LinearMath/btDefaultMotionState.h>
 
 #include <LinearMath/btQuaternion.h>
-#include <cassert>
 #include <memory>
 #include <piksel/object.hh>
 
@@ -16,9 +15,10 @@
 #include "boink/exception.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/timer.h"
 #include "boink/utility.h"
 #include "boink/collision_group.h"
-#include "boink/logger.h"
+#include "boink/assert.h"
 
 namespace boink
 {
@@ -216,16 +216,24 @@ void Vehicle::updateLapInfo(btScalar dt)
 
 void Vehicle::updatePitstop(btScalar dt)
 {
-  if(Road::Overlap::Full==this->isVehicleInPitstop(Pitstop::Zone::Fix))
-  {
+  static Timer timer(kBrakingDuration,kBrakingDuration);
 
+  if(this->isVehicleInPitstop(Pitstop::Zone::Fix)>0)
+  {
     btVector3 vel=rigidbody_->getLinearVelocity();
-    if(vel.length2()>kMaxFixZoneSpeed*kMaxFixZoneSpeed)
+    btScalar speed2=vel.length2();
+
+    if(speed2>kMaxFixZoneSpeed*kMaxFixZoneSpeed)
+      timer.reset();
+
+    if(!timer.hasFinised() && speed2>kMaxFixZonePenaltySpeed*kMaxFixZonePenaltySpeed)
     {
       btVector3 brake_dir=-vel.normalized();
       rigidbody_->applyCentralImpulse(brake_dir*kPitstopBrakingForce*dt);
     }
   }
+
+  timer.update(dt);
 }
 
 void Vehicle::updateRender(Renderer* renderer)
@@ -366,10 +374,10 @@ btScalar Vehicle::getTyreTempCelsius(WheelPosition pos) const
 
 void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
 {
-  assert(vehicle_->getNumWheels() == 4);
+  BOINK_ASSERT(getNumWheels() == 4);
   tuning_ = tuning;
 
-  for (int i = 0; i < vehicle_->getNumWheels(); i++)
+  for (int i = 0; i < getNumWheels(); i++)
   {
     WheelInfo& wheel = vehicle_->getWheelInfo(i);
     wheel.m_suspensionInfo.m_stiffness = tuning_.m_suspensionStiffness;
@@ -386,7 +394,7 @@ void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
 
 const RaycastVehicle::VehicleTuning& Vehicle::getTuning() const
 {
-  assert(vehicle_->getNumWheels() == 4);
+  BOINK_ASSERT(getNumWheels() == 4);
   return tuning_;
 }
 
@@ -473,7 +481,7 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
 std::unique_ptr<btRigidBody> Vehicle::createRigidbody(btCompoundShape* col_shape,
       btMotionState* motion_state, btScalar mass)
 {
-  assert(mass != 0.f);
+  BOINK_ASSERT(mass != 0.f);
 
   btVector3 local_inertia(0, 0, 0);
   col_shape->calculateLocalInertia(mass, local_inertia);
@@ -524,7 +532,7 @@ void Vehicle::reset()
   rigidbody_->setInterpolationAngularVelocity(btVector3(0, 0, 0));
 
   vehicle_->resetSuspension();
-  for(int i=0; i < vehicle_->getNumWheels(); i++)
+  for(int i=0; i < getNumWheels(); i++)
   {
     auto& wheel_info=vehicle_->getWheelInfo(i);
 
@@ -543,7 +551,7 @@ void Vehicle::reset()
   lap_info_.curr_lap_coverage=new_coverage;
 }
 
-Road::Overlap Vehicle::isVehicleOnTrack(bool max_lines) const
+int Vehicle::isVehicleOnTrack(bool max_lines) const
 {
   btTransform trans=this->getChassisWorldTransform();
   btVector3 offset=center_of_mass_;
@@ -556,7 +564,18 @@ Road::Overlap Vehicle::isVehicleOnTrack(bool max_lines) const
       max_lines);
 }
 
-Road::Overlap Vehicle::isVehicleInPitstop(Pitstop::Zone zone,bool max_lines) const
+int Vehicle::isVehicleInPitstop(bool max_lines) const
+{
+  int wheel_sum=0;
+  for(const auto& [zone_type,_]:track_->getPitstop().getZones())
+    wheel_sum+=this->isVehicleInPitstop(zone_type,max_lines);
+
+  BOINK_ASSERT(wheel_sum<=getNumWheels());
+
+  return wheel_sum;
+}
+
+int Vehicle::isVehicleInPitstop(Pitstop::Zone zone, bool max_lines) const
 {
   const Road& road=track_->getPitstop().getZone(zone);
 
@@ -569,6 +588,11 @@ Road::Overlap Vehicle::isVehicleInPitstop(Pitstop::Zone zone,bool max_lines) con
       offset,
       bounding_dimensions_,
       max_lines);
+}
+
+bool Vehicle::hasStopped() const
+{
+  return this->getSpeed()<0.2f;
 }
 
 }  // namespace boink

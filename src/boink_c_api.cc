@@ -682,7 +682,7 @@ repeat:
   btQuaternion final_rot = yaw * align;
 
   btVector3 offset=vehicle->getCenterOfMassCS();
-  if(boink::Road::Overlap::None==road.isObjectOnRoad(
+  if(0==road.isObjectOnRoad(
         bt_random_pos,
         final_rot,
         offset,
@@ -809,7 +809,11 @@ int boink_read_vehicle_state(
   out_state->throttle_applied=0.0;
 
   out_state->vehicle_id=vehicle_id;
-  out_state->speed=vehicle->getSpeed();
+
+  if(vehicle->hasStopped())
+    out_state->speed=0.f;
+  else
+    out_state->speed=vehicle->getSpeed();
 
   btTransform chassis_transform=vehicle->getChassisWorldTransform();
   out_state->chassis_position=bt2boink(chassis_transform.getOrigin());
@@ -817,15 +821,13 @@ int boink_read_vehicle_state(
   
   btTransform wheel_transform;
 
-  // TODO 
-  // maybe change name to front wheels orientation?
-  // and add rear wheel orientation?
-
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
   out_state->wheel_position[0]=bt2boink(wheel_transform.getOrigin());
+  out_state->front_wheel_orientation[0]=bt2boink(wheel_transform.getRotation());
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
   out_state->wheel_position[1]=bt2boink(wheel_transform.getOrigin());
+  out_state->front_wheel_orientation[1]=bt2boink(wheel_transform.getRotation());
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
   out_state->wheel_position[2]=bt2boink(wheel_transform.getOrigin());
@@ -1132,6 +1134,52 @@ int boink_read_vehicle_ghost_mode_state(
   } 
 
   *out_state=state;
+  return BOINK_OK;
+}
+
+
+int boink_get_vehicle_pitstop_zone(
+    BoinkHandle handle,
+    uint64_t vehicle_id,
+    enum BoinkPitstopZone *out_zone,
+    int *out_wheels_num)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_zone);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_wheels_num);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  int total_wheels_num=0;
+  BoinkPitstopZone zone=BOINK_PITSTOP_ZONE_NONE;
+  if(int wheels_num=vehicle->isVehicleInPitstop(boink::Pitstop::Zone::Enter);
+      wheels_num>0)
+  {
+    total_wheels_num+=wheels_num;
+    zone=(BoinkPitstopZone)(zone|BOINK_PITSTOP_ZONE_ENTER);
+  }
+  if(int wheels_num=vehicle->isVehicleInPitstop(boink::Pitstop::Zone::Fix);
+      wheels_num>0)
+  {
+    total_wheels_num+=wheels_num;
+    zone=(BoinkPitstopZone)(zone|BOINK_PITSTOP_ZONE_FIX);
+  }
+  if(int wheels_num=vehicle->isVehicleInPitstop(boink::Pitstop::Zone::Exit);
+      wheels_num>0)
+  {
+    total_wheels_num+=wheels_num;
+    zone=(BoinkPitstopZone)(zone|BOINK_PITSTOP_ZONE_EXIT);
+  }
+
+  *out_zone=zone;
+  *out_wheels_num=total_wheels_num;
+
   return BOINK_OK;
 }
 

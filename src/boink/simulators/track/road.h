@@ -25,13 +25,6 @@ namespace boink
       btScalar bank;
     };
 
-    enum class Overlap
-    {
-      None,
-      Partial,
-      Full
-    };
-
     enum class Side
     {
       Center,
@@ -62,7 +55,8 @@ namespace boink
     bool isClosed() const {return is_road_closed_;}
     const Line& getLine(Side side) const;
 
-    Overlap isObjectOnRoad(
+    // returns number of corners which are on the road
+    int isObjectOnRoad(
         const btVector3& position,
         const btQuaternion& orientation,
         const btVector3& offset,

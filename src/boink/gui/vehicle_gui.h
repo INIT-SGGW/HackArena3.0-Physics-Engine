@@ -20,6 +20,7 @@ namespace boink
     void drawLapInfo();
     void drawTuning();
     void drawTyres();
+    void drawPitstop();
     void drawWheel(WheelPosition pos);
   public:
     bool mesh_enabled=true;

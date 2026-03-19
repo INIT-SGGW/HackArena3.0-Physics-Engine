@@ -135,7 +135,7 @@ namespace boink
     return sample;
   }
 
-  Road::Overlap Road::isObjectOnRoad(
+  int Road::isObjectOnRoad(
       const btVector3& position,
       const btQuaternion& orientation,
       const btVector3& offset,
@@ -158,7 +158,7 @@ namespace boink
       offset+box.top_right
     };
 
-    bool wheel_overlaps[4]={
+    bool corner_overlaps[4]={
       true,
       true,
       true,
@@ -181,7 +181,7 @@ namespace boink
       {
         if(lateral_dist>sample.right_width)
         {
-          wheel_overlaps[i]=false;
+          corner_overlaps[i]=false;
           continue;
         }
       }
@@ -189,7 +189,7 @@ namespace boink
       {
         if(-lateral_dist>sample.left_width)
         {
-          wheel_overlaps[i]=false;
+          corner_overlaps[i]=false;
           continue;
         }
       }
@@ -204,7 +204,7 @@ namespace boink
 
           if(rel_pos_f.dot(sample_first.tangent)<0)
           {
-            wheel_overlaps[i]=false;
+            corner_overlaps[i]=false;
             continue;
           }
         }
@@ -216,25 +216,21 @@ namespace boink
 
           if(rel_pos_f.dot(last_first.tangent)>0)
           {
-            wheel_overlaps[i]=false;
+            corner_overlaps[i]=false;
             continue;
           }
         }
       }
     }
 
-    bool anyTrue=false;
-    bool anyFalse=false;
-
-    for (bool v:wheel_overlaps) {
-      anyTrue|=v;
-      anyFalse|=!v;
-
-      if (anyTrue && anyFalse)
-          return Overlap::Partial;
+    int num_corners_on_road=0;
+    for( bool is_corner_on_road:corner_overlaps)
+    {
+      if(is_corner_on_road)
+        num_corners_on_road++;
     }
 
-    return anyTrue ? Overlap::Full : Overlap::None;
+    return num_corners_on_road;
   }
 
   void Road::createRoadData()

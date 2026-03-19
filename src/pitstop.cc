@@ -2,6 +2,7 @@
 
 #include "boink/exception.h"
 #include "boink/logger.h"
+#include "boink/assert.h"
 
 #include <sstream>
 #include <unordered_map>
@@ -34,6 +35,18 @@ namespace boink
         BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
     }
 
+  }
+
+  const Road& Pitstop::getZone(Pitstop::Zone type) const 
+  {
+    auto it=zones_.find(type);
+    if(it==zones_.end())
+    {
+      BOINK_ASSERT(false,"type was Zone::Node");
+
+      return zones_.begin()->second;
+    }
+    return it->second;
   }
 
   Road Pitstop::createZone(
