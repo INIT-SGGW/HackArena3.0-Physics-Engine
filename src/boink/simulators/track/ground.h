@@ -1,3 +1,4 @@
+// clang-format off
 #pragma once
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
@@ -21,12 +22,12 @@ namespace boink
   public:
     enum class Type
     {
-      Asphalt,
-      Grass,
-      Sand,
-      Gravel,
-      Wall,
-      Count
+      Asphalt = 0,
+      Grass = 1,
+      Sand = 2,
+      Gravel = 3,
+      Wall = 4,
+      Count = 5
     };
     struct SurfaceInfo;
 
@@ -99,7 +100,8 @@ namespace boink
 
   struct Ground::SurfaceInfo
   {
-    btScalar resistive_coef;
+    btScalar grip_coeff;
+    btScalar drag_coeff;
     btScalar rolling_resistance;
     btScalar wetness;
     Type type;

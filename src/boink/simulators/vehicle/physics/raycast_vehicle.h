@@ -115,6 +115,9 @@ class RaycastVehicle : public btActionInterface
   /// </summary>
   btVector3 getWheelContactVel(WheelInfo& wheel) const;
 
+  /// <returns>Grip (on first position) and drag (on second position)</returns>
+  std::pair<btScalar, btScalar> getSurfGripAndDragCoeff(WheelInfo& wheel) const;
+
   inline btRigidBody* getRigidBody() { return m_chassisBody; }
   const btRigidBody* getRigidBody() const { return m_chassisBody; }
 
@@ -142,7 +145,6 @@ class RaycastVehicle : public btActionInterface
  private:
   void applyAerodynamics(btScalar step);
   void updateTyres(btScalar step);
-  void updateFrictionBasedOnSurface(btScalar step);
 
  private:
   static btScalar getTyreWearRatePerMin(WheelInfo::TyreType type);
@@ -187,12 +189,12 @@ class RaycastVehicle : public btActionInterface
                                                       1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
                                                      0.02f, 0.0f);
   static inline const Curve kTempToGripCoeff =
-      Curve({0.40, 0.55, 0.70, 0.75, 0.82, 0.88, 0.93, 0.97, 0.99, 1.00, 1.00, 0.99, 0.96, 0.91, 0.85, 0.78, 0.70},
+      Curve({0.80, 0.82, 0.85, 0.88, 0.91, 0.94, 0.96, 0.98, 0.99, 1.00, 1.00, 0.99, 0.97, 0.94, 0.90, 0.87, 0.85},
             10.f, 0.f);
   static inline const Curve kTempToStiffCoeff =
       Curve({1.50, 1.40, 1.30, 1.25, 1.20, 1.15, 1.10, 1.05, 1.02, 1.00, 1.00, 0.95, 0.88, 0.80, 0.72, 0.65, 0.60},
             10.f, 0.f);
   static inline const Curve kWearToGripCoeff =
-      Curve({1.00, 0.99, 0.98, 0.97, 0.96, 0.94, 0.91, 0.85, 0.75, 0.60, 0.40}, -0.1f, 1.f);
+      Curve({1.00, 1.00, 0.99, 0.98, 0.97, 0.96, 0.94, 0.91, 0.88, 0.86, 0.85}, -0.1f, 1.f);
 };
 }  // namespace boink
