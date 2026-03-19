@@ -294,13 +294,21 @@ typedef struct BoinkPitstopData{
    * Can be null only when `exit_centerline_sample_count == 0`.
    */
   const struct BoinkCenterlineSample *exit_centerline_samples;
+  /**
+   * Pitstop length along centerline in meters.
+   */
+  Real length_m;
 }BoinkPitstopData;
 
 /**
  * Represents static track geometry for one lap.
  *
- * The `map_id`, `centerline_samples`, pointers are owned by the engine
+ * The `map_id`, `centerline_samples` pointers are owned by the engine
  * and must not be freed or modified by the caller.
+ *
+ * The pointers contained within `pitstop_data` are also owned by the engine
+ * and must not be freed or modified by the caller.
+ *
  * These pointers remain valid until `boink_destroy_race(h)` is called.
  */
 typedef struct BoinkTrackData {
@@ -326,7 +334,7 @@ typedef struct BoinkTrackData {
    * Can be null only when `centerline_sample_count == 0`.
    */
   const struct BoinkCenterlineSample *centerline_samples;
-  const struct BoinkPitstopData *pitstop_data;
+  struct BoinkPitstopData pitstop_data;
 } BoinkTrackData;
 
 /**

@@ -30,6 +30,7 @@ namespace boink
     :
       world_(world),
       filename_(filename),
+      version_(Track::extractTrackVersion(filename_)),
       weather_(weather)
   {
     this->initSurfaceInfos();
@@ -186,6 +187,27 @@ namespace boink
     const auto& node= extractor.getNode(FINISH_LANE_NAME);
 
     finish_line_=node.transform.getOrigin();
+  }
+
+
+  int Track::extractTrackVersion(std::string_view filename)
+  {
+    size_t i=filename.find("_");
+    if(i==std::string_view::npos)
+      return -1;
+
+    if(i+1>=filename.length())
+      return -1;
+
+    std::string_view version_str=filename.substr(i+1);
+    int version;
+    auto result=std::from_chars(
+        version_str.data(),version_str.data()+version_str.size(),version);
+
+    if(result.ec!=std::errc())
+      return -1;
+
+    return version;
   }
 
   std::optional<Ground::Type> Track::resolveGroundTypeFromName(std::string name)

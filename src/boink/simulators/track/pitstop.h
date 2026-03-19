@@ -23,6 +23,8 @@ namespace boink
 
     const Road& getZone(Zone type) const;
     const auto& getZones() const {return zones_;}
+
+    btScalar getLength() const {return pitstop_length_;}
   public:
     static std::string_view getZoneName(Zone type)
     {
@@ -47,5 +49,6 @@ namespace boink
     static const std::unordered_map<Zone,std::string_view> kZonesNames;
   private:
     std::unordered_map<Zone,Road> zones_;
+    btScalar pitstop_length_=0;
   };
 }

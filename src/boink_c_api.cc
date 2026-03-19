@@ -20,6 +20,7 @@
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <numbers>
 #include <sstream>
@@ -67,6 +68,26 @@ try {                                  \
 } catch (...) {                         \
     RETURN_STATUS(BOINK_ERR_INTERNAL);\
 }
+
+struct EngineData
+{
+  size_t main_samples_size;
+  BoinkCenterlineSample* main_samples;
+  size_t entry_samples_size;
+  BoinkCenterlineSample* entry_pitstop_samples;
+  size_t fix_samples_size;
+  BoinkCenterlineSample* fix_pitstop_samples;
+  size_t exit_samples_size;
+  BoinkCenterlineSample* exit_pitstop_samples;
+
+  ~EngineData()
+  {
+    delete[] main_samples;
+    delete[] entry_pitstop_samples;
+    delete[] fix_pitstop_samples;
+    delete[] exit_pitstop_samples;
+  }
+};
 
 static int exceptionType2api(boink::Exception::Type type);
 static BoinkVec3 bt2boink(btVector3 bt_vec);
@@ -263,7 +284,7 @@ void boink_destroy_race(BoinkHandle handle)
 {
   if(handle!=nullptr)
   {
-    delete[] (BoinkCenterlineSample*)((boink::Race*) handle)->getUserPtr();
+    delete (EngineData*)((boink::Race*) handle)->getUserPtr();
     delete (boink::Race*) handle;
   }
 }
@@ -302,6 +323,46 @@ int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
   return BOINK_OK;
 }
 
+BoinkCenterlineSample* createBoinkCenterlineSamples(
+    const boink::Road& road,
+    size_t* out_size)
+{
+  const auto& track_data=road.getRoadData();
+
+  BoinkCenterlineSample* samples=new BoinkCenterlineSample[track_data.size()];
+  for(size_t i=0;i<track_data.size();i++)
+  {
+    const btVector3& position=road.getPoint(i);
+    btScalar coverage=road.getCoverage(position);
+
+    samples[i].bank_rad=track_data[i].bank;
+    samples[i].curvature_1pm=track_data[i].curvature;
+    samples[i].grade_rad=track_data[i].grade;
+    samples[i].left_width_m=track_data[i].left_width;
+    samples[i].right_width_m=track_data[i].right_width;
+    samples[i].s_m=coverage;
+
+    samples[i].normal.x=track_data[i].normal.getX();
+    samples[i].normal.y=track_data[i].normal.getY();
+    samples[i].normal.z=track_data[i].normal.getZ();
+
+    samples[i].position.x=position.getX();
+    samples[i].position.y=position.getY();
+    samples[i].position.z=position.getZ();
+
+    samples[i].right.x=track_data[i].right.getX();
+    samples[i].right.y=track_data[i].right.getY();
+    samples[i].right.z=track_data[i].right.getZ();
+
+    samples[i].tangent.x=track_data[i].tangent.getX();
+    samples[i].tangent.y=track_data[i].tangent.getY();
+    samples[i].tangent.z=track_data[i].tangent.getZ();
+  }
+  *out_size=track_data.size();
+
+  return samples;
+}
+
 int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
 {
   boink::Race* p_race=(boink::Race*)handle;
@@ -310,60 +371,66 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       out_track_data);
 
-  //if(sizeof(BoinkTrackData)!=sizeof(boink::Track::SampleData))
-  //{
-  //  set_last_error(
-  //      __func__,
-  //      returnCodeStr(BOINK_ERR_INTERNAL),
-  //      "BoinkTrackData structure differs from boink::Track::SampleData");
-
-  //  return BOINK_ERR_INTERNAL;
-  //}
-
-  const auto& road=p_race->getTrack()->getRoad();
-  const auto& track_data=road.getRoadData();
+  const auto& track=p_race->getTrack();
+  const auto& main_road=track->getRoad();;
 
   if(p_race->getUserPtr()==nullptr)
   {
-    BoinkCenterlineSample* samples=new BoinkCenterlineSample[track_data.size()];
-    for(size_t i=0;i<track_data.size();i++)
-    {
-      const btVector3& position=road.getPoint(i);
-      btScalar coverage=road.getCoverage(position);
+    EngineData* p_engine_data=new EngineData();
+    const auto& pitstop=track->getPitstop();
 
-      samples[i].bank_rad=track_data[i].bank;
-      samples[i].curvature_1pm=track_data[i].curvature;
-      samples[i].grade_rad=track_data[i].grade;
-      samples[i].left_width_m=track_data[i].left_width;
-      samples[i].right_width_m=track_data[i].right_width;
-      samples[i].s_m=coverage;
+    BoinkCenterlineSample* main_samples=
+      createBoinkCenterlineSamples(main_road,&p_engine_data->main_samples_size);
+    BoinkCenterlineSample* entry_pitstop_samples=
+      createBoinkCenterlineSamples(
+          pitstop.getZone(boink::Pitstop::Zone::Enter),
+          &p_engine_data->entry_samples_size);
+    BoinkCenterlineSample* fix_pitstop_samples=
+      createBoinkCenterlineSamples(
+          pitstop.getZone(boink::Pitstop::Zone::Fix),
+          &p_engine_data->fix_samples_size);
+    BoinkCenterlineSample* exit_pitstop_samples=
+      createBoinkCenterlineSamples(
+          pitstop.getZone(boink::Pitstop::Zone::Exit),
+          &p_engine_data->exit_samples_size);
 
-      samples[i].normal.x=track_data[i].normal.getX();
-      samples[i].normal.y=track_data[i].normal.getY();
-      samples[i].normal.z=track_data[i].normal.getZ();
+    p_engine_data->main_samples=main_samples;
+    p_engine_data->entry_pitstop_samples=entry_pitstop_samples;
+    p_engine_data->fix_pitstop_samples=fix_pitstop_samples;
+    p_engine_data->exit_pitstop_samples=exit_pitstop_samples;
 
-      samples[i].position.x=position.getX();
-      samples[i].position.y=position.getY();
-      samples[i].position.z=position.getZ();
-
-      samples[i].right.x=track_data[i].right.getX();
-      samples[i].right.y=track_data[i].right.getY();
-      samples[i].right.z=track_data[i].right.getZ();
-
-      samples[i].tangent.x=track_data[i].tangent.getX();
-      samples[i].tangent.y=track_data[i].tangent.getY();
-      samples[i].tangent.z=track_data[i].tangent.getZ();
-    }
-    p_race->setUserPtr(samples);
+    p_race->setUserPtr(p_engine_data);
   }
 
-  out_track_data->map_id=p_race->getTrack()->getFilename().data();
-  out_track_data->version=0;
-  out_track_data->lap_length_m=p_race->getTrack()->getRoad().getLength();
-  out_track_data->centerline_samples=
-    reinterpret_cast<BoinkCenterlineSample*>(p_race->getUserPtr());
-  out_track_data->centerline_sample_count= (unsigned int)
-    p_race->getTrack()->getRoad().getSize(boink::Road::Side::Center);
+  EngineData* p_engine_data=reinterpret_cast<EngineData*>(p_race->getUserPtr());
+
+  out_track_data->map_id=track->getFilename().data();
+  out_track_data->lap_length_m=main_road.getLength();
+  out_track_data->pitstop_data.length_m=track->getPitstop().getLength();
+
+  int version=track->getTrackVersion();
+  out_track_data->version=
+    version>=0?
+    version:
+    std::numeric_limits<decltype(out_track_data->version)>::max();
+
+  out_track_data->centerline_samples=p_engine_data->main_samples;
+  out_track_data->centerline_sample_count=p_engine_data->main_samples_size;
+
+  out_track_data->pitstop_data.enter_centerline_samples=
+    p_engine_data->entry_pitstop_samples;
+  out_track_data->pitstop_data.enter_centerline_sample_count=
+    p_engine_data->entry_samples_size;
+
+  out_track_data->pitstop_data.fix_centerline_samples=
+    p_engine_data->fix_pitstop_samples;
+  out_track_data->pitstop_data.fix_centerline_sample_count=
+    p_engine_data->fix_samples_size;
+
+  out_track_data->pitstop_data.exit_centerline_samples=
+    p_engine_data->exit_pitstop_samples;
+  out_track_data->pitstop_data.exit_centerline_sample_count=
+    p_engine_data->exit_samples_size;
 
   return BOINK_OK;
 }

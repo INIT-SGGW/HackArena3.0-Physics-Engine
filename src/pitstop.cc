@@ -10,6 +10,7 @@
 namespace boink
 {
   Pitstop::Pitstop(const GltfExtractor& extractor)
+    :pitstop_length_(0)
   {
     for(auto& [type,name]:kZonesNames)
     {
@@ -33,8 +34,9 @@ namespace boink
       BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"right");
       for(const auto& point:getZone(type).getLine(Road::Side::Right).getPointsAndDist())
         BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
-    }
 
+      pitstop_length_+=zones_[type].getLength();
+    }
   }
 
   const Road& Pitstop::getZone(Pitstop::Zone type) const 

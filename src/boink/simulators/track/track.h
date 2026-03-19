@@ -29,6 +29,14 @@ namespace boink
   public:
     friend class TrackGui;
   public:
+    struct UserData
+    {
+      const Road::Metrics* p_main=nullptr;
+      const Road::Metrics* p_pit_entry=nullptr;
+      const Road::Metrics* p_pit_fix=nullptr;
+      const Road::Metrics* p_pit_exit=nullptr;
+    };
+  public:
     Track(
         std::string_view filename,
         std::shared_ptr<const Weather> weather,
@@ -47,6 +55,7 @@ namespace boink
     const Road& getRoad() const {return road_;}
     const Pitstop& getPitstop() const {return pitstop_;}
     std::string_view getFilename() const { return filename_;}
+    int getTrackVersion() const {return version_;}
 
     size_t getNumberOfStartingPositions() const {return start_postions_.size();}
     btVector3 getStartingPosition(size_t position) const;
@@ -58,6 +67,9 @@ namespace boink
     void initGrounds(const GltfExtractor& extractor);
     void initPositions(const GltfExtractor& extractor);
     void initFinishLine(const GltfExtractor& extractor);
+
+  public:
+    static int extractTrackVersion(std::string_view filename);
   private:
     static std::optional<Ground::Type> resolveGroundTypeFromName(std::string name);
   private:
@@ -82,6 +94,7 @@ namespace boink
 
     btTransform transform_=btTransform::getIdentity();
     std::string filename_;
+    int version_;
 
     std::shared_ptr<const Weather> weather_;
 

@@ -285,13 +285,34 @@ void printTrackData(const BoinkTrackData* track_data)
   printStateString(track_data->map_id);
   printStateInt(track_data->version);
   printStateReal(track_data->lap_length_m);
+  printStateReal(track_data->pitstop_data.length_m);
   printStateInt(track_data->centerline_sample_count);
+
+  return;
 
   const BoinkCenterlineSample* samples = track_data->centerline_samples;
   size_t num_samples = track_data->centerline_sample_count;
 
-  // for(size_t i=0;i<num_samples;i++)
-  //   printCenterlineSample(&samples[i],i);
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
+
+  samples = track_data->pitstop_data.enter_centerline_samples;
+  num_samples = track_data->pitstop_data.enter_centerline_sample_count;
+
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
+
+  samples = track_data->pitstop_data.fix_centerline_samples;
+  num_samples = track_data->pitstop_data.fix_centerline_sample_count;
+
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
+
+  samples = track_data->pitstop_data.exit_centerline_samples;
+  num_samples = track_data->pitstop_data.exit_centerline_sample_count;
+
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
 }
 
 void printCenterlineSample(const BoinkCenterlineSample* sample, int num)
