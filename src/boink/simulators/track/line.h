@@ -1,9 +1,11 @@
 #pragma once
 
-#include "boink/gltf_extractor.h"
 #include <LinearMath/btScalar.h>
 #include <LinearMath/btVector3.h>
 
+#include "boink/gltf_extractor.h"
+
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -55,7 +57,7 @@ namespace boink
      * point does not lie on the line returns the closest of ends and its
      * distance.
      */
-    std::pair<btVector3,btScalar> getClosestPointInterpolated(
+    std::pair<btVector3,btScalar> getClosestPointInterpolated1(
         const btVector3& point) const;
 
     std::pair<btVector3,btScalar>& getPointAndDist(size_t index)
@@ -67,6 +69,12 @@ namespace boink
     btVector3& getPoint(size_t index);
     const btVector3& getPoint(size_t index) const;
     size_t getPointsSize() const { return points_dist_.size();}
+
+    // Point of intersection and distance form ray_start to point of intersection
+    std::optional<std::pair<btVector3,btScalar>> getRayLineIntersection(
+      btVector3 ray_dir,
+      btVector3 ray_start,
+      btVector3 normal) const;
   private:
     Line(
         std::vector<btVector3> points,
@@ -83,8 +91,8 @@ namespace boink
      */
     static Line createLine(
         const GltfExtractor& extractor,
-        const btVector3& first_point,
-        std::string_view name);
+        std::string_view name,
+        std::optional<btVector3> first_point=std::nullopt);
 
     /**
      * @brief 

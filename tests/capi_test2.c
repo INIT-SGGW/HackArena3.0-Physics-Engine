@@ -19,7 +19,7 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
     free(err_buf);                        \
   }
 
-int main()
+int main() 
 {
 #ifdef WIN32
   //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
@@ -88,12 +88,6 @@ int main()
   model.suspension_rest_length = 0.4;
   model.wheel_radius = 0.36;
 
-  uint64_t id0;
-  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
   uint64_t id1;
   if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
   {
@@ -101,11 +95,6 @@ int main()
     goto clear;
   }
 
-  //if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
   //if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
   //{
   //  PRINT_ERROR();
@@ -117,21 +106,11 @@ int main()
   vehicle_rot.y = 0.7;
   vehicle_rot.z = 0.;
   vehicle_rot.w = 0.7;
-  if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
 
   BoinkVec3 vehicle_pos;
   vehicle_pos.x = 0.;
   vehicle_pos.y = 13.;
   vehicle_pos.z = 0.;
-  if ((code = boink_set_vehicle_position(handle, id0, &vehicle_pos)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
   vehicle_pos.x = 0.;
   vehicle_pos.y = 0.;
   vehicle_pos.z = 0.;
@@ -214,11 +193,6 @@ int main()
 
     if(time>2.f)
     {
-      if ((code = boink_set_vehicle_random_pos(handle,id0)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
       time=0.f;
     }
     time+=sim_time;
@@ -236,7 +210,7 @@ int main()
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
     BoinkGhostModeRuntimeState state_ghost;
-    if ((code = boink_read_vehicle_ghost_mode_state(handle, id0, &state_ghost)) != BOINK_OK)
+    if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
     {
       PRINT_ERROR();
       goto clear;
@@ -311,13 +285,34 @@ void printTrackData(const BoinkTrackData* track_data)
   printStateString(track_data->map_id);
   printStateInt(track_data->version);
   printStateReal(track_data->lap_length_m);
+  printStateReal(track_data->pitstop_data.length_m);
   printStateInt(track_data->centerline_sample_count);
+
+  return;
 
   const BoinkCenterlineSample* samples = track_data->centerline_samples;
   size_t num_samples = track_data->centerline_sample_count;
 
-  // for(size_t i=0;i<num_samples;i++)
-  //   printCenterlineSample(&samples[i],i);
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
+
+  samples = track_data->pitstop_data.enter_centerline_samples;
+  num_samples = track_data->pitstop_data.enter_centerline_sample_count;
+
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
+
+  samples = track_data->pitstop_data.fix_centerline_samples;
+  num_samples = track_data->pitstop_data.fix_centerline_sample_count;
+
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
+
+  samples = track_data->pitstop_data.exit_centerline_samples;
+  num_samples = track_data->pitstop_data.exit_centerline_sample_count;
+
+   for(size_t i=0;i<num_samples;i++)
+     printCenterlineSample(&samples[i],i);
 }
 
 void printCenterlineSample(const BoinkCenterlineSample* sample, int num)

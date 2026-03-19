@@ -6,11 +6,11 @@
 #include "boink/exception.h"
 #include "boink/logger.h"
 #include "boink/utility.h"
-#include "boink/assert.h"
 
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <optional>
 #include <unordered_set>
 #include <vector>
 #include <deque>
@@ -47,7 +47,7 @@ Line::Line(
       BOINK_WARN(
           "Distance between points smaller than epsilon. Index: {}", i);
     if(diff>kDesiredDistance)
-      BOINK_WARN(
+      BOINK_TRACE(
           "Distance between points greater than "
           "kDesiredDistance={} [m [m]]. Index: {}",kDesiredDistance, i);
 
@@ -67,7 +67,7 @@ Line::Line(
 
     line_length_=dist;
   }
-  BOINK_DEBUG("Line length: {}",line_length_);
+  BOINK_TRACE("Line length: {}",line_length_);
 
   for(size_t i=0;i<points_dist_.size();i++)
   {
@@ -77,7 +77,7 @@ Line::Line(
 }
 
 btScalar Line::getCoverage(const btVector3& point) const {
-  return this->getClosestPointInterpolated(point).second;
+  return this->getClosestPointInterpolated1(point).second;
 }
 
 std::vector<std::pair<btVector3,btScalar>>::const_iterator Line::getClosest(
@@ -127,7 +127,7 @@ std::vector<std::pair<btVector3,btScalar>>::const_iterator Line::getIthClosest(
 }
 
 
-std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
+std::pair<btVector3,btScalar> Line::getClosestPointInterpolated1(
     const btVector3& point) const
 {
   size_t i_closest=std::distance(points_dist_.begin(),getClosest(point));
@@ -151,7 +151,7 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
           closest,
           point);
 
-      if((other-interpolated_point).dot(closest-interpolated_point)<0)
+      if((other-interpolated_point).dot(closest-interpolated_point)<=0)
       {
         btScalar d_closest=points_dist_[i_closest].second;
         btScalar d_other=points_dist_[i_other].second;
@@ -169,9 +169,9 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated(
     }
   }
 
-  BOINK_ASSERT(is_line_closed_,"Line points data are incorretly imported");
 
   // fallback for open lines or unexpected cases
+  // and sharp turns when point is on the outside
   return {closest, points_dist_[i_closest].second};
 }
 
@@ -194,17 +194,16 @@ btVector3 Line::getPointInterpolated(
 
 void Line::reverse()
 {
-  if(!isClosed())
-    BOINK_ASSERT(
-        "Reversing open line");
-
   std::reverse(points_dist_.begin(),points_dist_.end());
   
-  auto last_data=points_dist_[points_dist_.size()-1];
-  points_dist_.pop_back();
-  points_dist_.insert(points_dist_.begin(),last_data);
+  if(isClosed())
+  {
+    auto last_data=points_dist_[points_dist_.size()-1];
+    points_dist_.pop_back();
+    points_dist_.insert(points_dist_.begin(),last_data);
+  }
 
-  // and know we neeed to update distance :(
+  // and now we neeed to update distance :(
   btScalar length=0.0f;
   btVector3 prev=points_dist_[0].first;
   for(size_t i=0;i<points_dist_.size();i++)
@@ -229,10 +228,64 @@ const btVector3& Line::getPoint(size_t index) const
   return points_dist_.at(index).first;
 }
 
+std::optional<std::pair<btVector3,btScalar>> Line::getRayLineIntersection(
+    btVector3 ray_dir,
+    btVector3 ray_start,
+    btVector3 normal) const
+{
+  size_t N=this->getPointsSize();
+  
+  if (N<2)
+    return std::nullopt;
+
+  btScalar t_closest=FLT_MAX;
+  btVector3 point_closest;
+  bool found=false;
+
+  size_t num_segments=is_line_closed_?N:(N-1);
+
+  for (size_t i=0; i<num_segments;++i)
+  {
+    size_t idx0=i;
+    size_t idx1=(i+1)%N;
+
+    auto ray_info = math::getRayLineInterscetion(
+        ray_dir,
+        ray_start,
+        normal,
+        points_dist_[idx0].first,
+        points_dist_[idx1].first,
+        g_Epsilon);
+
+    if (!ray_info.has_value())
+      continue;
+
+    auto[point,t,u] = ray_info.value();
+
+    if (u<0.f || u>1.f)
+      continue;
+
+    if (t<0.f)
+      continue;
+
+    if (t<t_closest)
+    {
+      point_closest = point;
+      t_closest = t;
+      found = true;
+    }
+  }
+
+  if (!found)
+    return std::nullopt;
+
+  return {{point_closest,t_closest}};
+}
+
 Line Line::createLine(
     const GltfExtractor& extractor, 
-    const btVector3& first_point,
-    std::string_view name)
+    std::string_view name,
+    std::optional<btVector3> opt_first_point)
 {
   auto& line_node=extractor.getNode(name);
   if(line_node.type!=TINYGLTF_MODE_LINE)
@@ -328,6 +381,12 @@ Line Line::createLine(
   if(is_line_closed)
     strip.pop_back();
 
+  btVector3 first_point;
+  if(!opt_first_point.has_value())
+    first_point=vertices[strip.front()];
+  else
+    first_point=opt_first_point.value();
+
   auto it=std::min_element(strip.begin(),strip.end(),
       [&](unsigned int idx_a,unsigned int idx_b)
       {
@@ -337,6 +396,7 @@ Line Line::createLine(
         return len_a2<len_b2;
       }
   );
+
   if(it==strip.end())
     throw Exception(
         Exception::Type::UnsupportedFormatError,

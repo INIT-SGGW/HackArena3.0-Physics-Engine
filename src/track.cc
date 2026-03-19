@@ -8,7 +8,6 @@
 #include "boink/exception.h"
 #include "boink/gltf_extractor.h"
 #include "boink/gui/track_gui.h"
-#include "boink/constants.h"
 #include "boink/assert.h"
 
 #include <algorithm>
@@ -21,7 +20,6 @@
 #include <iostream>
 #include <sstream>
 #include <charconv>
-#include <random>
 
 namespace boink
 {
@@ -32,6 +30,7 @@ namespace boink
     :
       world_(world),
       filename_(filename),
+      version_(Track::extractTrackVersion(filename_)),
       weather_(weather)
   {
     this->initSurfaceInfos();
@@ -40,9 +39,27 @@ namespace boink
     this->initGrounds(extractor);
     this->initFinishLine(extractor);
     this->initPositions(extractor);
-    this->createLines(extractor);
 
-    this->createTrackData();
+    road_=Road(
+        Line::createLine(extractor,CENTERLINE_NAME,finish_line_),
+        Line::createLine(extractor,RIGHTLINE_NAME,finish_line_),
+        Line::createLine(extractor,LEFTLINE_NAME,finish_line_));
+    if(!road_.isClosed())
+    {
+      throw Exception(
+          Exception::Type::UnsupportedFormatError,
+          "Main road is not a closed road");
+    }
+
+    pitstop_=Pitstop(extractor);
+    for(const auto& [type,zone]: pitstop_.getZones())
+    {
+      if(zone.isClosed())
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "One of the pitstop roads is closed road");
+    }
+
     gui_=std::make_shared<TrackGui>(this);
   }
 
@@ -58,47 +75,6 @@ namespace boink
     BOINK_ASSERT(index<start_postions_.size());
 
     return start_postions_.at(index);
-  }
-
-  btVector3 Track::getOnTrackRandomPosition() const
-  {
-    std::random_device rd;
-    static std::mt19937 gen(rd());
-
-    std::uniform_int_distribution<size_t> dist(0,centerline_.getPointsSize()-1);
-    size_t random_index=dist(gen);
-
-    BOINK_ASSERT(random_index<track_data_.size());
-    if(random_index>=track_data_.size())
-      return centerline_.getPoint(random_index);
-
-    const auto& sample=track_data_.at(random_index);
-    BOINK_ASSERT(
-        (sample.position-centerline_.getPoint(random_index)).length2()<g_Epsilon);
-
-    std::uniform_real_distribution<btScalar> real_dist(0.0f,1.f);
-    btScalar random_left_width=real_dist(gen)*sample.left_width;
-    btScalar random_right_width=real_dist(gen)*sample.right_width;
-
-    btVector3 offset=sample.right*(random_right_width-random_left_width);
-    btVector3 random_point=centerline_.getPoint(random_index);
-
-    return random_point+offset;
-  }
-
-  Track::SampleData Track::getClosestTrackSample(const btVector3& point) const
-  {
-    size_t index=std::distance(centerline_.begin(), centerline_.getClosest(point));
-    
-    BOINK_ASSERT(index<track_data_.size());
-    if(index>=track_data_.size())
-      return track_data_.at(0);;
-
-    const auto& sample=track_data_.at(index);
-    BOINK_ASSERT(
-        (sample.position-centerline_.getPoint(index)).length2()<g_Epsilon);
-
-    return sample;
   }
 
   void Track::initSurfaceInfos()
@@ -140,41 +116,6 @@ namespace boink
           node.transform,
           &surface_infos_[type.value()],world_);
     }
-  }
-
-  void Track::createLines(const GltfExtractor& extractor)
-  {
-    centerline_=Line::createLine(extractor,finish_line_,CENTERLINE_NAME);
-    rightline_=Line::createLine(extractor,finish_line_,RIGHTLINE_NAME);
-    leftline_=Line::createLine(extractor,finish_line_,LEFTLINE_NAME);
-
-    if(
-        !centerline_.isClosed() || 
-        !rightline_.isClosed() || 
-        !leftline_.isClosed())
-    {
-      throw Exception(
-          Exception::Type::UnsupportedFormatError,
-          "Center, right or left line is not closed line");
-    }
-
-
-    // Check if centerline should be reveresed
-    {
-      auto center_point=centerline_.getPoint(0);
-      auto next_center_point=centerline_.getPoint(1);
-
-      auto dir=next_center_point-center_point;
-
-      auto right_point=rightline_.getClosest(center_point)->first;
-      auto right=right_point-center_point;
-
-      auto normal=right.cross(dir);
-
-      if(normal.dot(g_Up)<0)
-        centerline_.reverse();
-    }
-
   }
 
   void Track::initPositions(const GltfExtractor& extractor)
@@ -248,99 +189,25 @@ namespace boink
     finish_line_=node.transform.getOrigin();
   }
 
-  void Track::createTrackData()
+
+  int Track::extractTrackVersion(std::string_view filename)
   {
-    track_data_.reserve(centerline_.getPointsSize());
+    size_t i=filename.find("_");
+    if(i==std::string_view::npos)
+      return -1;
 
-    BOINK_ASSERT(centerline_.getPointsSize()>2);
-    BOINK_ASSERT(rightline_.getPointsSize()>2);
-    BOINK_ASSERT(leftline_.getPointsSize()>2);
+    if(i+1>=filename.length())
+      return -1;
 
-    for(size_t i=0;i<centerline_.getPointsSize();i++)
-      track_data_.push_back(this->generateSampleTrackData(i));
+    std::string_view version_str=filename.substr(i+1);
+    int version;
+    auto result=std::from_chars(
+        version_str.data(),version_str.data()+version_str.size(),version);
 
-    // Calc curvature 
-    for(size_t i=0;i<track_data_.size();i++)
-    {
-      size_t prev=(i-1+track_data_.size())%track_data_.size();
-      size_t next=(i+1)%track_data_.size();
+    if(result.ec!=std::errc())
+      return -1;
 
-      const auto& sample_prev=track_data_[prev];
-      const auto& sample_next=track_data_[next];
-      btVector3 dT=sample_next.tangent-sample_prev.tangent;
-      btScalar ds=sample_next.coverage-sample_prev.coverage;
-
-      btVector3 dTds=dT/ds;
-
-      track_data_[i].curvature=dTds.dot(track_data_[i].right);
-    }
-
-    if(track_data_.size()!=centerline_.getPointsSize())
-      throw Exception(
-          Exception::Type::InternalError,
-          "After read track_data and center line points sizes does not match");
-  }
-
-  Track::SampleData Track::generateSampleTrackData(size_t i) const
-  {
-    SampleData sample;
-    size_t centerline_size=centerline_.getPointsSize();
-    size_t next=(i+1)%centerline_size;
-
-    const auto& [center_point,dist]=centerline_.getPointAndDist(i);
-    btVector3 right_point=
-      rightline_.getClosest(center_point)->first;
-
-    sample.position=center_point;
-    sample.coverage=dist;
-
-    const auto& next_center_point=centerline_.getPoint(next);
-    sample.tangent=next_center_point-center_point;
-    sample.tangent.normalize();
-
-    // Create real right vector
-    sample.right=right_point-center_point;
-    sample.right-=sample.right.dot(sample.tangent)*sample.tangent;
-    sample.right.normalize();
-
-    if(sample.tangent.dot(sample.right)>g_Epsilon)
-    {
-      std::stringstream ss;
-      ss<<"For centerline point i=("<<i;
-      ss<<") the dot product of tangent and right vectors is greater than epsilon";
-      throw Exception(
-          Exception::Type::InternalError,
-          ss.str());
-    }
-
-    sample.normal=sample.right.cross(sample.tangent);
-    BOINK_ASSERT(sample.normal.length2()>g_Epsilon);
-    sample.normal.normalize();
-
-    if(sample.normal.dot(g_Up)<0.0)
-    {
-      std::stringstream ss;
-      ss<<"For centerline point i=("<<i;
-      ss<<") the dot product of normal and up vectors is negative";
-      throw Exception(
-          Exception::Type::InternalError,
-          ss.str());
-    }
-
-    sample.right_width=(rightline_.getClosestPointInterpolated(
-        center_point).first-center_point).length();
-    sample.left_width=(leftline_.getClosestPointInterpolated(
-        center_point).first-center_point).length();
-
-    sample.grade=btAsin(sample.tangent.dot(g_Up));
-
-    btVector3 proj_up=g_Up-g_Up.dot(sample.tangent)*sample.tangent;
-    btScalar cos_angle=proj_up.dot(sample.normal);
-    btScalar sin_angle=proj_up.dot(sample.right);
-
-    sample.bank=btAtan2(sin_angle,cos_angle);
-
-    return sample;
+    return version;
   }
 
   std::optional<Ground::Type> Track::resolveGroundTypeFromName(std::string name)
@@ -382,26 +249,121 @@ namespace boink
     if(!enable_track_data_vec_draw_)
       return;
 
-    const auto& samples=this->getTrackData();
-
-    auto offset=this->getWorldTransform().getOrigin();
-    for(const auto& sample:samples)
+    // Main road
     {
-      auto pos=offset+sample.position;
-      p_renderer->drawPoint(
-          pos,
-          {0.5,0.5,0.0},
-          sample.normal,
-          sample.tangent);
+      const auto& samples=road_.getRoadData();
 
-      p_renderer->drawLine(
-          pos,
-          pos+sample.right*sample.right_width,
-          {0.0,0.5,0.0});
-      p_renderer->drawLine(
-          pos,
-          pos+sample.right*-sample.left_width,
-          {0.5,0.0,0.0});
+      auto offset=this->getWorldTransform().getOrigin();
+      for(size_t i=0;i<samples.size();i++)
+      {
+        const auto& sample=samples[i];
+        const auto& pos=offset+road_.getPoint(i);;
+        p_renderer->drawPoint(
+            pos,
+            {0.5,0.5,0.0},
+            sample.normal,
+            sample.tangent);
+
+        p_renderer->drawLine(
+            pos,
+            pos+sample.right*sample.right_width,
+            {0.0,0.5,0.0});
+        p_renderer->drawLine(
+            pos,
+            pos+sample.right*-sample.left_width,
+            {0.5,0.0,0.0});
+      }
+      const Line& line=const_cast<const Road&>(road_).getLine(Road::Side::Right);
+      for(size_t i=0;i<line.getPointsSize();i++)
+      {
+        const auto& point=line.getPoint(i);
+        size_t i_next=(i+1)%line.getPointsSize();
+        p_renderer->drawLine(
+          point+offset,
+          offset+line.getPoint(i_next),
+          {1,1,1});
+      }
+      const Line& line1=const_cast<const Road&>(road_).getLine(Road::Side::Left);
+      for(size_t i=0;i<line1.getPointsSize();i++)
+      {
+        const auto& point=line1.getPoint(i);
+        size_t i_next=(i+1)%line1.getPointsSize();
+        p_renderer->drawLine(
+          point+offset,
+          offset+line1.getPoint(i_next),
+          {1,1,1});
+      }
+
+    }
+
+    // Pitstop
+    {
+      for(const auto& [zone_type,_]:pitstop_.getZones())
+      {
+        btVector3 zone_color;
+        switch((Pitstop::Zone)zone_type)
+        {
+          case Pitstop::Zone::Enter:
+            zone_color={0,1,0};
+            break;
+          case Pitstop::Zone::Fix:
+            zone_color={0,0,1};
+            break;
+          case Pitstop::Zone::Exit:
+            zone_color={1,0,0};
+            break;
+          default:
+            zone_color={1,1,1};
+            break;
+        }
+        const auto& zone=pitstop_.getZone((Pitstop::Zone)zone_type);
+        const auto& samples=zone.getRoadData();
+        auto offset=this->getWorldTransform().getOrigin();
+        for(size_t i=0;i<samples.size();i++)
+        {
+          const auto& sample=samples[i];
+          const auto& pos=offset+zone.getPoint(i);;
+          p_renderer->drawPoint(
+              pos,
+              {0.25,0.25,0.0},
+              sample.normal,
+              sample.tangent);
+
+          p_renderer->drawLine(
+              pos,
+              pos+sample.right*sample.right_width,
+              {0.0,0.25,0.0});
+          p_renderer->drawLine(
+              pos,
+              pos+sample.right*-sample.left_width,
+              {0.25,0.0,0.0});
+
+          if(i+1!=samples.size())
+            p_renderer->drawLine(
+              pos,
+              offset+zone.getPoint(i+1),
+              zone_color);
+        }
+
+        const Line& line=const_cast<const Road&>(zone).getLine(Road::Side::Right);
+        for(size_t i=0;i<line.getPointsSize()-1;i++)
+        {
+          const auto& point=line.getPoint(i);
+          p_renderer->drawLine(
+            point+offset,
+            offset+line.getPoint(i+1),
+            {1,1,1});
+        }
+        const Line& line1=const_cast<const Road&>(zone).getLine(Road::Side::Left);
+        for(size_t i=0;i<line1.getPointsSize()-1;i++)
+        {
+          const auto& point=line1.getPoint(i);
+          p_renderer->drawLine(
+            point+offset,
+            offset+line1.getPoint(i+1),
+            {1,1,1});
+        }
+      }
     }
 
     p_renderer->drawPoint(finish_line_,{1.0,1.0,1.0});

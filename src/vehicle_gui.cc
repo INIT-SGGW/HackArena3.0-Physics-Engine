@@ -57,6 +57,10 @@ namespace boink
     ImGui::Text("COM in CS: (%.2f,%.2f,%.2f) [m]",
         center_of_mass_cs[0],center_of_mass_cs[1],center_of_mass_cs[2]);
 
+
+    if(ImGui::CollapsingHeader("Pitstop zones"))
+      drawPitstop();
+
     if(ImGui::CollapsingHeader(ghost_gui_.getTitle().data()))
       ghost_gui_.draw();
 
@@ -174,6 +178,17 @@ namespace boink
         }
       }
     }
+  }
+
+  void VehicleGui::drawPitstop()
+  {
+    ImGui::Text("On track corners: %d",p_vehicle_->isVehicleOnTrack());
+    ImGui::Text("In pitstop entry corners: %d",
+        p_vehicle_->isVehicleInPitstop(Pitstop::Zone::Enter));
+    ImGui::Text("In pitstop fix corners: %d",
+        p_vehicle_->isVehicleInPitstop(Pitstop::Zone::Fix));
+    ImGui::Text("In pitstop exit corners: %d",
+        p_vehicle_->isVehicleInPitstop(Pitstop::Zone::Exit));
   }
 
   const char* tyreTypeToStr(WheelInfo::TyreType type)

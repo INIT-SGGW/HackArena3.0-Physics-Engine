@@ -21,6 +21,7 @@
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/ghost_mode.h"
 #include "boink/simulators/vehicle/lap_info.h"
+#include "boink/bounding_box.h"
 
 namespace boink
 {
@@ -39,14 +40,6 @@ class Vehicle : public Simulator
       btVector3 center_of_mass;
       RaycastVehicle::VehicleTuning tuning;
       WheelInfo::TyreType tyre_type;
-    };
-
-    struct BoundingBox
-    {
-      btVector3 top_left;
-      btVector3 top_right;
-      btVector3 bottom_left;
-      btVector3 bottom_right;
     };
     
     enum class TurnDirection
@@ -102,8 +95,11 @@ class Vehicle : public Simulator
     btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
+    btVector3 getVehicleDirection() const;
+
     btScalar getSpeed() const;
     btScalar getMass() const;
+    int getNumWheels() const {return vehicle_->getNumWheels();}
     btVector3 getCenterOfMassCS() const;
 
     btScalar getTyreHealth(WheelPosition pos) const;
@@ -141,8 +137,15 @@ class Vehicle : public Simulator
      * @brief Resets all speeds, forces, interpolation of a vehicle.
      */
     void reset();
+
+    int isVehicleOnTrack(bool max_lines=false) const;
+    int isVehicleInPitstop(bool max_lines=false) const;
+    int isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
+
+    bool hasStopped() const;
   private:
     void updateLapInfo(btScalar dt);
+    void updatePitstop(btScalar dt);
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -154,6 +157,11 @@ class Vehicle : public Simulator
         btScalar mass);
 
     static BoundingBox getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
+  private:
+    static constexpr btScalar kMaxFixZoneSpeed=15.f;
+    static constexpr btScalar kMaxFixZonePenaltySpeed=5.f;
+    static constexpr btScalar kBrakingDuration=5.f;
+    static constexpr btScalar kPitstopBrakingForce=50000.f;
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
@@ -171,8 +179,6 @@ class Vehicle : public Simulator
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     
-    //int laps_completed_;
-    //btScalar curr_lap_dist_point_;
     LapInfo lap_info_;
 
     GhostModeInfo ghost_info_;

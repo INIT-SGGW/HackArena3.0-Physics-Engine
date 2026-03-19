@@ -42,7 +42,6 @@ namespace boink
 
     std::optional<std::tuple<int,btScalar,Simulator::ID>> getBestLap() const;
 
-    // Temporary soliton
     void setUserPtr(void* ptr)
     {user_ptr_=ptr;}
     void* getUserPtr() const

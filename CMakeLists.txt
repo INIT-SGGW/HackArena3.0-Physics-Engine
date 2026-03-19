@@ -119,6 +119,8 @@ target_sources(boink
     src/ghost_gui.cc
     src/constants.cc
     src/logger.cc
+    src/pitstop.cc
+    src/road.cc
 )
 
 target_include_directories(boink
@@ -134,6 +136,7 @@ include(CTest)
 
 set(TEST_SOURCES_C
   capi_test
+  capi_test2
   capi_without_debugger_test
 )
 foreach(name IN LISTS TEST_SOURCES_C)
