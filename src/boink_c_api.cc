@@ -810,27 +810,7 @@ int boink_set_vehicle_to_pitstop(BoinkHandle handle, uint64_t vehicle_id)
   HANDLE_EXCEPTIONS(
     vehicle=p_race->getVehicle(vehicle_id));
 
-  const auto& fix_road=
-    p_race->getTrack()->getPitstop().getZone(boink::Pitstop::Zone::Fix);
-  const auto& fix_line_center=fix_road.getLine(boink::Road::Side::Center);
-
-  btVector3 new_pos=fix_line_center.getPoint(fix_line_center.getPointsSize()/2);
-
-  const auto& metrics=fix_road.getClosestMetrics(new_pos);
-
-  btVector3 up_compensate=
-    metrics.normal*(vehicle->getChassisToGroundDist()+boink::g_GroundMargin);
-  new_pos+=up_compensate;
-  
-  btQuaternion final_rot=get_rotation_relative_to_track(metrics.tangent,metrics.normal);
-
-  btTransform bt_transform;
-  bt_transform.setIdentity();
-  bt_transform = vehicle->getChassisWorldTransform();
-  bt_transform.setOrigin(new_pos);
-  bt_transform.setRotation(final_rot);
-  vehicle->setChassisWorldTransform(bt_transform);
-
+  vehicle->setVehicleToPitstop(boink::Pitstop::Zone::Fix);
   return BOINK_OK;
 }
 
@@ -1217,14 +1197,6 @@ int boink_read_vehicle_ghost_mode_state(
     BOINK_GHOST_MODE_BLOCKER_IN_PIT:
     0;
 
-  if(state.blockers_mask==0 && ghost_mode.isInGhostMode() && ghost_mode.isActive())
-  {
-    set_last_error(
-        __func__,
-        RETURN_CODE_STR(BOINK_ERR_INTERNAL),
-        "out_state->blockers_mask is 0 but vehicle is in ghost mode");
-    return BOINK_ERR_INTERNAL;
-  }
 
   state.exit_delay_remaining_ms=0;
   state.enter_delay_remaining_ms=0;
@@ -1273,6 +1245,12 @@ int boink_read_vehicle_ghost_mode_state(
       state.phase=BOINK_GHOST_MODE_PHASE_INACTIVE;
     }
   } 
+
+  if(state.blockers_mask==0 && ghost_mode.isInGhostMode() && ghost_mode.isActive())
+  {
+    BOINK_WARN("state.blockers_mask={}",state.blockers_mask);
+    BOINK_WARN("out_state->blockers_mask is 0 but vehicle is in ghost mode");
+  }
 
   *out_state=state;
   return BOINK_OK;

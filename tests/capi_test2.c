@@ -27,7 +27,7 @@ int main()
   const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\Bolid_F1.glb";
   const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";
 #else
-  const char* vehicle_filename = "Bolid_F1.glb";
+  const char* vehicle_filename = "F1_CAR_06.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
   const char* track_filename = "horizon_05.glb";
 #endif
@@ -85,8 +85,8 @@ int main()
   model.mass = 800.;
   model.max_steer_angle = 90;
   model.mesh = mesh_handle;
-  model.suspension_rest_length = 0.4;
-  model.wheel_radius = 0.36;
+  model.suspension_rest_length = 0.01;
+  model.wheel_radius = 0.38;
 
   uint64_t id1;
   if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
@@ -109,10 +109,7 @@ int main()
 
   BoinkVec3 vehicle_pos;
   vehicle_pos.x = 0.;
-  vehicle_pos.y = 13.;
-  vehicle_pos.z = 0.;
-  vehicle_pos.x = 0.;
-  vehicle_pos.y = 0.;
+  vehicle_pos.y = -513.;
   vehicle_pos.z = 0.;
   //if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
   //{
@@ -149,11 +146,6 @@ int main()
     prev = now;
 
     Real sim_time;
-    if ((code = boink_step_race(handle, dt,&sim_time)) != BOINK_OK)
-    {
-      PRINT_ERROR();
-      goto clear;
-    }
 
     BoinkWeather weather_state;
     weather_state.cloudiness = 0.5f;
@@ -173,11 +165,11 @@ int main()
 
     if (!runOnce && dur > 6.)
     {
-      //if ((code = boink_set_vehicle_at_start_pos(handle,id1,5)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
+      if ((code = boink_set_vehicle_position(handle,id1,&vehicle_pos)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
       runOnce = true;
     }
 
@@ -196,6 +188,12 @@ int main()
       time=0.f;
     }
     time+=sim_time;
+
+    if ((code = boink_step_race(handle, dt,&sim_time)) != BOINK_OK)
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
 
     struct BoinkVehicleState state;
     if ((code = boink_read_vehicle_state(handle, id1, &state)) != BOINK_OK)

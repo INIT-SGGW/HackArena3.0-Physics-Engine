@@ -42,6 +42,8 @@ namespace boink
 
   void GhostMode::update(btScalar dt)
   {
+    this->doHitTest();
+
     if(!is_sim_enabled_)
     {
       if(isInGhostMode())
@@ -52,8 +54,6 @@ namespace boink
       }
       return;
     }
-
-    this->doHitTest();
 
     if(isOverlapping())
       overlap_timer_.reset();
