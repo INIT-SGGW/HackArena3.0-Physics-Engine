@@ -101,16 +101,16 @@ int main()
     goto clear;
   }
 
-  //if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
-  //if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
+  if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
 
   BoinkQuaternion vehicle_rot;
   vehicle_rot.x = 0.;
@@ -122,24 +122,12 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-
-  BoinkVec3 vehicle_pos;
-  vehicle_pos.x = 0.;
-  vehicle_pos.y = 13.;
-  vehicle_pos.z = 0.;
-  if ((code = boink_set_vehicle_position(handle, id0, &vehicle_pos)) != BOINK_OK)
+  if ((code = boink_set_vehicle_orientation(handle, id0, &vehicle_rot)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
   }
-  vehicle_pos.x = 0.;
-  vehicle_pos.y = 0.;
-  vehicle_pos.z = 0.;
-  //if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
+
 
   BoinkControls controls;
   controls.brake = 0.0;
@@ -192,13 +180,13 @@ int main()
       }
     }
 
-    if (!runOnce && dur > 6.)
+    if (!runOnce && dur > 46.)
     {
-      //if ((code = boink_set_vehicle_at_start_pos(handle,id1,5)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
+      if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
       runOnce = true;
     }
 
@@ -212,13 +200,19 @@ int main()
       runOnce2 = true;
     }
 
-    if(time>2.f)
+    if(time>20.f)
     {
-      //if ((code = boink_set_vehicle_random_pos(handle,id0)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
+      if ((code = boink_set_vehicle_to_pitstop(handle,id0)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      if ((code = boink_set_vehicle_to_pitstop(handle,id1)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      pos++;
       time=0.f;
     }
     time+=sim_time;
@@ -250,7 +244,7 @@ int main()
 
     //printf("# of positions: %lu\n",number);
 
-    printGhostModeData(&state_ghost);
+    //printGhostModeData(&state_ghost);
 
     boink_update_debug();
   }

@@ -34,6 +34,7 @@ namespace boink
   void GhostMode::disable()
   {
     is_sim_enabled_=false;
+    this->reset();
 
     if(isInGhostMode())
       this->exitGhostMode();
@@ -42,7 +43,15 @@ namespace boink
   void GhostMode::update(btScalar dt)
   {
     if(!is_sim_enabled_)
+    {
+      if(isInGhostMode())
+      {
+        force_timer_.update(dt);
+        if(force_timer_.hasFinised()&&!isOverlapping())
+          this->exitGhostMode();
+      }
       return;
+    }
 
     this->doHitTest();
 
@@ -89,7 +98,9 @@ namespace boink
   void GhostMode::enterGhostModeForce()
   {
     this->enterGhostMode();
+
     exit_timer_.reset();
+    force_timer_.reset();
   }
 
   void GhostMode::enterGhostMode()
@@ -161,5 +172,7 @@ namespace boink
     exit_timer_.reset(settings_.exit_delay);
     overlap_timer_.reset(settings_.exit_delay_when_overlap);
     overlap_timer_.setElapsedToFinish();
+
+    force_timer_.reset(settings_.exit_delay);
  }
 }

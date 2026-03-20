@@ -29,6 +29,7 @@ namespace boink
 
     bool isInGhostMode() const {return is_in_ghost_mode_;}
     bool isOverlapping() const {return is_overlapping_;}
+    bool isActive() const {return is_sim_enabled_;}
 
     const Timer& getEnterTimer() const {return enter_timer_;}
     const Timer& getExitTimer() const {return exit_timer_;}
@@ -64,6 +65,8 @@ namespace boink
     Timer enter_timer_;
     Timer exit_timer_;
     Timer overlap_timer_;
+
+    Timer force_timer_;
 
     GhostModeSettings settings_;
   };

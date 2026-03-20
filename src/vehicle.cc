@@ -561,10 +561,12 @@ void Vehicle::reset()
     track_->getRoad().
     getCoverage(this->getChassisWorldTransform().getOrigin());
 
-  if(new_coverage>lap_info_.curr_lap_coverage)
+  if(new_coverage-lap_info_.curr_lap_coverage>0.1)
     lap_info_.current_lap--;
 
   lap_info_.curr_lap_coverage=new_coverage;
+
+  ghost_sim_.enterGhostModeForce();
 }
 
 int Vehicle::isVehicleOnTrack(bool max_lines) const

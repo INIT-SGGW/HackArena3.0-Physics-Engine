@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 15
+#define BOINK_C_API_VERSION_MINOR 16
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -1024,6 +1024,38 @@ BOINK_API int boink_set_vehicle_at_start_pos(BoinkHandle h,
  * - Another error code for other failures.
  */
 BOINK_API int boink_get_number_of_start_pos(BoinkHandle h, uint64_t *out_number_pos);
+
+/**
+ * Sets the world-space position of a vehicle to the closest point.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_back_to_track(BoinkHandle h, uint64_t vehicle_id);
+
+/**
+ * Sets the world-space position of a vehicle to a pitstop fix zone.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_to_pitstop(BoinkHandle h, uint64_t vehicle_id);
 
 /**
  * Sets the world-space orientation of a vehicle.
