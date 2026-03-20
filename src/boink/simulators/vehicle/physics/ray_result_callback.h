@@ -25,7 +25,7 @@ namespace boink
       const btRigidBody* body = btRigidBody::upcast(obj);
 
       if(m_isGhosted&&
-          obj->getBroadphaseHandle()->m_collisionFilterGroup==CollisionGroup::Vehicle)
+          obj->getBroadphaseHandle()->m_collisionFilterGroup==Collision::Group::Vehicle)
         return m_closestHitFraction;
 
       if (body)

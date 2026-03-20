@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 14
+#define BOINK_C_API_VERSION_MINOR 15
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -76,6 +76,30 @@
  * Indicates an internal engine error.
  */
 #define BOINK_ERR_INTERNAL -100
+
+/**
+ * Active pitstop zones the vehicle can be in.
+ *
+ * Values are intended to represent the current pitstop phase.
+ */
+typedef enum BoinkPitstopZone {
+  /**
+   * Vehicle is not in any pitstop zone.
+   */
+  BOINK_PITSTOP_ZONE_NONE = 0,
+  /**
+   * Vehicle is in the pit entry zone.
+   */
+  BOINK_PITSTOP_ZONE_ENTER = (1 << 0),
+  /**
+   * Vehicle is in the pit repair zone.
+   */
+  BOINK_PITSTOP_ZONE_FIX = (1 << 1),
+  /**
+   * Vehicle is in the pit exit zone.
+   */
+  BOINK_PITSTOP_ZONE_EXIT = (1 << 2),
+} BoinkPitstopZone;
 
 /**
  * Requested gear-shift operation for a single controls command.
@@ -148,33 +172,6 @@ typedef enum BoinkGhostModeBlocker {
    */
   BOINK_GHOST_MODE_BLOCKER_IN_PIT = (1 << 5),
 } BoinkGhostModeBlocker;
-
-/**
- * Active pitstop zones the vehicle can be in.
- *
- * Values are intended to represent the current pitstop phase.
- */
-typedef enum BoinkPitstopZone {
-  /**
-   * Vehicle is not in any pitstop zone.
-   */
-  BOINK_PITSTOP_ZONE_NONE = (0),
-
-  /**
-   * Vehicle is in the pit entry zone.
-   */
-  BOINK_PITSTOP_ZONE_ENTER = (1 << 0),
-
-  /**
-   * Vehicle is in the pit repair zone.
-   */
-  BOINK_PITSTOP_ZONE_FIX = (1 << 1),
-
-  /**
-   * Vehicle is in the pit exit zone.
-   */
-  BOINK_PITSTOP_ZONE_EXIT = (1 << 2),
-} BoinkPitstopZone;
 
 /**
  * Represents an opaque engine handle.
@@ -263,7 +260,10 @@ typedef struct BoinkCenterlineSample {
   Real bank_rad;
 } BoinkCenterlineSample;
 
-typedef struct BoinkPitstopData{
+/**
+ * Represents static pitstop geometry for one lap.
+ */
+typedef struct BoinkPitstopData {
   /**
    * Number of elements at `enter_centerline_samples`.
    */
@@ -298,12 +298,12 @@ typedef struct BoinkPitstopData{
    * Pitstop length along centerline in meters.
    */
   Real length_m;
-}BoinkPitstopData;
+} BoinkPitstopData;
 
 /**
  * Represents static track geometry for one lap.
  *
- * The `map_id`, `centerline_samples` pointers are owned by the engine
+ * The `map_id` and `centerline_samples` pointers are owned by the engine
  * and must not be freed or modified by the caller.
  *
  * The pointers contained within `pitstop_data` are also owned by the engine
@@ -334,6 +334,9 @@ typedef struct BoinkTrackData {
    * Can be null only when `centerline_sample_count == 0`.
    */
   const struct BoinkCenterlineSample *centerline_samples;
+  /**
+   * Static pitstop geometry data for the track.
+   */
   struct BoinkPitstopData pitstop_data;
 } BoinkTrackData;
 
@@ -489,13 +492,13 @@ typedef struct BoinkVehicleState {
    */
   Real wheel_speeds[4];
   /**
-   * Orientation of the vehicle wheels as a quaternion (x, y, z, w).
+   * Front-wheel steering orientation in radians.
    *
    * Index mapping:
    *   [0] = front-left
    *   [1] = front-right
    */
-  struct BoinkQuaternion front_wheel_orientation[2];
+  Real front_wheel_orientation_rad[2];
 } BoinkVehicleState;
 
 /**
@@ -806,6 +809,29 @@ BOINK_API int boink_get_race_duration(BoinkHandle h, Real *out_dur);
 BOINK_API int boink_get_track_data(BoinkHandle h, struct BoinkTrackData *out_track_data);
 
 /**
+ * Reads current pitstop zones and wheel count in pitstop for the specified vehicle.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle whose pitstop zone is requested.
+ * - `out_zone` - non-null pointer that receives the current pitstop zone.
+ * - `out_wheels_num` - non-null pointer that receives number of wheels in pitstop zones.
+ *
+ * Returns:
+ * - `BOINK_OK` on success and writes the zone to `*out_zone`.
+ * - `BOINK_ERR_INVALID_ARG` if `out_zone` or `out_wheels_num` is null.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ *
+ * Notes:
+ * - `*out_wheels_num` is expected to be in range `0..=4`.
+ */
+BOINK_API int boink_get_vehicle_pitstop_zone(BoinkHandle h,
+                                          uint64_t vehicle_id,
+                                          enum BoinkPitstopZone *out_zone,
+                                          int *out_wheels_num);
+
+/**
  * Updates the debug drawer for the current frame.
  *
  * This function should be called once per frame if debug visualization
@@ -1052,8 +1078,8 @@ BOINK_API int boink_read_vehicle_state(BoinkHandle h,
  * - Another error code for other failures.
  */
 BOINK_API int boink_read_vehicle_race_metrics(BoinkHandle h,
-                                               uint64_t vehicle_id,
-                                               struct BoinkVehicleRaceMetrics *out_metrics);
+                                           uint64_t vehicle_id,
+                                           struct BoinkVehicleRaceMetrics *out_metrics);
 
 /**
  * Returns the lap number and lap time of the vehicle's personal best lap.
@@ -1061,10 +1087,10 @@ BOINK_API int boink_read_vehicle_race_metrics(BoinkHandle h,
  * Output parameters are written only when `BOINK_OK` is returned.
  *
  * Parameters:
- * - h - handle to a valid race.
+ * - `h` - handle to a valid race.
  * - `vehicle_id` - identifier of the vehicle whose race metrics are requested.
  * - `out_lap` - non-null pointer that receives lap number.
- * - `out_lap_time_ms` - non-null pointer that receives the best lap time in miliseconds.
+ * - `out_lap_time_ms` - non-null pointer that receives the best lap time in milliseconds.
  *
  * Returns:
  * - `BOINK_OK` on success.
@@ -1084,7 +1110,7 @@ BOINK_API int boink_get_vehicle_personal_best_lap(BoinkHandle h,
  * Output parameters are written only when `BOINK_OK` is returned.
  *
  * Parameters:
- * - h - handle to a valid race.
+ * - `h` - handle to a valid race.
  * - `out_vehicle_id` - non-null pointer that receives the vehicle identifier.
  * - `out_lap` - non-null pointer that receives the lap number.
  * - `out_lap_time_ms` - non-null pointer that receives the best lap time in milliseconds.
@@ -1095,39 +1121,10 @@ BOINK_API int boink_get_vehicle_personal_best_lap(BoinkHandle h,
  * - `BOINK_ERR_INVALID_ARG` if `out_vehicle_id`, `out_lap`, or `out_lap_time_ms` is null.
  * - An error code on failure.
  */
-BOINK_API int boink_get_best_lap(BoinkHandle h,uint64_t *out_vehicle_id,
-                                               unsigned int *out_lap,
-                                               unsigned int *out_lap_time_ms);
-
-/**
- * Returns the laps history of a given vehicle.
- *
- * Each lap number in `out_laps` corresponds to its lap time in `out_lap_times_ms`.
- * If `out_laps` and `out_lap_times_ms` are null, 
- * the function returns the total number of laps in `in_out_count`.
- *
- * Parameters:
- * - h - handle to a valid race.
- * - vehicle_id - the vehicle identifier whose lap history is requested.
- * - out_laps - optional; non-null pointer to an array that receives lap numbers.
- * - out_lap_times_ms - optional; non-null pointer to an array that 
- *   receives lap times in milliseconds.
- * - in_out_count - input as the capacity of the output arrays; 
- *   output as the actual number of laps written.
- *
- * Returns:
- * - `BOINK_OK` on success.
- * - `BOINK_NO_DATA` if the vehicle has not completed any laps yet.
- * - `BOINK_ERR_INVALID_ARG` if `in_out_count` is null or 
- *   if only one of `out_laps`/`out_lap_times_ms` is null.
- * - `BOINK_ERR_BUFFER_TOO_SMALL` if the arrays are too small to 
- *   hold all laps.
- * - An error code on failure.
- */
-//BOINK_API int boink_get_vehicle_laps_history(BoinkHandle h,uint64_t vehicle_id,
-//                                               unsigned int *out_laps,
-//                                               unsigned int *out_lap_times_ms,
-//                                               uint64_t *in_out_count);
+BOINK_API int boink_get_best_lap(BoinkHandle h,
+                              uint64_t *out_vehicle_id,
+                              unsigned int *out_lap,
+                              unsigned int *out_lap_time_ms);
 
 /**
  * Reads runtime ghost mode state for the specified vehicle.
@@ -1187,27 +1184,6 @@ BOINK_API int boink_set_ghost_mode_settings(BoinkHandle h,
  * - Another error code for other failures.
  */
 BOINK_API int boink_disable_ghost_mode(BoinkHandle h);
-
-/**
- * Reads current pitstop zones and wheel count in pitstop for the specified vehicle.
- *
- * Parameters:
- * - `h` - handle to a valid race.
- * - `vehicle_id` - identifier of the vehicle whose pitstop zone is requested.
- * - `out_zone` - non-null pointer that receives the current pitstop zone.
- * - `out_wheels_num` - non-null pointer that receives 
- *   number of wheels in pitstop zones.
- *
- * Returns:
- * - `BOINK_OK` on success and writes the zone to `*out_zone`.
- * - `BOINK_ERR_INVALID_ARG` if `out_zone` is null.
- * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
- * - Another error code for other failures.
- */
-BOINK_API int boink_get_vehicle_pitstop_zone(BoinkHandle h,
-                                             uint64_t vehicle_id,
-                                             enum BoinkPitstopZone *out_zone,
-                                             int *out_wheels_num);
 
 #ifdef __cplusplus
 }  // extern "C"

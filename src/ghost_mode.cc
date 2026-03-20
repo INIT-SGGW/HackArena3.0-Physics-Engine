@@ -25,20 +25,17 @@ namespace boink
           "Min exit speed cannot be lower than max enter speed");
 
     is_sim_enabled_=true;
-    is_in_ghost_mode_=false;
+    enterGhostMode();
     settings_=std::move(settings);
 
-    enter_timer_.reset(settings_.enter_delay);
-    exit_timer_.reset(settings_.exit_delay);
-    overlap_timer_.reset(settings.exit_delay_when_overlap);
-    overlap_timer_.setElapsedToFinish();
+    this->reset();
   }
 
   void GhostMode::disable()
   {
     is_sim_enabled_=false;
 
-    if(is_in_ghost_mode_)
+    if(isInGhostMode())
       this->exitGhostMode();
   }
 
@@ -61,7 +58,7 @@ namespace boink
     {
       exit_timer_.reset();
 
-      if(is_in_ghost_mode_)
+      if(isInGhostMode())
         return;
 
       enter_timer_.update(dt);
@@ -73,7 +70,7 @@ namespace boink
     {
       enter_timer_.reset();
 
-      if(!is_in_ghost_mode_)
+      if(!isInGhostMode())
         return;
 
       exit_timer_.update(dt);
@@ -89,6 +86,12 @@ namespace boink
     }
   }
 
+  void GhostMode::enterGhostModeForce()
+  {
+    this->enterGhostMode();
+    exit_timer_.reset();
+  }
+
   void GhostMode::enterGhostMode()
   {
     is_in_ghost_mode_=true;
@@ -99,8 +102,8 @@ namespace boink
 
     world_->addRigidBody(
         vehicle_->getRigidBody(),
-        CollisionGroup::Vehicle,
-        CollisionGroup::Static);
+        Collision::Group::Vehicle,
+        Collision::Group::Static);
     world_->addAction(vehicle_);
   }
 
@@ -114,8 +117,8 @@ namespace boink
 
     world_->addRigidBody(
         vehicle_->getRigidBody(),
-        CollisionGroup::Vehicle,
-        CollisionGroup::Vehicle | CollisionGroup::Static);
+        Collision::Group::Vehicle,
+        Collision::Group::Vehicle | Collision::Group::Static);
     world_->addAction(vehicle_);
   }
 
@@ -151,4 +154,12 @@ namespace boink
 
     is_overlapping_=false;
   }
+
+ void GhostMode::reset()
+ {
+    enter_timer_.reset(settings_.enter_delay);
+    exit_timer_.reset(settings_.exit_delay);
+    overlap_timer_.reset(settings_.exit_delay_when_overlap);
+    overlap_timer_.setElapsedToFinish();
+ }
 }

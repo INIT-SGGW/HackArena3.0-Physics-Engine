@@ -214,11 +214,11 @@ int main()
 
     if(time>2.f)
     {
-      if ((code = boink_set_vehicle_random_pos(handle,id0)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+      //if ((code = boink_set_vehicle_random_pos(handle,id0)) != BOINK_OK)
+      //{
+      //  PRINT_ERROR();
+      //  goto clear;
+      //}
       time=0.f;
     }
     time+=sim_time;
@@ -236,7 +236,7 @@ int main()
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
     BoinkGhostModeRuntimeState state_ghost;
-    if ((code = boink_read_vehicle_ghost_mode_state(handle, id0, &state_ghost)) != BOINK_OK)
+    if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
     {
       PRINT_ERROR();
       goto clear;
@@ -250,7 +250,7 @@ int main()
 
     //printf("# of positions: %lu\n",number);
 
-    //printGhostModeData(&state_ghost);
+    printGhostModeData(&state_ghost);
 
     boink_update_debug();
   }

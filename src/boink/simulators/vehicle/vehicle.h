@@ -10,6 +10,7 @@
 #include <LinearMath/btMotionState.h>
 
 #include <memory>
+#include <utility>
 
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/track.h"
@@ -108,6 +109,9 @@ class Vehicle : public Simulator
 
     void setTuning(const RaycastVehicle::VehicleTuning& tuning);
     const RaycastVehicle::VehicleTuning& getTuning() const;
+
+    std::pair<btScalar,TurnDirection> getSteering(
+        WheelPosition pos) const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);

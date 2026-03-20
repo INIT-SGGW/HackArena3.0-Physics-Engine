@@ -891,11 +891,21 @@ int boink_read_vehicle_state(
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
   out_state->wheel_position[0]=bt2boink(wheel_transform.getOrigin());
-  out_state->front_wheel_orientation[0]=bt2boink(wheel_transform.getRotation());
+
+  auto pair=vehicle->getSteering(boink::WheelPosition::FrontLeft);
+  out_state->front_wheel_orientation_rad[0]=
+    pair.second==boink::Vehicle::TurnDirection::Left?
+    pair.first*-1:
+    pair.first;
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
   out_state->wheel_position[1]=bt2boink(wheel_transform.getOrigin());
-  out_state->front_wheel_orientation[1]=bt2boink(wheel_transform.getRotation());
+
+  pair=vehicle->getSteering(boink::WheelPosition::FrontRight);
+  out_state->front_wheel_orientation_rad[1]=
+    pair.second==boink::Vehicle::TurnDirection::Left?
+    pair.first*-1:
+    pair.first;
 
   wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
   out_state->wheel_position[2]=bt2boink(wheel_transform.getOrigin());
@@ -1142,6 +1152,10 @@ int boink_read_vehicle_ghost_mode_state(
   state.blockers_mask|=
     overlap_timer.isRunning()?
     BOINK_GHOST_MODE_BLOCKER_OVERLAP_EXIT_DELAY_RUNNING:
+    0;
+  state.blockers_mask|=
+    vehicle->isVehicleInPitstop(boink::Pitstop::Zone::Fix)>0?
+    BOINK_GHOST_MODE_BLOCKER_IN_PIT:
     0;
 
   if(state.blockers_mask==0 && ghost_mode.isInGhostMode())

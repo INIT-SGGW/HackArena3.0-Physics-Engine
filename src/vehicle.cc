@@ -46,8 +46,8 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
   {
     world_->addRigidBody(
         rigidbody_.get(),
-        CollisionGroup::Vehicle,
-        CollisionGroup::Vehicle | CollisionGroup::Static);
+        Collision::Group::Vehicle,
+        Collision::Group::Vehicle | Collision::Group::Static);
 
     rigidbody_->setRestitution(0);
     rigidbody_->setUserPointer(&user_data_);
@@ -220,6 +220,7 @@ void Vehicle::updatePitstop(btScalar dt)
 
   if(this->isVehicleInPitstop(Pitstop::Zone::Fix)>0)
   {
+    ghost_sim_.enterGhostModeForce();
     btVector3 vel=rigidbody_->getLinearVelocity();
     btScalar speed2=vel.length2();
 
@@ -396,6 +397,21 @@ const RaycastVehicle::VehicleTuning& Vehicle::getTuning() const
 {
   BOINK_ASSERT(getNumWheels() == 4);
   return tuning_;
+}
+
+std::pair<btScalar,Vehicle::TurnDirection> Vehicle::getSteering(
+    WheelPosition pos) const
+{
+  btScalar rad=vehicle_->getSteeringValue((int)pos);
+
+  TurnDirection dir=TurnDirection::Left;
+  if(rad<0)
+  {
+    dir=TurnDirection::Right;
+    rad*=-1;
+  }
+
+  return {rad,dir};
 }
 
 void Vehicle::setSteering(btScalar value, TurnDirection dir)

@@ -40,11 +40,14 @@ namespace boink
     { return speed_<settings_.max_enter_speed;}
     bool isExitSpeedConditionMet() const
     { return speed_>settings_.min_exit_speed;}
+
+    void enterGhostModeForce();
   private:
     void enterGhostMode();
     void exitGhostMode();
 
     void doHitTest();
+    void reset();
   private:
     btDynamicsWorld* world_;
     RaycastVehicle* vehicle_;
@@ -55,6 +58,8 @@ namespace boink
     btScalar speed_=0.f;
 
     bool is_in_ghost_mode_=false;
+
+    bool is_force_condition_=false;
 
     Timer enter_timer_;
     Timer exit_timer_;

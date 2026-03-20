@@ -532,8 +532,8 @@ namespace boink
     btVector3 to=from+dir*max_search;
 
     btCollisionWorld::ClosestRayResultCallback ray_callback(from,to);
-    ray_callback.m_collisionFilterGroup=CollisionGroup::Vehicle;
-    ray_callback.m_collisionFilterMask=CollisionGroup::Static;
+    ray_callback.m_collisionFilterGroup=Collision::Group::Vehicle;
+    ray_callback.m_collisionFilterMask=Collision::Group::Static;
 
     world_->rayTest(from,to,ray_callback);
 
@@ -565,8 +565,8 @@ namespace boink
 
       btCollisionWorld::ClosestRayResultCallback ray_callback(
           currentPoint, currentPoint + rayVector);
-      ray_callback.m_collisionFilterGroup = CollisionGroup::Vehicle;
-      ray_callback.m_collisionFilterMask = CollisionGroup::Static;
+      ray_callback.m_collisionFilterGroup = Collision::Group::Vehicle;
+      ray_callback.m_collisionFilterMask = Collision::Group::Static;
 
       world_->rayTest(currentPoint, currentPoint + rayVector, ray_callback);
 
