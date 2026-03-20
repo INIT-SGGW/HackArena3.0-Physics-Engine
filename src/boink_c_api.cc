@@ -942,7 +942,10 @@ int boink_read_vehicle_state(
         pair.first*-1:
         pair.first;
     }
+
   };
+
+  out_state->are_all_wheels_on_ground=vehicle->areAllWheelsOnGround();
 
   set_wheel_state(boink::WheelPosition::FrontLeft,0);
   set_wheel_state(boink::WheelPosition::FrontRight,1);

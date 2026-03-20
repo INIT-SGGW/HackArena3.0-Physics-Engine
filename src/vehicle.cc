@@ -376,6 +376,17 @@ btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
 
 const btTransform& Vehicle::getCenterOfMassTransform() const { return rigidbody_->getCenterOfMassTransform(); }
 
+bool Vehicle::areAllWheelsOnGround() const
+{
+  for(int i=0;i<(int)WheelPosition::Count;i++)
+  {
+    if(!vehicle_->getWheelInfo(i).m_raycastInfo.m_isInContact)
+      return false;
+  }
+
+  return true;
+}
+
 btVector3 Vehicle::getVehicleDirection() const
 {
   btQuaternion quat=getChassisWorldTransform().getRotation();

@@ -176,6 +176,8 @@ namespace boink
 
   void Race::updateDebug()
   {
+    if(!p_dbg_)
+      return;
     Simulation::updateDebug();
 
     this->updateGui();

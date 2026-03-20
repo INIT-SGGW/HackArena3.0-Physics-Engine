@@ -104,6 +104,8 @@ class Vehicle : public Simulator
     int getNumWheels() const {return vehicle_->getNumWheels();}
     btVector3 getCenterOfMassCS() const;
 
+    bool areAllWheelsOnGround() const;
+
     btScalar getTyreHealth(WheelPosition pos) const;
     WheelInfo::TyreType getTyreType(WheelPosition pos) const;
     btScalar getTyreTempCelsius(WheelPosition pos) const;

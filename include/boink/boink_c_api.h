@@ -523,7 +523,7 @@ typedef struct BoinkVehicleState {
   Real front_wheel_orientation_rad[2];
   /**
    * Current tyre health in the range [0.0, 1.0],
-   * where 1.0 represents a brand new tyre and 0.0 a fully worn tyre.
+   * where 1.0 represents a new tyre and 0.0 a fully worn tyre.
    *
    * Index mapping:
    *   [0] = front-left
@@ -543,9 +543,13 @@ typedef struct BoinkVehicleState {
    */
   Real tyre_temprature_celsius[4];
   /**
-   * Currently equipped tyre compound type.
+   * Currently equipped tyre type.
    */
   BoinkTyreType tyre_type;
+  /**
+   * Indicates whether all four wheels are in contact with the ground.
+   */
+  bool are_all_wheels_on_ground;
 } BoinkVehicleState;
 
 /**
