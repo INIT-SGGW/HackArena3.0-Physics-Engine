@@ -1,9 +1,13 @@
 #pragma once
 
-#include <vector>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 
+#include "boink/simulators/track/ground.h"
 #include "boink/simulators/track/line.h"
 #include "boink/bounding_box.h"
+
+#include <vector>
+#include <memory>
 
 namespace boink
 {
@@ -17,7 +21,12 @@ namespace boink
       btVector3 right;
 
       btScalar left_width;
+      btScalar left_max_width;
+      std::vector<std::pair<btScalar,Ground::Type>> left_grounds;
+
       btScalar right_width;
+      btScalar right_max_width;
+      std::vector<std::pair<btScalar,Ground::Type>> right_grounds;
 
       btScalar curvature;
       // minus downhill postivie uphill -90 to +90
@@ -33,7 +42,12 @@ namespace boink
     };
   public:
     Road()=default;
-    Road(Line centerline, Line rightline, Line leftline);
+    Road(
+        Line centerline, 
+        Line rightline, 
+        Line leftline, 
+        std::shared_ptr<btDynamicsWorld> world,
+        std::string file);
 
     const std::vector<Metrics>& getRoadData() const {return road_data_;}
     std::vector<Metrics>& getRoadData() {return road_data_;}
@@ -63,15 +77,28 @@ namespace boink
         const BoundingBox& box,
         bool max_lines=false) const;
   private:
+    void loadMetrics();
     void createRoadData();
     Metrics generateMetrics(size_t i) const;
+    void saveMetrics();
+
     btScalar calculateCurvature(size_t i) const;
+    btScalar calculateFirstHitDist(
+        const btVector3& from,const btVector3& dir, btScalar max_search=50.f) const;
+    std::vector<std::pair<btScalar,Ground::Type>>calculateGroundWidths(
+        const btVector3& from,
+        const btVector3& to,
+        btVector3 down,
+        btScalar step=0.1f) const;
 
     Line& getLine(Side side);
   private:
     Line centerline_;
     Line rightline_;
     Line leftline_;
+
+    std::shared_ptr<btDynamicsWorld> world_;
+    std::string file_;
 
     bool is_road_closed_;
     std::vector<Metrics> road_data_;

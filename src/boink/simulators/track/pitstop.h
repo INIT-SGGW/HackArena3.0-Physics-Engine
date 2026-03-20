@@ -3,6 +3,8 @@
 #include "boink/gltf_extractor.h"
 #include "boink/simulators/track/road.h"
 
+#include <BulletDynamics/Dynamics/btDynamicsWorld.h>
+#include <memory>
 #include <unordered_map>
 
 namespace boink
@@ -19,7 +21,10 @@ namespace boink
     };
   public:
     Pitstop()=default;
-    Pitstop(const GltfExtractor& extractor);
+    Pitstop(
+        const GltfExtractor& extractor, 
+        std::shared_ptr<btDynamicsWorld> world,
+        const std::string& path );
 
     const Road& getZone(Zone type) const;
     const auto& getZones() const {return zones_;}
@@ -36,7 +41,9 @@ namespace boink
   private:
     static Road createZone(
         const GltfExtractor& extractor,
-        const std::string& prefix);
+        const std::string& prefix,
+        std::shared_ptr<btDynamicsWorld> world,
+        std::string path);
   private:
     static constexpr std::string_view kPitstopNameDelim="_";
     static constexpr std::string_view kPitstopSegName="PITSTOP_ZONE";

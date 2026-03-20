@@ -9,14 +9,17 @@
 
 namespace boink
 {
-  Pitstop::Pitstop(const GltfExtractor& extractor)
+  Pitstop::Pitstop(
+      const GltfExtractor& extractor, 
+      std::shared_ptr<btDynamicsWorld> world,
+      const std::string& path)
     :pitstop_length_(0)
   {
     for(auto& [type,name]:kZonesNames)
     {
       std::stringstream ss;
       ss<<kPitstopSegName<<kPitstopNameDelim<<name;
-      zones_[type]=createZone(extractor,ss.str());
+      zones_[type]=createZone(extractor,ss.str(),world,path);
 
       if(zones_[type].isClosed())
         throw Exception(
@@ -53,7 +56,9 @@ namespace boink
 
   Road Pitstop::createZone(
       const GltfExtractor& extractor,
-      const std::string& prefix)
+      const std::string& prefix,
+      std::shared_ptr<btDynamicsWorld> world,
+      std::string path)
   {
     std::stringstream ss;
 
@@ -69,7 +74,8 @@ namespace boink
     Line right=Line::createLine(extractor,ss.str());
     ss.str("");
 
-    return Road(std::move(center),std::move(right),std::move(left));
+    path+="_"+prefix+".boink";
+    return Road(std::move(center),std::move(right),std::move(left),world,path);
   }
 
   const std::unordered_map<std::string_view,Pitstop::Zone> Pitstop::kZonesTypes=

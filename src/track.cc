@@ -40,10 +40,15 @@ namespace boink
     this->initFinishLine(extractor);
     this->initPositions(extractor);
 
+    std::string bin_file(filename);
+    bin_file+=".boink";
+
     road_=Road(
         Line::createLine(extractor,CENTERLINE_NAME,finish_line_),
         Line::createLine(extractor,RIGHTLINE_NAME,finish_line_),
-        Line::createLine(extractor,LEFTLINE_NAME,finish_line_));
+        Line::createLine(extractor,LEFTLINE_NAME,finish_line_),
+        world_,
+        bin_file);
     if(!road_.isClosed())
     {
       throw Exception(
@@ -51,7 +56,7 @@ namespace boink
           "Main road is not a closed road");
     }
 
-    pitstop_=Pitstop(extractor);
+    pitstop_=Pitstop(extractor,world_,std::string(filename));
     for(const auto& [type,zone]: pitstop_.getZones())
     {
       if(zone.isClosed())
@@ -88,6 +93,8 @@ namespace boink
       {3.f,0.4f,wetness,Ground::Type::Gravel};
     surface_infos_[Ground::Type::Asphalt]= 
       {0.0f,0.1f,wetness,Ground::Type::Asphalt};
+    surface_infos_[Ground::Type::Kerb]= 
+      {0.0f,0.1f,wetness,Ground::Type::Kerb};
     surface_infos_[Ground::Type::Wall]= 
       {1.0f,0.1f,wetness,Ground::Type::Wall};
   }
@@ -258,20 +265,8 @@ namespace boink
       {
         const auto& sample=samples[i];
         const auto& pos=offset+road_.getPoint(i);;
-        p_renderer->drawPoint(
-            pos,
-            {0.5,0.5,0.0},
-            sample.normal,
-            sample.tangent);
 
-        p_renderer->drawLine(
-            pos,
-            pos+sample.right*sample.right_width,
-            {0.0,0.5,0.0});
-        p_renderer->drawLine(
-            pos,
-            pos+sample.right*-sample.left_width,
-            {0.5,0.0,0.0});
+        drawMetricSample(p_renderer,pos,sample);
       }
       const Line& line=const_cast<const Road&>(road_).getLine(Road::Side::Right);
       for(size_t i=0;i<line.getPointsSize();i++)
@@ -323,20 +318,7 @@ namespace boink
         {
           const auto& sample=samples[i];
           const auto& pos=offset+zone.getPoint(i);;
-          p_renderer->drawPoint(
-              pos,
-              {0.25,0.25,0.0},
-              sample.normal,
-              sample.tangent);
-
-          p_renderer->drawLine(
-              pos,
-              pos+sample.right*sample.right_width,
-              {0.0,0.25,0.0});
-          p_renderer->drawLine(
-              pos,
-              pos+sample.right*-sample.left_width,
-              {0.25,0.0,0.0});
+          drawMetricSample(p_renderer,pos,sample);
 
           if(i+1!=samples.size())
             p_renderer->drawLine(
@@ -370,5 +352,106 @@ namespace boink
     
     for(const auto& point:start_postions_)
       p_renderer->drawPoint(point,{1.0,1.0,1.0});
+  }
+
+  void Track::drawMetricSample(
+      Renderer* p_renderer,const btVector3& pos,const Road::Metrics& sample)
+  {
+    p_renderer->drawPoint(
+        pos,
+        {0.5,0.5,0.0},
+        sample.normal,
+        sample.tangent);
+
+    p_renderer->drawLine(
+        pos,
+        pos+sample.right*sample.right_width,
+        {0.0,0.5,0.0});
+    p_renderer->drawLine(
+        pos,
+        pos+sample.right*-sample.left_width,
+        {0.5,0.0,0.0});
+
+    btVector3 pos_up=pos+sample.normal*-1.5f;
+    p_renderer->drawLine(
+        pos_up,
+        pos_up+sample.right*sample.right_max_width,
+        {1.0,0.5,0.0});
+    p_renderer->drawLine(
+        pos_up,
+        pos_up+sample.right*-sample.left_max_width,
+        {0.5,1.0,0.0});
+    
+    
+    // 1. Offset the visualization slightly above ground to avoid Z-fighting
+    // (Assuming normal points UP, we add a small positive value)
+    pos_up = pos + sample.normal * 0.2f; 
+
+    // --- DRAW LEFT SIDE ---
+    // Start at the left road edge
+    btVector3 leftRoadEdge = pos_up + (sample.right * -sample.left_width);
+    btVector3 leftDir = -sample.right;
+    float leftTotalLimit = sample.left_max_width - sample.left_width;
+
+    for (size_t i = 0; i < sample.left_grounds.size(); ++i) 
+    {
+        Ground::Type type = sample.left_grounds[i].second;
+        if (type == Ground::Type::Count) continue; // Don't draw "nothing"
+
+        float startDist = sample.left_grounds[i].first;
+        // The segment ends at the next transition, or at the maximum width (the wall)
+        float endDist = (i + 1 < sample.left_grounds.size()) 
+                        ? sample.left_grounds[i+1].first 
+                        : leftTotalLimit;
+
+        btVector3 pStart = leftRoadEdge + (leftDir * startDist);
+        btVector3 pEnd   = leftRoadEdge + (leftDir * endDist);
+
+        p_renderer->drawLine(pStart, pEnd, getGroundColor(type));
+    }
+
+    // --- DRAW RIGHT SIDE ---
+    // Start at the right road edge
+    btVector3 rightRoadEdge = pos_up + (sample.right * sample.right_width);
+    btVector3 rightDir = sample.right;
+    float rightTotalLimit = sample.right_max_width - sample.right_width;
+
+    for (size_t i = 0; i < sample.right_grounds.size(); ++i) 
+    {
+        Ground::Type type = sample.right_grounds[i].second;
+        if (type == Ground::Type::Count) continue;
+
+        float startDist = sample.right_grounds[i].first;
+        float endDist = (i + 1 < sample.right_grounds.size()) 
+                        ? sample.right_grounds[i+1].first 
+                        : rightTotalLimit;
+
+        btVector3 pStart = rightRoadEdge + (rightDir * startDist);
+        btVector3 pEnd   = rightRoadEdge + (rightDir * endDist);
+
+        p_renderer->drawLine(pStart, pEnd, getGroundColor(type));
+    }
+  }
+
+  btVector3 Track::getGroundColor(Ground::Type type) const
+  {
+    switch (type) {
+      case Ground::Type::Asphalt:
+      return btVector3(0.15f, 0.15f, 0.15f);
+    case Ground::Type::Grass:
+      return btVector3(0.13f, 0.55f, 0.13f);
+    case Ground::Type::Sand:
+      return btVector3(0.76f, 0.70f, 0.20f);
+    case Ground::Type::Gravel:
+      return btVector3(0.45f, 0.45f, 0.48f);
+    case Ground::Type::Wall:
+      return btVector3(0.80f, 0.10f, 0.10f);
+    case Ground::Type::Kerb:
+      return btVector3(0.75f, 0.75f, 0.75f);
+
+    default:
+    case Ground::Type::Count:
+      return btVector3(1.0f, 0.0f, 1.0f);
+    }
   }
 }

@@ -29,14 +29,6 @@ namespace boink
   public:
     friend class TrackGui;
   public:
-    struct UserData
-    {
-      const Road::Metrics* p_main=nullptr;
-      const Road::Metrics* p_pit_entry=nullptr;
-      const Road::Metrics* p_pit_fix=nullptr;
-      const Road::Metrics* p_pit_exit=nullptr;
-    };
-  public:
     Track(
         std::string_view filename,
         std::shared_ptr<const Weather> weather,
@@ -68,6 +60,9 @@ namespace boink
     void initPositions(const GltfExtractor& extractor);
     void initFinishLine(const GltfExtractor& extractor);
 
+    void drawMetricSample(
+        Renderer* p_renderer,const btVector3& pos,const Road::Metrics& metric);
+    btVector3 getGroundColor(Ground::Type type) const;
   public:
     static int extractTrackVersion(std::string_view filename);
   private:
