@@ -165,6 +165,37 @@ void Vehicle::update(btScalar dt)
   ghost_info_.enabled=ghost_sim_.isInGhostMode();
 
   this->updatePitstop(dt);
+
+  btVector3 chassis=this->getChassisWorldTransform().getOrigin();
+  if(chassis.y()<-1000)
+    this->setVehicleToPitstop(Pitstop::Zone::Fix);
+}
+
+void Vehicle::setVehicleToPitstop(Pitstop::Zone zone)
+{
+  const auto& fix_road=
+    track_->getPitstop().getZone(zone);
+  const auto& fix_line_center=fix_road.getLine(boink::Road::Side::Center);
+
+  btVector3 new_pos=fix_line_center.getPoint(fix_line_center.getPointsSize()/2);
+
+  const auto& metrics=fix_road.getClosestMetrics(new_pos);
+
+  btVector3 up_compensate=
+    metrics.normal*(getChassisToGroundDist()+boink::g_GroundMargin);
+  new_pos+=up_compensate;
+  
+  btQuaternion align_to_surface = shortestArcQuat(boink::g_Up, metrics.normal);
+  btVector3 local_forward = quatRotate(align_to_surface, boink::g_Forward);
+
+  btQuaternion align_to_tangent = shortestArcQuat(local_forward, metrics.tangent);
+  btQuaternion final_rot = align_to_tangent * align_to_surface;
+
+  btTransform bt_transform;
+  bt_transform.setIdentity();
+  bt_transform.setOrigin(new_pos);
+  bt_transform.setRotation(final_rot);
+  setChassisWorldTransform(bt_transform);
 }
 
 void Vehicle::updateLapInfo(btScalar dt)
@@ -471,10 +502,32 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
   std::unique_ptr<btCompoundShape> compound(new btCompoundShape());
   btConvexHullShape* hull = new btConvexHullShape();
 
-  for (const btVector3& v : vertices)
+  float floor = -0.5;
+  float max_z=0;
+  float min_z=3.f;
+  for ( btVector3 v : vertices)
   {
+    if(v.z()>max_z)
+      max_z=v.z();
+
+    if(v.z()<min_z)
+      min_z=v.z();
+
+    if(v.y()<floor)
+      v.setY(floor);
+
     hull->addPoint(v, false);
   }
+
+  // 2. Inject 4 points at the front to FORCE it to be rectangular
+  //float fz = 2.6f; // Front-most Z
+  float hw = 0.9f; // Half-width
+  float hh = -0.3f; // Half-height
+
+  hull->addPoint(btVector3( hw, hh,max_z)); // Top Right Front
+  hull->addPoint(btVector3(-hw, hh,max_z)); // Top Left Front
+  hull->addPoint(btVector3( hw, floor,min_z)); // Top Right Front
+  hull->addPoint(btVector3(-hw, floor,min_z)); // Top Left Front
 
   hull->recalcLocalAabb();
   hull->optimizeConvexHull();
@@ -561,10 +614,12 @@ void Vehicle::reset()
     track_->getRoad().
     getCoverage(this->getChassisWorldTransform().getOrigin());
 
-  if(new_coverage>lap_info_.curr_lap_coverage)
+  if(new_coverage-lap_info_.curr_lap_coverage>0.1)
     lap_info_.current_lap--;
 
   lap_info_.curr_lap_coverage=new_coverage;
+
+  ghost_sim_.enterGhostModeForce();
 }
 
 int Vehicle::isVehicleOnTrack(bool max_lines) const

@@ -32,7 +32,7 @@
 
 #define BOINK_C_API_VERSION_MAJOR 0
 
-#define BOINK_C_API_VERSION_MINOR 15
+#define BOINK_C_API_VERSION_MINOR 16
 
 #define BOINK_C_API_VERSION_PATCH 0
 
@@ -76,6 +76,28 @@
  * Indicates an internal engine error.
  */
 #define BOINK_ERR_INTERNAL -100
+
+/**
+ * Available tyre types for the vehicle.
+ *
+ * Values represent the compound currently in use.
+ */
+typedef enum BoinkTyreType {
+  /**
+   * Soft compound tyre.
+   */
+  BOINK_TYRE_TYPE_SOFT = 0,
+
+  /**
+   * Hard compound tyre.
+   */
+  BOINK_TYRE_TYPE_HARD = 1,
+
+  /**
+   * Wet tyre.
+   */
+  BOINK_TYRE_TYPE_WET = 2
+} BoinkTyreType;
 
 /**
  * Active pitstop zones the vehicle can be in.
@@ -499,6 +521,31 @@ typedef struct BoinkVehicleState {
    *   [1] = front-right
    */
   Real front_wheel_orientation_rad[2];
+  /**
+   * Current tyre health in the range [0.0, 1.0],
+   * where 1.0 represents a brand new tyre and 0.0 a fully worn tyre.
+   *
+   * Index mapping:
+   *   [0] = front-left
+   *   [1] = front-right
+   *   [2] = rear-left
+   *   [3] = rear-right
+   */
+  Real tyre_health[4];
+  /**
+   * Current tyre temperature in degrees Celsius.
+   *
+   * Index mapping:
+   *   [0] = front-left
+   *   [1] = front-right
+   *   [2] = rear-left
+   *   [3] = rear-right
+   */
+  Real tyre_temprature_celsius[4];
+  /**
+   * Currently equipped tyre compound type.
+   */
+  BoinkTyreType tyre_type;
 } BoinkVehicleState;
 
 /**
@@ -1024,6 +1071,38 @@ BOINK_API int boink_set_vehicle_at_start_pos(BoinkHandle h,
  * - Another error code for other failures.
  */
 BOINK_API int boink_get_number_of_start_pos(BoinkHandle h, uint64_t *out_number_pos);
+
+/**
+ * Sets the world-space position of a vehicle to the closest point.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_back_to_track(BoinkHandle h, uint64_t vehicle_id);
+
+/**
+ * Sets the world-space position of a vehicle to a pitstop fix zone.
+ *
+ * This immediately updates the specified vehicle's position in the simulation.
+ *
+ * Parameters:
+ * - `h` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle to move.
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - Another error code for other failures.
+ */
+BOINK_API int boink_set_vehicle_to_pitstop(BoinkHandle h, uint64_t vehicle_id);
 
 /**
  * Sets the world-space orientation of a vehicle.

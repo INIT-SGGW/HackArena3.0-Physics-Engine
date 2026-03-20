@@ -633,6 +633,18 @@ int boink_set_vehicle_position(
   return BOINK_OK;
 }
 
+btQuaternion get_rotation_relative_to_track(
+    const btVector3& bt_forward,const btVector3& bt_normal)
+{
+  btQuaternion align_to_surface = shortestArcQuat(boink::g_Up, bt_normal);
+  btVector3 local_forward = quatRotate(align_to_surface, boink::g_Forward);
+
+  btQuaternion align_to_tangent = shortestArcQuat(local_forward, bt_forward);
+  btQuaternion final_rot = align_to_tangent * align_to_surface;
+
+  return final_rot;
+}
+
 int boink_set_vehicle_before_point(
     BoinkHandle handle,
     uint64_t vehicle_id,
@@ -654,44 +666,29 @@ int boink_set_vehicle_before_point(
     p_race->
     getTrack()->
     getRoad().getClosestMetrics(bt_point).tangent;
-  boink::BoundingBox bounding_dims=vehicle->getBoundingDims();
+  btVector3 bt_normal=
+    p_race->
+    getTrack()->
+    getRoad().getClosestMetrics(bt_point).normal;
 
-  btVector3 axis_rot=boink::g_Forward.cross(bt_forward);
-  btScalar rot_angle=boink::g_Forward.angle(bt_forward);
-
-  btQuaternion rot;
-
-  if(axis_rot.length2()<boink::g_Epsilon)
-  {
-    if(boink::g_Forward.dot(bt_forward)>0.f)
-      rot=btQuaternion::getIdentity();
-    else
-      rot=btQuaternion(boink::g_Up*-1,SIMD_PI);
-  }
-  else
-  {
-    axis_rot.normalize();
-    rot=btQuaternion(axis_rot,rot_angle);
-  }
+  btQuaternion rot=get_rotation_relative_to_track(bt_forward,bt_normal);
 
   btTransform transform=vehicle->getChassisWorldTransform();
   transform.setRotation(rot);
-  vehicle->setChassisWorldTransform(transform);
+    vehicle->setChassisWorldTransform(transform);
 
   btVector3 up_compensate=
     boink::g_Up*(vehicle->getChassisToGroundDist()+boink::g_GroundMargin);
   up_compensate=quatRotate(rot,up_compensate);
 
+  boink::BoundingBox bounding_dims=vehicle->getBoundingDims();
   btScalar half_depth=(bounding_dims.top_left-bounding_dims.bottom_left).length()/2.f;
   btVector3 bt_pos=-1*bt_forward*half_depth+bt_point;
   bt_pos+=up_compensate;
 
-  BoinkVec3 pos;
-  pos.x=bt_pos.x();
-  pos.y=bt_pos.y();
-  pos.z=bt_pos.z();
-  HANDLE_EXCEPTIONS(
-      boink_set_vehicle_position(handle,vehicle_id,&pos));
+  transform=vehicle->getChassisWorldTransform();
+  transform.setOrigin(bt_pos);
+  vehicle->setChassisWorldTransform(transform);
 
   return BOINK_OK;
 }
@@ -750,7 +747,7 @@ repeat:
   btQuaternion final_rot = yaw * align;
 
   btVector3 offset=vehicle->getCenterOfMassCS();
-  if(0==road.isObjectOnRoad(
+  if(4!=road.isObjectOnRoad(
         bt_random_pos,
         final_rot,
         offset,
@@ -765,13 +762,55 @@ repeat:
     sample.normal*(vehicle->getChassisToGroundDist()+boink::g_GroundMargin);
   bt_random_pos+=up_compensate;
 
-  BoinkVec3 random_pos;
-  random_pos.x=bt_random_pos.x();
-  random_pos.y=bt_random_pos.y();
-  random_pos.z=bt_random_pos.z();
+  btTransform transform=vehicle->getChassisWorldTransform();
+  transform.setOrigin(bt_random_pos);
+  vehicle->setChassisWorldTransform(transform);
+
+  return BOINK_OK;
+}
+
+int boink_set_vehicle_back_to_track(BoinkHandle handle, uint64_t vehicle_id)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
   HANDLE_EXCEPTIONS(
-      boink_set_vehicle_position(
-        handle,vehicle_id,&random_pos));
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  btVector3 vehicle_pos=vehicle->getChassisWorldTransform().getOrigin();
+  btVector3 new_pos=p_race->getTrack()->getRoad().getInterpolatedPoint1(vehicle_pos);
+  
+  const auto& metrics=p_race->getTrack()->getRoad().getClosestMetrics(new_pos);
+
+  btVector3 up_compensate=
+    metrics.normal*(vehicle->getChassisToGroundDist()+boink::g_GroundMargin);
+  new_pos+=up_compensate;
+  
+  btQuaternion final_rot=get_rotation_relative_to_track(metrics.tangent,metrics.normal);
+
+  btTransform bt_transform;
+  bt_transform.setIdentity();
+  bt_transform = vehicle->getChassisWorldTransform();
+  bt_transform.setOrigin(new_pos);
+  bt_transform.setRotation(final_rot);
+  vehicle->setChassisWorldTransform(bt_transform);
+
+  return BOINK_OK;
+}
+
+int boink_set_vehicle_to_pitstop(BoinkHandle handle, uint64_t vehicle_id)
+{
+  boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+  vehicle->setVehicleToPitstop(boink::Pitstop::Zone::Fix);
   return BOINK_OK;
 }
 
@@ -887,31 +926,28 @@ int boink_read_vehicle_state(
   out_state->chassis_position=bt2boink(chassis_transform.getOrigin());
   out_state->vehicle_orientation=bt2boink(chassis_transform.getRotation());
   
-  btTransform wheel_transform;
+  auto set_wheel_state=
+  [&](boink::WheelPosition wheel_pos, size_t wheel_index)
+  {
+    btTransform wheel_transform=vehicle->getWheelWorldTransform(wheel_pos);
+    out_state->wheel_position[wheel_index]=bt2boink(wheel_transform.getOrigin());
+    out_state->tyre_temprature_celsius[wheel_index]=vehicle->getTyreTempCelsius(wheel_pos);
+    out_state->wheel_speeds[wheel_index]=
+      vehicle->getWheelAngularSpeed(wheel_pos);
 
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
-  out_state->wheel_position[0]=bt2boink(wheel_transform.getOrigin());
+    if(wheel_index<2){
+      auto pair=vehicle->getSteering(wheel_pos);
+      out_state->front_wheel_orientation_rad[wheel_index]=
+        pair.second==boink::Vehicle::TurnDirection::Left?
+        pair.first*-1:
+        pair.first;
+    }
+  };
 
-  auto pair=vehicle->getSteering(boink::WheelPosition::FrontLeft);
-  out_state->front_wheel_orientation_rad[0]=
-    pair.second==boink::Vehicle::TurnDirection::Left?
-    pair.first*-1:
-    pair.first;
-
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
-  out_state->wheel_position[1]=bt2boink(wheel_transform.getOrigin());
-
-  pair=vehicle->getSteering(boink::WheelPosition::FrontRight);
-  out_state->front_wheel_orientation_rad[1]=
-    pair.second==boink::Vehicle::TurnDirection::Left?
-    pair.first*-1:
-    pair.first;
-
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
-  out_state->wheel_position[2]=bt2boink(wheel_transform.getOrigin());
-
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearRight);
-  out_state->wheel_position[3]=bt2boink(wheel_transform.getOrigin());
+  set_wheel_state(boink::WheelPosition::FrontLeft,0);
+  set_wheel_state(boink::WheelPosition::FrontRight,1);
+  set_wheel_state(boink::WheelPosition::RearLeft,2);
+  set_wheel_state(boink::WheelPosition::RearRight,3);
 
   return BOINK_OK;
 }
@@ -1158,14 +1194,6 @@ int boink_read_vehicle_ghost_mode_state(
     BOINK_GHOST_MODE_BLOCKER_IN_PIT:
     0;
 
-  if(state.blockers_mask==0 && ghost_mode.isInGhostMode())
-  {
-    set_last_error(
-        __func__,
-        RETURN_CODE_STR(BOINK_ERR_INTERNAL),
-        "out_state->blockers_mask is 0 but vehicle is in ghost mode");
-    return BOINK_ERR_INTERNAL;
-  }
 
   state.exit_delay_remaining_ms=0;
   state.enter_delay_remaining_ms=0;
@@ -1177,7 +1205,7 @@ int boink_read_vehicle_ghost_mode_state(
     mask|=BOINK_GHOST_MODE_BLOCKER_VEHICLE_OVERLAP_ACTIVE;
     mask|=BOINK_GHOST_MODE_BLOCKER_IN_PIT;
 
-    if((mask&state.blockers_mask)==0)
+    if((mask&state.blockers_mask)==0 && ghost_mode.isActive())
     {
       if(exit_timer.isRunning())
         state.exit_delay_remaining_ms=
@@ -1215,10 +1243,15 @@ int boink_read_vehicle_ghost_mode_state(
     }
   } 
 
+  if(state.blockers_mask==0 && ghost_mode.isInGhostMode() && ghost_mode.isActive())
+  {
+    BOINK_WARN("state.blockers_mask={}",state.blockers_mask);
+    BOINK_WARN("out_state->blockers_mask is 0 but vehicle is in ghost mode");
+  }
+
   *out_state=state;
   return BOINK_OK;
 }
-
 
 int boink_get_vehicle_pitstop_zone(
     BoinkHandle handle,

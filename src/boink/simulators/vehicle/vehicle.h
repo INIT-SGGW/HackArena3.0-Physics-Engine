@@ -84,6 +84,7 @@ class Vehicle : public Simulator
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
     void setChassisWorldTransform(const btTransform& transform);
+    void setVehicleToPitstop(Pitstop::Zone zone);
 
     const LapInfo& getLapInfo() const {return lap_info_;}
 
