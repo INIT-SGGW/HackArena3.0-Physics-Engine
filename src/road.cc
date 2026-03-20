@@ -1,19 +1,32 @@
 #include "boink/simulators/track/road.h"
 
+#include <BulletCollision/CollisionDispatch/btCollisionWorld.h>
+#include <LinearMath/btQuaternion.h>
+
+#include "boink/collision_group.h"
 #include "boink/exception.h"
 #include "boink/constants.h"
 #include "boink/assert.h"
 
-#include <LinearMath/btQuaternion.h>
+#include <fstream>
+#include <ios>
 #include <random>
 
 namespace boink
 {
-  Road::Road(Line centerline, Line rightline, Line leftline)
+  Road::Road(
+      Line centerline, 
+      Line rightline, 
+      Line leftline, 
+      std::shared_ptr<btDynamicsWorld> world,
+      std::string file)
     :centerline_(std::move(centerline)),
      rightline_(std::move(rightline)),
-     leftline_(std::move(leftline))
+     leftline_(std::move(leftline)),
+     world_(world),
+     file_(file)
   {
+    (void)world;
     if(centerline_.getPointsSize()<3||
         rightline_.getPointsSize()<3||
         leftline_.getPointsSize()<3)
@@ -64,7 +77,7 @@ namespace boink
 
     is_road_closed_=centerline_.isClosed();
 
-    this->createRoadData();
+    this->loadMetrics();
 
     if(road_data_.size()!=centerline_.getPointsSize())
       throw Exception(
@@ -233,6 +246,106 @@ namespace boink
     return num_corners_on_road;
   }
 
+  void Road::loadMetrics()
+  {
+    std::ifstream in(file_, std::ios_base::binary | std::ios_base::in);
+
+    if(!in)
+    {
+      createRoadData();
+      saveMetrics();
+      return;
+    }
+
+    size_t size;
+    in.read((char*)&size, sizeof(size));
+
+    std::vector<Metrics> data(size);
+
+    for (auto& m : data)
+    {
+      in.read((char*)&m.tangent, sizeof(btVector3));
+      in.read((char*)&m.normal, sizeof(btVector3));
+      in.read((char*)&m.right, sizeof(btVector3));
+
+      in.read((char*)&m.left_width, sizeof(btScalar));
+      in.read((char*)&m.left_max_width, sizeof(btScalar));
+
+      size_t leftSize;
+      in.read((char*)&leftSize, sizeof(leftSize));
+      m.left_grounds.resize(leftSize);
+      for (auto& p : m.left_grounds)
+      {
+          in.read((char*)&p.first, sizeof(btScalar));
+          in.read((char*)&p.second, sizeof(Ground::Type));
+      }
+
+      in.read((char*)&m.right_width, sizeof(btScalar));
+      in.read((char*)&m.right_max_width, sizeof(btScalar));
+
+      size_t rightSize;
+      in.read((char*)&rightSize, sizeof(rightSize));
+      m.right_grounds.resize(rightSize);
+      for (auto& p : m.right_grounds)
+      {
+          in.read((char*)&p.first, sizeof(btScalar));
+          in.read((char*)&p.second, sizeof(Ground::Type));
+      }
+
+      in.read((char*)&m.curvature, sizeof(btScalar));
+      in.read((char*)&m.grade, sizeof(btScalar));
+      in.read((char*)&m.bank, sizeof(btScalar));
+    }
+
+    road_data_=std::move(data);
+  }
+
+  void Road::saveMetrics()
+  {
+    std::ofstream out(file_,std::ios_base::binary|std::ios_base::out);
+
+    if(!out)
+      throw Exception(
+          Exception::Type::IOError,
+          "Failed to load track binary data");
+    
+    size_t size=road_data_.size();
+    out.write((char*)(&size),sizeof(size));
+
+    for (const auto& m : road_data_)
+    {
+      out.write((char*)&m.tangent, sizeof(btVector3));
+      out.write((char*)&m.normal, sizeof(btVector3));
+      out.write((char*)&m.right, sizeof(btVector3));
+
+      out.write((char*)&m.left_width, sizeof(btScalar));
+      out.write((char*)&m.left_max_width, sizeof(btScalar));
+
+      size_t leftSize = m.left_grounds.size();
+      out.write((char*)&leftSize, sizeof(leftSize));
+      for (auto& p : m.left_grounds)
+      {
+          out.write((char*)&p.first, sizeof(btScalar));
+          out.write((char*)&p.second, sizeof(Ground::Type));
+      }
+
+      out.write((char*)&m.right_width, sizeof(btScalar));
+      out.write((char*)&m.right_max_width, sizeof(btScalar));
+
+      size_t rightSize = m.right_grounds.size();
+      out.write((char*)&rightSize, sizeof(rightSize));
+      for (auto& p : m.right_grounds)
+      {
+          out.write((char*)&p.first, sizeof(btScalar));
+          out.write((char*)&p.second, sizeof(Ground::Type));
+      }
+
+      out.write((char*)&m.curvature, sizeof(btScalar));
+      out.write((char*)&m.grade, sizeof(btScalar));
+      out.write((char*)&m.bank, sizeof(btScalar));
+    }
+  }
+
   void Road::createRoadData()
   {
     road_data_.reserve(centerline_.getPointsSize());
@@ -293,7 +406,8 @@ namespace boink
     }
   }
 
-  Road::Metrics Road::generateMetrics(size_t i) const
+  Road::Metrics Road::generateMetrics(
+      size_t i) const
   {
     Metrics sample;
     size_t centerline_size=centerline_.getPointsSize();
@@ -358,6 +472,18 @@ namespace boink
 
     sample.bank=btAtan2(sin_angle,cos_angle);
 
+    btVector3 center_move_up=center_point+sample.normal*1.5f;
+    sample.left_max_width=calculateFirstHitDist(center_move_up,-sample.right);
+    sample.right_max_width=calculateFirstHitDist(center_move_up,sample.right);
+
+    btVector3 down=-sample.normal;
+    sample.right_grounds=calculateGroundWidths(
+        sample.right*sample.right_width+center_move_up,
+        sample.right*sample.right_max_width+center_move_up,down);
+    sample.left_grounds=calculateGroundWidths(
+        -sample.right*sample.left_width+center_move_up,
+        -sample.right*sample.left_max_width+center_move_up,down);
+
     return sample;
   }
 
@@ -398,6 +524,75 @@ namespace boink
     btVector3 dTds=dT/ds;
 
     return dTds.dot(road_data_[i].right);
+  }
+
+  btScalar Road::calculateFirstHitDist(
+      const btVector3& from,const btVector3& dir, btScalar max_search)const
+  {
+    btVector3 to=from+dir*max_search;
+
+    btCollisionWorld::ClosestRayResultCallback ray_callback(from,to);
+    ray_callback.m_collisionFilterGroup=CollisionGroup::Vehicle;
+    ray_callback.m_collisionFilterMask=CollisionGroup::Static;
+
+    world_->rayTest(from,to,ray_callback);
+
+    if(ray_callback.hasHit())
+      return from.distance(ray_callback.m_hitPointWorld);
+    else
+      return max_search;
+  }
+
+  std::vector<std::pair<btScalar,Ground::Type>> Road::calculateGroundWidths(
+      const btVector3& from,
+      const btVector3& to,
+      btVector3 down,
+      btScalar step) const
+  {
+    btScalar max_dist=from.distance(to);
+    std::vector<std::pair<btScalar, Ground::Type>> grounds;
+
+    btVector3 dir=(to-from).normalized();
+    
+    btVector3 rayVector=down.normalized()*50.0f;
+
+    Ground::Type prev_type = Ground::Type::Count;
+
+    for (btScalar dist = 0.0f; dist <= max_dist; dist += step)
+    {
+      // FIX: Calculate point relative to 'from'
+      btVector3 currentPoint = from + (dir * dist);
+
+      btCollisionWorld::ClosestRayResultCallback ray_callback(
+          currentPoint, currentPoint + rayVector);
+      ray_callback.m_collisionFilterGroup = CollisionGroup::Vehicle;
+      ray_callback.m_collisionFilterMask = CollisionGroup::Static;
+
+      world_->rayTest(currentPoint, currentPoint + rayVector, ray_callback);
+
+      Ground::Type current_type = Ground::Type::Count; // Default to "No Hit"
+
+      if (ray_callback.hasHit())
+      {
+        void* ptr = ray_callback.m_collisionObject->getUserPointer();
+        if (ptr)
+        {
+          // Cast safely
+          auto* userData = static_cast<Ground::UserData*>(ptr);
+          if (userData && userData->p_surface_info)
+            current_type = userData->p_surface_info->type;
+        }
+      }
+
+      // Detect if the surface type changed (e.g., Asphalt -> Grass, or Grass -> None)
+      if (current_type != prev_type)
+      {
+        grounds.emplace_back(dist, current_type);
+        prev_type = current_type;
+      }
+    }
+
+    return grounds;
   }
 
   Line& Road::getLine(Side side)
