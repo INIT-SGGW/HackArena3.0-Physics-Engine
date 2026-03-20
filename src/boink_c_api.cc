@@ -926,31 +926,28 @@ int boink_read_vehicle_state(
   out_state->chassis_position=bt2boink(chassis_transform.getOrigin());
   out_state->vehicle_orientation=bt2boink(chassis_transform.getRotation());
   
-  btTransform wheel_transform;
+  auto set_wheel_state=
+  [&](boink::WheelPosition wheel_pos, size_t wheel_index)
+  {
+    btTransform wheel_transform=vehicle->getWheelWorldTransform(wheel_pos);
+    out_state->wheel_position[wheel_index]=bt2boink(wheel_transform.getOrigin());
+    out_state->tyre_temprature_celsius[wheel_index]=vehicle->getTyreTempCelsius(wheel_pos);
+    out_state->wheel_speeds[wheel_index]=
+      vehicle->getWheelAngularSpeed(wheel_pos);
 
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontLeft);
-  out_state->wheel_position[0]=bt2boink(wheel_transform.getOrigin());
+    if(wheel_index<2){
+      auto pair=vehicle->getSteering(wheel_pos);
+      out_state->front_wheel_orientation_rad[wheel_index]=
+        pair.second==boink::Vehicle::TurnDirection::Left?
+        pair.first*-1:
+        pair.first;
+    }
+  };
 
-  auto pair=vehicle->getSteering(boink::WheelPosition::FrontLeft);
-  out_state->front_wheel_orientation_rad[0]=
-    pair.second==boink::Vehicle::TurnDirection::Left?
-    pair.first*-1:
-    pair.first;
-
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::FrontRight);
-  out_state->wheel_position[1]=bt2boink(wheel_transform.getOrigin());
-
-  pair=vehicle->getSteering(boink::WheelPosition::FrontRight);
-  out_state->front_wheel_orientation_rad[1]=
-    pair.second==boink::Vehicle::TurnDirection::Left?
-    pair.first*-1:
-    pair.first;
-
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearLeft);
-  out_state->wheel_position[2]=bt2boink(wheel_transform.getOrigin());
-
-  wheel_transform=vehicle->getWheelWorldTransform(boink::WheelPosition::RearRight);
-  out_state->wheel_position[3]=bt2boink(wheel_transform.getOrigin());
+  set_wheel_state(boink::WheelPosition::FrontLeft,0);
+  set_wheel_state(boink::WheelPosition::FrontRight,1);
+  set_wheel_state(boink::WheelPosition::RearLeft,2);
+  set_wheel_state(boink::WheelPosition::RearRight,3);
 
   return BOINK_OK;
 }

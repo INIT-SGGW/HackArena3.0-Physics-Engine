@@ -78,6 +78,28 @@
 #define BOINK_ERR_INTERNAL -100
 
 /**
+ * Available tyre types for the vehicle.
+ *
+ * Values represent the compound currently in use.
+ */
+typedef enum BoinkTyreType {
+  /**
+   * Soft compound tyre.
+   */
+  BOINK_TYRE_TYPE_SOFT = 0,
+
+  /**
+   * Hard compound tyre.
+   */
+  BOINK_TYRE_TYPE_HARD = 1,
+
+  /**
+   * Wet tyre.
+   */
+  BOINK_TYRE_TYPE_WET = 2
+} BoinkTyreType;
+
+/**
  * Active pitstop zones the vehicle can be in.
  *
  * Values are intended to represent the current pitstop phase.
@@ -499,6 +521,31 @@ typedef struct BoinkVehicleState {
    *   [1] = front-right
    */
   Real front_wheel_orientation_rad[2];
+  /**
+   * Current tyre health in the range [0.0, 1.0],
+   * where 1.0 represents a brand new tyre and 0.0 a fully worn tyre.
+   *
+   * Index mapping:
+   *   [0] = front-left
+   *   [1] = front-right
+   *   [2] = rear-left
+   *   [3] = rear-right
+   */
+  Real tyre_health[4];
+  /**
+   * Current tyre temperature in degrees Celsius.
+   *
+   * Index mapping:
+   *   [0] = front-left
+   *   [1] = front-right
+   *   [2] = rear-left
+   *   [3] = rear-right
+   */
+  Real tyre_temprature_celsius[4];
+  /**
+   * Currently equipped tyre compound type.
+   */
+  BoinkTyreType tyre_type;
 } BoinkVehicleState;
 
 /**
