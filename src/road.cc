@@ -593,6 +593,9 @@ namespace boink
             }
         }
 
+        if (current_type==Ground::Type::Wall)
+          continue;
+
         // Initialize prev_type on the very first sample
         if (dist == 0.0f) {
             prev_type = current_type;
