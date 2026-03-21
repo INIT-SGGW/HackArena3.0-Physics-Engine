@@ -571,7 +571,7 @@ namespace boink
     // 1. CLEAR/INITIALIZE EVERYTHING LOCALLY
     grounds.clear(); 
     btScalar last_transition_dist = 0.0f;
-    Ground::Type prev_type = Ground::Type::Count;
+    Ground::Type prev_type = Ground::Type::Asphalt;
 
     for (btScalar dist = 0.0f; dist <= max_dist; dist += step)
     {
@@ -582,7 +582,7 @@ namespace boink
         ray_callback.m_collisionFilterMask = Collision::Group::Static;
         world_->rayTest(currentPoint, currentPoint + rayVector, ray_callback);
 
-        Ground::Type current_type = Ground::Type::Count; 
+        Ground::Type current_type = Ground::Type::Asphalt;
         if (ray_callback.hasHit())
         {
             void* ptr = ray_callback.m_collisionObject->getUserPointer();
@@ -597,33 +597,16 @@ namespace boink
         if (dist == 0.0f) {
             prev_type = current_type;
         }
-
-        // A: HIT A WALL OR VOID -> Stop immediately
-        if (current_type == Ground::Type::Wall || current_type == Ground::Type::Count)
-        {
-            if (prev_type != Ground::Type::Count && dist > last_transition_dist)
-            {
-                grounds.emplace_back(dist - last_transition_dist, prev_type);
-            }
-            last_transition_dist = dist;
-            prev_type = Ground::Type::Count; // Mark as nothingness
-            return grounds; // EXIT FUNCTION: Do not process further
-        }
-
-        // B: SURFACE CHANGED (e.g., Asphalt to Grass)
         if (current_type != prev_type)
         {
-            // Only record if the previous section wasn't "nothing"
-            if (prev_type != Ground::Type::Count) {
-                grounds.emplace_back(dist - last_transition_dist, prev_type);
-            }
+            grounds.emplace_back(dist - last_transition_dist, prev_type);
             last_transition_dist = dist;
             prev_type = current_type;
         }
     }
 
     // C: END OF LOOP -> If we hit max_dist while still on a valid surface
-    if (prev_type != Ground::Type::Count && last_transition_dist < max_dist)
+    if (last_transition_dist < max_dist)
     {
         grounds.emplace_back(max_dist - last_transition_dist, prev_type);
     }
