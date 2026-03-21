@@ -1,5 +1,6 @@
 // clang-format off
 #include "boink/boink_c_api.h"
+#include "boink/fmt_boink_c_api.h"
 
 #include "boink/debugger/debugger.h"
 #include "boink/exception.h"
@@ -83,9 +84,32 @@ struct EngineData
 
   ~EngineData()
   {
+    // Delete nested arrays for main_samples
+    for(size_t i = 0; i < main_samples_size; ++i) {
+      delete[] main_samples[i].left_grounds;
+      delete[] main_samples[i].right_grounds;
+    }
     delete[] main_samples;
+
+    // Delete nested arrays for entry_pitstop_samples
+    for(size_t i = 0; i < entry_samples_size; ++i) {
+      delete[] entry_pitstop_samples[i].left_grounds;
+      delete[] entry_pitstop_samples[i].right_grounds;
+    }
     delete[] entry_pitstop_samples;
+
+    // Delete nested arrays for fix_pitstop_samples
+    for(size_t i = 0; i < fix_samples_size; ++i) {
+      delete[] fix_pitstop_samples[i].left_grounds;
+      delete[] fix_pitstop_samples[i].right_grounds;
+    }
     delete[] fix_pitstop_samples;
+
+    // Delete nested arrays for exit_pitstop_samples
+    for(size_t i = 0; i < exit_samples_size; ++i) {
+      delete[] exit_pitstop_samples[i].left_grounds;
+      delete[] exit_pitstop_samples[i].right_grounds;
+    }
     delete[] exit_pitstop_samples;
   }
 };
@@ -150,7 +174,13 @@ int boink_get_engine_profile(char* out_buf, unsigned int* in_out_len)
 #endif
   unsigned int required_size=(unsigned int)strlen(profile_name)+1;
 
-  if(!out_buf || *in_out_len<required_size)
+  if(!out_buf)
+  {
+    *in_out_len=required_size;
+    RETURN_STATUS(BOINK_OK);
+  }
+
+  if(*in_out_len<required_size)
   {
     *in_out_len=required_size;
     RETURN_STATUS(BOINK_ERR_BUFFER_TOO_SMALL);
@@ -170,10 +200,16 @@ int boink_get_last_error(char* out_buf, unsigned int* in_out_len)
   const char* error_desc=g_last_error.c_str();
   unsigned int required_size= (unsigned int)g_last_error.length()+1;
 
-  if(!out_buf || *in_out_len<required_size)
+  if(!out_buf)
   {
     *in_out_len=required_size;
-    return BOINK_ERR_BUFFER_TOO_SMALL;
+    RETURN_STATUS(BOINK_OK);
+  }
+
+  if(*in_out_len<required_size)
+  {
+    *in_out_len=required_size;
+    RETURN_STATUS(BOINK_ERR_BUFFER_TOO_SMALL);
   }
 
   memcpy(out_buf,error_desc,required_size);
@@ -208,6 +244,7 @@ int boink_init(bool debug_drawer_enable)
   }
 
   boink::Logger::init();
+  BOINK_INFO("Initializing engine");
   BOINK_INFO("C API version: ({}.{}.{})",
       BOINK_C_API_VERSION_MAJOR,
       BOINK_C_API_VERSION_MINOR,
@@ -219,6 +256,7 @@ int boink_init(bool debug_drawer_enable)
 
   if(debug_drawer_enable)
   {
+    BOINK_INFO("Debug drawer enabled");
     HANDLE_EXCEPTIONS(
       gp_dbg=new boink::Debugger(
         "Boink Debugger",
@@ -231,6 +269,7 @@ int boink_init(bool debug_drawer_enable)
 
 void boink_terminate()
 {
+  BOINK_INFO("Terminating engine");
   if(gp_dbg!=nullptr)
   {
     delete gp_dbg;
@@ -279,15 +318,17 @@ BoinkHandle boink_create_race(const char* track_glb_filename)
         nullptr);
     return nullptr;
   }
+  BOINK_INFO("Created race with track file: {}",track_glb_filename);
 }
 
 void boink_destroy_race(BoinkHandle handle)
-{
+{ 
   if(handle!=nullptr)
   {
     delete (EngineData*)((boink::Race*) handle)->getUserPtr();
     delete (boink::Race*) handle;
   }
+  BOINK_INFO("Destroyed race");
 }
 
 int boink_create_vehicle_mesh(
@@ -303,6 +344,7 @@ int boink_create_vehicle_mesh(
     *out_mesh_handle=reinterpret_cast<BoinkVehicleMeshHandle>(
         new boink::VehicleMesh(glb_model_filename)))
 
+  BOINK_INFO("Created vehicle mesh with model file: {}",glb_model_filename);
   return BOINK_OK;
 }
 
@@ -310,6 +352,7 @@ void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle)
 {
   if(handle!=nullptr)
     delete reinterpret_cast<boink::VehicleMesh*>(handle);
+  BOINK_INFO("Destroyed vehicle mesh");
 }
 
 int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
@@ -329,7 +372,6 @@ BoinkCenterlineSample* createBoinkCenterlineSamples(
     size_t* out_size)
 {
   const auto& track_data=road.getRoadData();
-
   BoinkCenterlineSample* samples=new BoinkCenterlineSample[track_data.size()];
   for(size_t i=0;i<track_data.size();i++)
   {
@@ -341,6 +383,8 @@ BoinkCenterlineSample* createBoinkCenterlineSamples(
     samples[i].grade_rad=track_data[i].grade;
     samples[i].left_width_m=track_data[i].left_width;
     samples[i].right_width_m=track_data[i].right_width;
+    samples[i].max_left_width_m=track_data[i].left_max_width;
+    samples[i].max_right_width_m=track_data[i].right_max_width;
     samples[i].s_m=coverage;
 
     samples[i].normal.x=track_data[i].normal.getX();
@@ -358,6 +402,40 @@ BoinkCenterlineSample* createBoinkCenterlineSamples(
     samples[i].tangent.x=track_data[i].tangent.getX();
     samples[i].tangent.y=track_data[i].tangent.getY();
     samples[i].tangent.z=track_data[i].tangent.getZ();
+
+    if(track_data[i].left_grounds.size()>0)
+    {
+      samples[i].left_grounds_count=(unsigned int)track_data[i].left_grounds.size();
+      samples[i].left_grounds=new BoinkGroundWidth[samples[i].left_grounds_count];
+      for(size_t j=0;j<track_data[i].left_grounds.size();j++)
+      {
+        samples[i].left_grounds[j].width=track_data[i].left_grounds[j].first;
+        samples[i].left_grounds[j].type=
+          static_cast<BoinkGroundType>(track_data[i].left_grounds[j].second);
+      }
+    }
+    else
+    {
+      samples[i].left_grounds_count=0;
+      samples[i].left_grounds=nullptr;
+    }
+    if(track_data[i].right_grounds.size()>0)
+    {
+      samples[i].right_grounds_count=(unsigned int)track_data[i].right_grounds.size();
+      samples[i].right_grounds=new BoinkGroundWidth[samples[i].right_grounds_count];
+      for(size_t j=0;j<track_data[i].right_grounds.size();j++)
+      {
+        samples[i].right_grounds[j].width=track_data[i].right_grounds[j].first;
+        samples[i].right_grounds[j].type=
+          static_cast<BoinkGroundType>(track_data[i].right_grounds[j].second);
+      }
+    }
+    else
+    {
+      samples[i].right_grounds_count=0;
+      samples[i].right_grounds=nullptr;
+    }
+
   }
   *out_size=track_data.size();
 
@@ -432,6 +510,43 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
     p_engine_data->exit_pitstop_samples;
   out_track_data->pitstop_data.exit_centerline_sample_count=
     p_engine_data->exit_samples_size;
+
+  // Debug logging for track data
+  BOINK_TRACE("=== Track Data ===");
+  BOINK_TRACE("map_id: {}", out_track_data->map_id);
+  BOINK_TRACE("version: {}", out_track_data->version);
+  BOINK_TRACE("lap_length_m: {}", out_track_data->lap_length_m);
+  BOINK_TRACE("centerline_sample_count: {}", out_track_data->centerline_sample_count);
+  
+  BOINK_TRACE("=== Main Centerline Samples ===");
+  for(unsigned int i = 0; i < out_track_data->centerline_sample_count; ++i) {
+    const auto& sample = out_track_data->centerline_samples[i];
+    BOINK_TRACE("[{}] s_m: {}, pos: {}, tangent: {}, normal: {}, right: {}, "
+                "left_width: {}, right_width: {}, max_left_width: {}, max_right_width: {}, "
+                "curvature: {}, grade: {}, bank: {}",
+                i, sample.s_m,
+                sample.position, sample.tangent, sample.normal, sample.right,
+                sample.left_width_m, sample.right_width_m,
+                sample.max_left_width_m, sample.max_right_width_m,
+                sample.curvature_1pm, sample.grade_rad, sample.bank_rad);
+    
+    BOINK_TRACE("  left_grounds_count: {}, right_grounds_count: {}",
+                sample.left_grounds_count, sample.right_grounds_count);
+    for(unsigned int j = 0; j < sample.left_grounds_count; ++j) {
+      BOINK_TRACE("    left_grounds[{}]: width={}, type={}", j,
+                  sample.left_grounds[j].width, sample.left_grounds[j].type);
+    }
+    for(unsigned int j = 0; j < sample.right_grounds_count; ++j) {
+      BOINK_TRACE("    right_grounds[{}]: width={}, type={}", j,
+                  sample.right_grounds[j].width, sample.right_grounds[j].type);
+    }
+  }
+  
+  BOINK_TRACE("=== Pitstop Data ===");
+  BOINK_TRACE("pitstop_length_m: {}", out_track_data->pitstop_data.length_m);
+  BOINK_TRACE("enter_centerline_sample_count: {}", out_track_data->pitstop_data.enter_centerline_sample_count);
+  BOINK_TRACE("fix_centerline_sample_count: {}", out_track_data->pitstop_data.fix_centerline_sample_count);
+  BOINK_TRACE("exit_centerline_sample_count: {}", out_track_data->pitstop_data.exit_centerline_sample_count);
 
   return BOINK_OK;
 }

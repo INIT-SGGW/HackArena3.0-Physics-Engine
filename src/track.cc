@@ -384,52 +384,46 @@ namespace boink
     
     
     // 1. Offset the visualization slightly above ground to avoid Z-fighting
-    // (Assuming normal points UP, we add a small positive value)
     pos_up = pos + sample.normal * 0.2f; 
 
     // --- DRAW LEFT SIDE ---
-    // Start at the left road edge
-    btVector3 leftRoadEdge = pos_up + (sample.right * -sample.left_width);
+    btVector3 leftCursor = pos_up + (sample.right * -sample.left_width);
     btVector3 leftDir = -sample.right;
-    float leftTotalLimit = sample.left_max_width - sample.left_width;
 
-    for (size_t i = 0; i < sample.left_grounds.size(); ++i) 
+    for (const auto& groundSeg : sample.left_grounds) 
     {
-        Ground::Type type = sample.left_grounds[i].second;
-        if (type == Ground::Type::Count) continue; // Don't draw "nothing"
+        float width = groundSeg.first;
+        Ground::Type type = groundSeg.second;
 
-        float startDist = sample.left_grounds[i].first;
-        // The segment ends at the next transition, or at the maximum width (the wall)
-        float endDist = (i + 1 < sample.left_grounds.size()) 
-                        ? sample.left_grounds[i+1].first 
-                        : leftTotalLimit;
+        if (type == Ground::Type::Count) continue;
 
-        btVector3 pStart = leftRoadEdge + (leftDir * startDist);
-        btVector3 pEnd   = leftRoadEdge + (leftDir * endDist);
+        btVector3 pStart = leftCursor;
+        btVector3 pEnd   = leftCursor + (leftDir * width);
 
         p_renderer->drawLine(pStart, pEnd, getGroundColor(type));
+
+        // Move the cursor forward for the next segment
+        leftCursor = pEnd;
     }
 
     // --- DRAW RIGHT SIDE ---
-    // Start at the right road edge
-    btVector3 rightRoadEdge = pos_up + (sample.right * sample.right_width);
+    btVector3 rightCursor = pos_up + (sample.right * sample.right_width);
     btVector3 rightDir = sample.right;
-    float rightTotalLimit = sample.right_max_width - sample.right_width;
 
-    for (size_t i = 0; i < sample.right_grounds.size(); ++i) 
+    for (const auto& groundSeg : sample.right_grounds) 
     {
-        Ground::Type type = sample.right_grounds[i].second;
+        float width = groundSeg.first;
+        Ground::Type type = groundSeg.second;
+
         if (type == Ground::Type::Count) continue;
 
-        float startDist = sample.right_grounds[i].first;
-        float endDist = (i + 1 < sample.right_grounds.size()) 
-                        ? sample.right_grounds[i+1].first 
-                        : rightTotalLimit;
-
-        btVector3 pStart = rightRoadEdge + (rightDir * startDist);
-        btVector3 pEnd   = rightRoadEdge + (rightDir * endDist);
+        btVector3 pStart = rightCursor;
+        btVector3 pEnd   = rightCursor + (rightDir * width);
 
         p_renderer->drawLine(pStart, pEnd, getGroundColor(type));
+
+        // Move the cursor forward for the next segment
+        rightCursor = pEnd;
     }
   }
 
