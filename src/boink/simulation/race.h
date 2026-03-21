@@ -50,11 +50,7 @@ namespace boink
     std::vector<std::pair<Simulator::ID,std::shared_ptr<Controller>>> 
       getControllers() const;
     void updateGui();
-  private:
-    static void bulletCustomNearCallback(
-        btBroadphasePair& pair,
-        btCollisionDispatcher& dispatcher,
-        const btDispatcherInfo& info);
+    void updateOverlapLists(btScalar dt);
   private:
     std::shared_ptr<Weather> weather_;
     std::shared_ptr<Track> track_;

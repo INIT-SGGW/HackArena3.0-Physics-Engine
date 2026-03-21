@@ -2,6 +2,8 @@
 
 #include <piksel/gui_object.hh>
 
+#include "boink/custom_collision_dispatcher.h"
+
 namespace boink
 {
   Simulation::Simulation(
@@ -11,7 +13,7 @@ namespace boink
     :gui_(gui),
     p_dbg_(p_dbg),
     collision_configuration_(new btDefaultCollisionConfiguration()),
-    dispatcher_(new btCollisionDispatcher(collision_configuration_.get())),
+    dispatcher_(new CustomCollisionDispatcher(collision_configuration_.get())),
     overlapping_pair_cache_(new btDbvtBroadphase()),
     solver_(new btSequentialImpulseConstraintSolver()),
     dynamics_world_(new btDiscreteDynamicsWorld(

@@ -8,7 +8,6 @@
 #include <LinearMath/btDefaultMotionState.h>
 
 #include <LinearMath/btQuaternion.h>
-#include <memory>
 #include <piksel/object.hh>
 
 #include "boink/constants.h"
@@ -19,6 +18,8 @@
 #include "boink/utility.h"
 #include "boink/collision_group.h"
 #include "boink/assert.h"
+
+#include <memory>
 
 namespace boink
 {
@@ -481,6 +482,7 @@ bool Vehicle::setGearUp() { return vehicle_->setGearUp(); }
 void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
 {
   ghost_sim_.enable(ghost_settings);
+  ghost_info_.overlap_target=ghost_settings.exit_delay_when_overlap;
 }
 
 void Vehicle::disableGhostSim()

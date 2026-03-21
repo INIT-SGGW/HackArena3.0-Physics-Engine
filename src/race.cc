@@ -22,6 +22,7 @@ namespace boink
   {
     this->addSimulator(track_);
     this->addSimulator(weather_);
+
   }
 
   Race::~Race()
@@ -171,6 +172,7 @@ namespace boink
     int steps=Simulation::update(
         dt,max_sub_steps,fixed_delta_time,max_delta_time);
 
+    updateOverlapLists(dt);
     return steps;
   }
 
@@ -181,6 +183,75 @@ namespace boink
     Simulation::updateDebug();
 
     this->updateGui();
+  }
+
+  void Race::updateOverlapLists(btScalar dt)
+  {
+    for (auto& vehicle : vehicles_) 
+    {
+      auto& overlap_vehicles=
+        vehicle.second->getUserData()->ghost_info->overlap_vehicles;
+      for(auto it=overlap_vehicles.begin();it!=overlap_vehicles.end();)
+      {
+        it->second.update(dt);
+
+        if(it->second.hasFinised())
+          it=overlap_vehicles.erase(it);
+        else
+          ++it;
+      }
+    }
+
+    btBroadphasePairArray& pairArray = 
+      getDynamicsWorld()->
+      getBroadphase()->
+      getOverlappingPairCache()->
+      getOverlappingPairArray();
+
+    for (int i = 0; i < pairArray.size(); i++) 
+    {
+      btBroadphasePair& pair = pairArray[i];
+      
+      btCollisionObject* colObj0 = 
+        static_cast<btCollisionObject*>(pair.m_pProxy0->m_clientObject);
+      btCollisionObject* colObj1 = 
+        static_cast<btCollisionObject*>(pair.m_pProxy1->m_clientObject);
+
+      if (colObj0 && colObj1 && colObj0->getUserPointer() && colObj1->getUserPointer())
+      {
+        BulletUserData* ud0 = 
+          reinterpret_cast<BulletUserData*>(colObj0->getUserPointer());
+        BulletUserData* ud1 = 
+          reinterpret_cast<BulletUserData*>(colObj1->getUserPointer());
+
+        if (ud0->getType() == BulletUserData::Type::Vehicle && 
+            ud1->getType() == BulletUserData::Type::Vehicle)
+        {
+          Vehicle::UserData* v_ud0 = reinterpret_cast<Vehicle::UserData*>(ud0);
+          Vehicle::UserData* v_ud1 = reinterpret_cast<Vehicle::UserData*>(ud1);
+
+          if(v_ud0->ghost_info->enabled || v_ud1->ghost_info->enabled)
+          {
+            v_ud0->ghost_info->overlap_vehicles.insert(
+                {colObj1,Timer(ghost_settings_.exit_delay_when_overlap)});
+            v_ud1->ghost_info->overlap_vehicles.insert(
+                {colObj0,Timer(ghost_settings_.exit_delay_when_overlap)});
+          }
+
+          if(auto it_timer=v_ud0->ghost_info->overlap_vehicles.find(colObj1);
+              it_timer!=v_ud0->ghost_info->overlap_vehicles.end())
+          {
+            it_timer->second.reset();
+          }
+
+          if(auto it_timer=v_ud1->ghost_info->overlap_vehicles.find(colObj0);
+              it_timer!=v_ud1->ghost_info->overlap_vehicles.end())
+          {
+            it_timer->second.reset();
+          }
+        }
+      }
+    } 
   }
 
   void Race::updateGui()
@@ -197,5 +268,13 @@ namespace boink
     assert(p_race_gui!=nullptr);
 #endif
     p_race_gui->num_vehicles=vehicles_.size();
+
+    if(ghost_enabled_!=p_race_gui->enable_ghost_sim_)
+    {
+      if(p_race_gui->enable_ghost_sim_)
+        enableGhostMode(ghost_settings_);
+      else
+        disableGhostMode();
+    }
   }
 }

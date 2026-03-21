@@ -100,12 +100,20 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
+  uint64_t id2;
+  if ((code = boink_spawn_vehicle(handle, &model, &id2)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
 
   if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
   }
+
+  model.suspension_rest_length = 0.41;
   if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
   {
     PRINT_ERROR();
@@ -190,7 +198,7 @@ int main()
       runOnce = true;
     }
 
-    if (!runOnce2 && dur > 3.)
+    if (!runOnce2 && dur > 2.0)
     {
       if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
       {
@@ -198,6 +206,11 @@ int main()
         goto clear;
       }
       if ((code = boink_set_vehicle_before_finish_line(handle,id0)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      if ((code = boink_set_vehicle_before_finish_line(handle,id2)) != BOINK_OK)
       {
         PRINT_ERROR();
         goto clear;

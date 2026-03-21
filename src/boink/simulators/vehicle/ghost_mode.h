@@ -27,13 +27,12 @@ namespace boink
 
     void update(btScalar dt);
 
+    bool isSimulationActive() const {return is_sim_enabled_;}
     bool isInGhostMode() const {return is_in_ghost_mode_;}
-    bool isOverlapping() const {return is_overlapping_;}
     bool isActive() const {return is_sim_enabled_;}
 
     const Timer& getEnterTimer() const {return enter_timer_;}
     const Timer& getExitTimer() const {return exit_timer_;}
-    const Timer& getOverlapTimer() const {return overlap_timer_;}
 
     bool isCompletedLapsConditionMet() const 
     { return lap_info_->getLapsCompleted()<(int)settings_.enabled_until_completed_laps;}
@@ -47,7 +46,6 @@ namespace boink
     void enterGhostMode();
     void exitGhostMode();
 
-    void doHitTest();
     void reset();
   private:
     btDynamicsWorld* world_;
@@ -55,16 +53,11 @@ namespace boink
     const LapInfo* lap_info_;
 
     bool is_sim_enabled_=false;
-    bool is_overlapping_=false;
-    btScalar speed_=0.f;
-
     bool is_in_ghost_mode_=false;
 
-    bool is_force_condition_=false;
-
+    btScalar speed_=0.f;
     Timer enter_timer_;
     Timer exit_timer_;
-    Timer overlap_timer_;
 
     Timer force_timer_;
 
