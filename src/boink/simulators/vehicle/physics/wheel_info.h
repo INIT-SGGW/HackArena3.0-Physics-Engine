@@ -18,11 +18,17 @@
 #include <LinearMath/btTransform.h>
 #include <LinearMath/btVector3.h>
 
+#include <array>
+
+#include "boink/simulators/vehicle/physics/helpers/curve.h"
+
 class btRigidBody;
 namespace boink
 {
 
 struct WheelInfoConstructionInfo;
+struct TyreTypeProperties;
+
 struct WheelInfo
 {
   struct RaycastInfo
@@ -121,6 +127,7 @@ struct WheelInfo
 
   static constexpr float kWheelMass = 16.0f;
   static constexpr float kWheelMassDistCoeff = 0.78f;
+  static const std::array<TyreTypeProperties, 3> kTyresTypesInfo;
 };
 
 struct WheelInfoConstructionInfo
@@ -144,4 +151,17 @@ struct WheelInfoConstructionInfo
 
   bool m_bIsFrontWheel;
 };
+
+struct TyreTypeProperties
+{
+  btScalar baseDryGrip;
+  btScalar baseWetGrip;
+  btScalar wearRate;
+  btScalar optimalTemp;
+  btScalar heatingFactor;
+
+  Curve tempToGripCoeff;
+  Curve tempToStiffCoeff;
+};
+
 }  // namespace boink

@@ -16,10 +16,12 @@
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
+#include <array>
+
 namespace boink
 {
 // TODO
-btScalar WheelInfo::TyreInfo::heatingConst = btScalar(0.000005f);
+btScalar WheelInfo::TyreInfo::heatingConst = btScalar(0.00005f);
 btScalar WheelInfo::TyreInfo::coolingConst = btScalar(0.001f);
 btScalar WheelInfo::TyreInfo::wearRate = btScalar(0.0000001f);
 
@@ -31,6 +33,31 @@ btScalar WheelInfo::TyreInfo::s_slipRatioTempConstant = btScalar(0.5);
 btScalar WheelInfo::TyreInfo::s_angularSpeedTempConstant = btScalar(0.1);
 
 btScalar WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst = btScalar(0.1);
+
+// btScalar baseDryGrip;
+// btScalar baseWetGrip;
+// btScalar wearRate;
+// btScalar optimalTemp;
+// btScalar heatingFactor;
+//
+// Curve tempToGripCoeff;
+// Curve tempToStiffCoeff;
+const std::array<TyreTypeProperties, 3> WheelInfo::kTyresTypesInfo = {
+    {{1.00f, 0.2f, 3.f, 100.f, 1.2f,
+      Curve({0.80, 0.82, 0.85, 0.88, 0.92, 0.96, 0.98, 0.99, 1.00, 1.00, 0.98, 0.94, 0.88, 0.82, 0.78, 0.75, 0.75},
+            10.f, 0.f),
+      Curve({1.50, 1.40, 1.30, 1.20, 1.15, 1.10, 1.05, 1.02, 1.00, 1.00, 0.95, 0.85, 0.75, 0.65, 0.60, 0.55, 0.50},
+            10.f, 0.f)},  // soft
+     {0.96f, 0.2f, 1.f, 100.f, 0.8f,
+      Curve({0.75, 0.77, 0.80, 0.83, 0.86, 0.89, 0.92, 0.95, 0.97, 0.99, 1.00, 1.00, 0.99, 0.97, 0.95, 0.92, 0.88},
+            10.f, 0.f),
+      Curve({1.60, 1.50, 1.40, 1.30, 1.25, 1.20, 1.15, 1.10, 1.05, 1.02, 1.00, 1.00, 0.98, 0.95, 0.90, 0.85, 0.80},
+            10.f, 0.f)},  // hard
+     {0.85f, 0.8f, 1.5f, 75.f, 2.5f,
+      Curve({0.85, 0.88, 0.92, 0.95, 0.97, 0.99, 1.00, 1.00, 0.95, 0.85, 0.75, 0.65, 0.55, 0.50, 0.50, 0.50, 0.50},
+            10.f, 0.f),
+      Curve({1.30, 1.20, 1.15, 1.10, 1.05, 1.02, 1.00, 1.00, 0.90, 0.75, 0.60, 0.50, 0.45, 0.40, 0.40, 0.40, 0.40},
+            10.f, 0.f)}}};  // wet
 
 WheelInfo::WheelInfo(WheelInfoConstructionInfo& ci)
 {

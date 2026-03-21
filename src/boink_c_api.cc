@@ -441,7 +441,7 @@ int boink_spawn_vehicle(
   create_info.tuning.m_suspensionDamping=2.5f;
   create_info.tuning.m_suspensionCompression=2.5f;
 
-  create_info.tyre_type=boink::WheelInfo::TyreType::Wet;
+  create_info.tyre_type=boink::WheelInfo::TyreType::Hard;
 
   // TODO
   // I think try is not needed here but it must be checked

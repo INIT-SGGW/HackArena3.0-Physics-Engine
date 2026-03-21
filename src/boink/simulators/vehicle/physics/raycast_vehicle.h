@@ -16,6 +16,7 @@
 
 #include <BulletDynamics/Dynamics/btActionInterface.h>
 
+#include "boink/simulators/track/ground.h"
 #include "boink/simulators/vehicle/physics/helpers/car-drive-parts/engine.h"
 #include "boink/simulators/vehicle/physics/helpers/car-drive-parts/gearbox.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
@@ -115,8 +116,8 @@ class RaycastVehicle : public btActionInterface
   /// </summary>
   btVector3 getWheelContactVel(WheelInfo& wheel) const;
 
-  /// <returns>Grip (on first position) and drag (on second position)</returns>
-  std::pair<btScalar, btScalar> getSurfGripAndDragCoeff(WheelInfo& wheel) const;
+  /// <returns>Information about surface under the wheel or nullptr if there is no surface under the wheel.</returns>
+  const Ground::SurfaceInfo* getSurfInfo(WheelInfo& wheel) const;
 
   inline btRigidBody* getRigidBody() { return m_chassisBody; }
   const btRigidBody* getRigidBody() const { return m_chassisBody; }
@@ -144,10 +145,6 @@ class RaycastVehicle : public btActionInterface
 
  private:
   void applyAerodynamics(btScalar step);
-  void updateTyres(btScalar step);
-
- private:
-  static btScalar getTyreWearRatePerMin(WheelInfo::TyreType type);
 
  private:
   btAlignedObjectArray<btVector3> m_forwardWS;
@@ -174,7 +171,6 @@ class RaycastVehicle : public btActionInterface
 
   bool m_drawEnable = true;
 
-  // TODO: this should be taken from weather simulation
   static constexpr float kAirTemperature = 20.f;  // [Celsius]
   static constexpr float kTransmissionEfficiency = 0.7f;
   static constexpr float kSmoothingTractionForceFactor = 0.35f;
@@ -188,12 +184,6 @@ class RaycastVehicle : public btActionInterface
   static inline const Curve kSlipAngleToGrip = Curve({0.00, 0.50, 0.95, 1.35, 1.55, 1.50, 1.35, 1.20, 1.12, 1.08, 1.06,
                                                       1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
                                                      0.02f, 0.0f);
-  static inline const Curve kTempToGripCoeff =
-      Curve({0.80, 0.82, 0.85, 0.88, 0.91, 0.94, 0.96, 0.98, 0.99, 1.00, 1.00, 0.99, 0.97, 0.94, 0.90, 0.87, 0.85},
-            10.f, 0.f);
-  static inline const Curve kTempToStiffCoeff =
-      Curve({1.50, 1.40, 1.30, 1.25, 1.20, 1.15, 1.10, 1.05, 1.02, 1.00, 1.00, 0.95, 0.88, 0.80, 0.72, 0.65, 0.60},
-            10.f, 0.f);
   static inline const Curve kWearToGripCoeff =
       Curve({1.00, 1.00, 0.99, 0.98, 0.97, 0.96, 0.94, 0.91, 0.88, 0.86, 0.85}, -0.1f, 1.f);
 };

@@ -23,10 +23,11 @@
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btVector3.h>
 
-#include <iostream>
+// #include <iostream>
 
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/track/ground.h"
+#include "boink/simulators/vehicle/physics/helpers/scalarLerp.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/wheel_position.h"
@@ -447,7 +448,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     m_forwardWS[wheel_idx] = surfNormalWS.cross(m_axle[wheel_idx]);
     m_forwardWS[wheel_idx].normalize();
 
-    // @wheels forces and angular speedes
+    // @wheels forces and angular speeds
     btScalar total_torque = 0.f;
     auto traction_torque = 0.f;
     auto drag_torque = 0.f;
@@ -562,14 +563,25 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       btScalar lateral_force = btScalar(0.f);
       btScalar traction_force = btScalar(0.f);
 
-      auto [surf_grip_coeff, surf_drag_coeff] = getSurfGripAndDragCoeff(wheelInfo);
-      auto temp_grip_coeff = kTempToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
+      auto surf_info = getSurfInfo(wheelInfo);
+      const auto& tyre_type_info = WheelInfo::kTyresTypesInfo[(int)wheelInfo.m_tyreInfo.m_type];
+      auto surf_wet = surf_info->wetness;
+
+      auto surf_grip_coeff = surf_info->grip_coeff;
+      auto temp_grip_coeff = tyre_type_info.tempToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
       auto wear_grip_coeff = kWearToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_health);
-      auto temp_stiff_coeff = kTempToStiffCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
+      auto surf_wet_grip_coeff = scalarLerp(tyre_type_info.baseDryGrip, tyre_type_info.baseWetGrip, surf_wet);
+      auto temp_stiff_coeff = tyre_type_info.tempToStiffCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
+      auto surf_drag_coeff = surf_info->drag_coeff;
+
+      // std::cout << "surf_wet_grip_coeff: " << surf_wet_grip_coeff << "\t";
+      // std::cout << "temp_grip_coeff: " << temp_grip_coeff << "\t";
+      // std::cout << "temp_stiff_coeff: " << temp_stiff_coeff << "\t";
 
       // this represent that temperature or wear of tyre is not important on other surface than asphalt
-      auto total_grip_coeff =
-          (surf_grip_coeff == 1.f) ? surf_grip_coeff * temp_grip_coeff * wear_grip_coeff : surf_grip_coeff;
+      auto total_grip_coeff = (surf_grip_coeff == 1.f)
+                                  ? surf_grip_coeff * surf_wet_grip_coeff * temp_grip_coeff * wear_grip_coeff
+                                  : surf_grip_coeff * surf_wet_grip_coeff;
 
       auto curr_peak_lat = kSlipAnglePeak / temp_stiff_coeff;
       auto curr_peak_long = kSlipRatioPeak / temp_stiff_coeff;
@@ -620,18 +632,24 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       auto lat_power = btFabs(lateral_force * lat_speed);
       auto long_power = btFabs(traction_force * slip_velocity);
 
-      auto power = lat_power * 0.7 + long_power;
-      auto heat_generated = power * WheelInfo::TyreInfo::heatingConst;
-      auto speed_factor = btMax(5.f, wheel_speed);  // minimal value when car is stopped
+      auto slip_power = lat_power + long_power;
+      auto rolling_power = 0.15f * wheelInfo.m_wheelsSuspensionForce * wheel_speed;  // temperature from wheel squishing
+      auto heat_generated =
+          (slip_power + rolling_power) * WheelInfo::TyreInfo::heatingConst * tyre_type_info.heatingFactor * timeStep;
+      auto speed_factor = btMax(2.f, wheel_speed);  // minimal value when car is stopped
+      auto wet_factor = 1.f + (surf_wet * 4.f);
       auto heat_lost = (wheelInfo.m_tyreInfo.m_tempCelsius - kAirTemperature) * WheelInfo::TyreInfo::coolingConst *
-                       speed_factor * timeStep;
+                       speed_factor * wet_factor * timeStep;
       wheelInfo.m_tyreInfo.m_tempCelsius += heat_generated - heat_lost;
 
+      // std::cout << "wetness: " << surf_wet << "\t";
+      // std::cout << "tyre_type: " << (int)wheelInfo.m_tyreInfo.m_type << "\t";
+      // std::cout << "heat_gen: " << heat_generated << "\t";
       // std::cout << "temperature: " << wheelInfo.m_tyreInfo.m_tempCelsius << "\t";
 
       // @ wear
-      power = lat_power + long_power;
-      wheelInfo.m_tyreInfo.m_health -= power * WheelInfo::TyreInfo::wearRate * timeStep;
+      slip_power = lat_power + long_power;
+      wheelInfo.m_tyreInfo.m_health -= slip_power * WheelInfo::TyreInfo::wearRate * timeStep;
       if (wheelInfo.m_tyreInfo.m_health < 0.f) wheelInfo.m_tyreInfo.m_health = 0.f;
 
       // std::cout << "wear: " << wheelInfo.m_tyreInfo.m_health << "\t";
@@ -689,7 +707,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   // std::cout << "rpm:  " << m_engine.rpm << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  std::cout << "\n";
+  // std::cout << "\n";
 }
 
 void RaycastVehicle::setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)
@@ -755,78 +773,6 @@ void RaycastVehicle::applyAerodynamics(btScalar step)
   // it behaves incorrect on debug build
   m_chassisBody->applyImpulse(step * air_down_force, {0., 0., 0.});
   m_chassisBody->applyImpulse(step * air_drag_force, {0., 0., 0.});
-}
-
-void RaycastVehicle::updateTyres(btScalar step)
-{
-  for (int i = 0; i < this->getNumWheels(); i++)
-  {
-    WheelInfo& wheel = getWheelInfo(i);
-    btScalar wearRatePerMin = getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
-
-    wheel.m_tyreInfo.m_health -= wearRatePerMin * step / 60.;
-    if (wheel.m_tyreInfo.m_health < 0.f) wheel.m_tyreInfo.m_health = 0.f;
-
-    //// Calcuate slip ratio
-    //{
-    //  wheel.m_wheelAngularSpeed=wheel.m_deltaRotation/step;
-    //  btScalar wheelLinearSpeed=
-    //    wheel.m_wheelAngularSpeed*wheel.m_wheelsRadius;
-    //  btScalar vehicleSpeed=
-    //    m_chassisBody->getLinearVelocity().length();
-
-    //  if(vehicleSpeed>0.1f)
-    //    wheel.m_slipRatio=1.f-wheelLinearSpeed/vehicleSpeed;
-    //  else
-    //    wheel.m_slipRatio=0.f;
-    //}
-
-    //// update temperature
-    //{
-    //  btScalar& tempCel=wheel.m_tyreInfo.m_tempCelsius;
-
-    //  btScalar tempIncrease=0;
-    //  tempIncrease+=
-    //    wheel.m_slipRatio*WheelInfo::TyreInfo::s_slipRatioTempConstant;
-    //  tempIncrease+=
-    //    wheel.m_wheelAngularSpeed*
-    //    WheelInfo::TyreInfo::s_angularSpeedTempConstant;
-
-    //  // TODO add wetness of ground
-    //  btScalar tempDecrease=0;
-    //  tempDecrease+=
-    //    wheel.m_wheelAngularSpeed*
-    //    WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst;
-
-    //  tempCel+=tempIncrease*step;
-    //  tempCel-=tempDecrease*step;
-    //}
-
-    //// update health
-    //{
-    //  btScalar wearRatePerMin=getTyreWearRatePerMin(wheel.m_tyreInfo.m_type);
-
-    //  wheel.m_tyreInfo.m_health-=wearRatePerMin*step/60.f;
-    //  if(wheel.m_tyreInfo.m_health<0.f)
-    //    wheel.m_tyreInfo.m_health=0.f;
-    //}
-  }
-}
-
-btScalar RaycastVehicle::getTyreWearRatePerMin(WheelInfo::TyreType type)
-{
-  switch (type)
-  {
-    case WheelInfo::TyreType::Hard:
-      return WheelInfo::TyreInfo::s_hardWearRatePerMin;
-    case WheelInfo::TyreType::Soft:
-      return WheelInfo::TyreInfo::s_softWearRatePerMin;
-    case WheelInfo::TyreType::Wet:
-      return WheelInfo::TyreInfo::s_wetWearRatePerMin;
-    default:
-      btAssert(false && "Unknown TyreType");
-      return WheelInfo::TyreInfo::s_softWearRatePerMin;
-  }
 }
 
 btScalar RaycastVehicle::updateDriveParts(btScalar step)
@@ -956,7 +902,7 @@ btVector3 RaycastVehicle::getWheelContactVel(WheelInfo& wheel) const
   return chasis->getVelocityInLocalPoint(rel_pos);
 }
 
-std::pair<btScalar, btScalar> RaycastVehicle::getSurfGripAndDragCoeff(WheelInfo& wheel) const
+const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 {
   btRigidBody* p_ground = wheel.m_raycastInfo.m_groundObject;
 
@@ -965,44 +911,44 @@ std::pair<btScalar, btScalar> RaycastVehicle::getSurfGripAndDragCoeff(WheelInfo&
     btAssert(false &&
              "Wheel is not in contact with ground. This should be unreachable, because this method is called only if "
              "wheel is in contact.");
-    return {btScalar(0.0), btScalar(0.0)};
+    return nullptr;
   }
 
   if (!p_ground->getUserPointer())
   {
     btAssert(false && "Something is broken with pointers, ask Igor");
-    return {btScalar(0.0), btScalar(0.0)};
+    return nullptr;
   }
 
   BulletUserData* user_data = (BulletUserData*)(p_ground->getUserPointer());
 
   if (!p_ground->isStaticObject())
   {
-    // TODO: here is situation when wheel is on another car, it needs to be tested.
+    // TODO: Make another surface type like Vehicle in SurfaceInfo, ask Igor for that
     if (user_data->getType() == BulletUserData::Type::Vehicle)
-      return {btScalar(0.6), btScalar(0.0)};
+      return nullptr;
     else
-      return {btScalar(0.0), btScalar(0.0)};
+      return nullptr;
   }
 
   if (user_data->getType() != BulletUserData::Type::Ground)
   {
     btAssert(false && "User data is not Type::Ground");
-    return {btScalar(0.0), btScalar(0.0)};
+    return nullptr;
   }
 
   Ground::UserData* user_data_casted = (Ground::UserData*)user_data;
   const Ground::SurfaceInfo* surface_info = user_data_casted->p_surface_info;
   auto surface_type = surface_info->type;
 
-  std::cout << "surface:  " << Ground::toString(surface_type) << "\t";
+  // std::cout << "surface:  " << Ground::toString(surface_type) << "\t";
 
   if (surface_type < (Ground::Type)0 || surface_type >= Ground::Type::Count)
   {
     btAssert(false && "Invalid Ground::Type");
-    return {btScalar(0.0), btScalar(0.0)};
+    return nullptr;
   }
   else
-    return {surface_info->grip_coeff, surface_info->drag_coeff};
+    return surface_info;
 }
 }  // namespace boink
