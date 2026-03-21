@@ -404,6 +404,26 @@ namespace boink
         }
       }
     }
+
+    for(size_t i=0;i<road_data_.size();i++)
+    {
+      auto& sample = road_data_[i];
+      const auto&[center_point, dist] = centerline_.getPointAndDist(i);
+      
+      btVector3 center_move_up = center_point + sample.normal * 1.5f;
+      btVector3 down = -sample.normal;
+
+      sample.left_max_width = std::max(sample.left_width, sample.left_max_width);
+      sample.right_max_width = std::max(sample.right_width, sample.right_max_width);
+
+      sample.right_grounds = calculateGroundWidths(
+          sample.right * sample.right_width + center_move_up,
+          sample.right * sample.right_max_width + center_move_up, down);
+          
+      sample.left_grounds = calculateGroundWidths(
+          -sample.right * sample.left_width + center_move_up,
+          -sample.right * sample.left_max_width + center_move_up, down);
+    }
   }
 
   Road::Metrics Road::generateMetrics(
@@ -475,14 +495,6 @@ namespace boink
     btVector3 center_move_up=center_point+sample.normal*1.5f;
     sample.left_max_width=calculateFirstHitDist(center_move_up,-sample.right);
     sample.right_max_width=calculateFirstHitDist(center_move_up,sample.right);
-
-    btVector3 down=-sample.normal;
-    sample.right_grounds=calculateGroundWidths(
-        sample.right*sample.right_width+center_move_up,
-        sample.right*sample.right_max_width+center_move_up,down);
-    sample.left_grounds=calculateGroundWidths(
-        -sample.right*sample.left_width+center_move_up,
-        -sample.right*sample.left_max_width+center_move_up,down);
 
     return sample;
   }
@@ -556,40 +568,64 @@ namespace boink
     
     btVector3 rayVector=down.normalized()*50.0f;
 
+    // 1. CLEAR/INITIALIZE EVERYTHING LOCALLY
+    grounds.clear(); 
+    btScalar last_transition_dist = 0.0f;
     Ground::Type prev_type = Ground::Type::Count;
 
     for (btScalar dist = 0.0f; dist <= max_dist; dist += step)
     {
-      // FIX: Calculate point relative to 'from'
-      btVector3 currentPoint = from + (dir * dist);
+        btVector3 currentPoint = from + (dir * dist);
 
-      btCollisionWorld::ClosestRayResultCallback ray_callback(
-          currentPoint, currentPoint + rayVector);
-      ray_callback.m_collisionFilterGroup = Collision::Group::Vehicle;
-      ray_callback.m_collisionFilterMask = Collision::Group::Static;
+        btCollisionWorld::ClosestRayResultCallback ray_callback(currentPoint, currentPoint + rayVector);
+        ray_callback.m_collisionFilterGroup = Collision::Group::Vehicle;
+        ray_callback.m_collisionFilterMask = Collision::Group::Static;
+        world_->rayTest(currentPoint, currentPoint + rayVector, ray_callback);
 
-      world_->rayTest(currentPoint, currentPoint + rayVector, ray_callback);
-
-      Ground::Type current_type = Ground::Type::Count; // Default to "No Hit"
-
-      if (ray_callback.hasHit())
-      {
-        void* ptr = ray_callback.m_collisionObject->getUserPointer();
-        if (ptr)
+        Ground::Type current_type = Ground::Type::Count; 
+        if (ray_callback.hasHit())
         {
-          // Cast safely
-          auto* userData = static_cast<Ground::UserData*>(ptr);
-          if (userData && userData->p_surface_info)
-            current_type = userData->p_surface_info->type;
+            void* ptr = ray_callback.m_collisionObject->getUserPointer();
+            if (ptr) {
+                auto* userData = static_cast<Ground::UserData*>(ptr);
+                if (userData && userData->p_surface_info)
+                    current_type = userData->p_surface_info->type;
+            }
         }
-      }
 
-      // Detect if the surface type changed (e.g., Asphalt -> Grass, or Grass -> None)
-      if (current_type != prev_type)
-      {
-        grounds.emplace_back(dist, current_type);
-        prev_type = current_type;
-      }
+        // Initialize prev_type on the very first sample
+        if (dist == 0.0f) {
+            prev_type = current_type;
+        }
+
+        // A: HIT A WALL OR VOID -> Stop immediately
+        if (current_type == Ground::Type::Wall || current_type == Ground::Type::Count)
+        {
+            if (prev_type != Ground::Type::Count && dist > last_transition_dist)
+            {
+                grounds.emplace_back(dist - last_transition_dist, prev_type);
+            }
+            last_transition_dist = dist;
+            prev_type = Ground::Type::Count; // Mark as nothingness
+            return grounds; // EXIT FUNCTION: Do not process further
+        }
+
+        // B: SURFACE CHANGED (e.g., Asphalt to Grass)
+        if (current_type != prev_type)
+        {
+            // Only record if the previous section wasn't "nothing"
+            if (prev_type != Ground::Type::Count) {
+                grounds.emplace_back(dist - last_transition_dist, prev_type);
+            }
+            last_transition_dist = dist;
+            prev_type = current_type;
+        }
+    }
+
+    // C: END OF LOOP -> If we hit max_dist while still on a valid surface
+    if (prev_type != Ground::Type::Count && last_transition_dist < max_dist)
+    {
+        grounds.emplace_back(max_dist - last_transition_dist, prev_type);
     }
 
     return grounds;

@@ -234,6 +234,20 @@ typedef struct BoinkVec3 {
   Real z;
 } BoinkVec3;
 
+typedef enum BoinkGroundType {
+  BOINK_GROUND_TYPE_ASPHALT = 0,
+  BOINK_GROUND_TYPE_GRASS = 1,
+  BOINK_GROUND_TYPE_SAND = 2,
+  BOINK_GROUND_TYPE_GRAVEL = 3,
+  BOINK_GROUND_TYPE_WALL = 4,
+  BOINK_GROUND_TYPE_KERB = 5,
+} BoinkGroundType;
+
+typedef struct BoinkGroundWidth {
+  Real width;
+  BoinkGroundType type;
+} BoinkPair;
+
 /**
  * Represents one static centerline sample of a race track.
  *
@@ -262,12 +276,41 @@ typedef struct BoinkCenterlineSample {
   struct BoinkVec3 right;
   /**
    * Drivable half-width to track-left from centerline, meters.
+
    */
   Real left_width_m;
   /**
    * Drivable half-width to track-right from centerline, meters.
    */
   Real right_width_m;
+  /**
+   * Drivable half-width to wall-left from centerline, meters.
+   */
+  Real max_left_width_m;
+  /**
+   * Number of elements at `left_grounds`.
+   */
+  unsigned int left_grounds_count;
+  /**
+   * Pointer to `left_grounds_count` elements describing ground types and widths on the left side.
+   *
+   * Can be null only when `left_grounds_count == 0`.
+   */
+  struct BoinkGroundWidth* left_grounds;
+  /**
+   * Drivable half-width to wall-right from centerline, meters.
+   */
+  Real max_right_width_m;
+  /**
+   * Number of elements at `right_grounds`.
+   */
+  unsigned int right_grounds_count;
+  /**
+   * Pointer to `right_grounds_count` elements describing ground types and widths on the right side.
+   *
+   * Can be null only when `right_grounds_count == 0`.
+   */
+  struct BoinkGroundWidth* right_grounds;
   /**
    * Signed centerline curvature [1/m].
    */
