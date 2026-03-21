@@ -327,9 +327,13 @@ void printTrackData(const BoinkTrackData* track_data)
 
   const BoinkCenterlineSample* samples = track_data->centerline_samples;
   size_t num_samples = track_data->centerline_sample_count;
+  const BoinkCenterlineSample* enter_samples=track_data->pitstop_data.enter_centerline_samples;
+  size_t num_enter_samples=track_data->pitstop_data.enter_centerline_sample_count;
 
-  // for(size_t i=0;i<num_samples;i++)
-  //   printCenterlineSample(&samples[i],i);
+  for(size_t i=0;i<num_samples;i++)
+    printCenterlineSample(&samples[i],i);
+  for(size_t i=0;i<num_enter_samples;i++)
+    printCenterlineSample(&enter_samples[i],i);
 }
 
 void printCenterlineSample(const BoinkCenterlineSample* sample, int num)
@@ -340,6 +344,24 @@ void printCenterlineSample(const BoinkCenterlineSample* sample, int num)
   printStateReal(sample->bank_rad);
   printStateReal(sample->grade_rad);
   printStateReal(sample->s_m);
+
+  const struct BoinkGroundWidth* ground_width = sample->left_grounds;
+  size_t left_cout=sample->left_grounds_count;
+
+  for(size_t i=0;i<left_cout;i++)
+  {
+    printStateInt(ground_width[i].type);
+    printStateReal(ground_width[i].width);
+  }
+
+  ground_width = sample->right_grounds;
+  size_t right_count=sample->right_grounds_count;
+
+  for(size_t i=0;i<right_count;i++)
+  {
+    printStateInt(ground_width[i].type);
+    printStateReal(ground_width[i].width);
+  }
 }
 
 

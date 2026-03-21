@@ -564,6 +564,9 @@ namespace boink
     btScalar max_dist=from.distance(to);
     std::vector<std::pair<btScalar, Ground::Type>> grounds;
 
+    if(max_dist<g_Epsilon)
+      return grounds;
+
     btVector3 dir=(to-from).normalized();
     
     btVector3 rayVector=down.normalized()*50.0f;
