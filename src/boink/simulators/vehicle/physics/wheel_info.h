@@ -157,7 +157,7 @@ struct TyreTypeProperties
   btScalar baseDryGrip;
   btScalar baseWetGrip;
   btScalar wearRate;
-  btScalar optimalTemp;
+  btScalar optimalTemp;  // TODO: this is potentally uneeded, if truly it is then delete it
   btScalar heatingFactor;
 
   Curve tempToGripCoeff;

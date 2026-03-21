@@ -72,7 +72,6 @@ class RaycastVehicle : public btActionInterface
 
   btScalar getSteeringValue(int wheel) const;
   void setSteeringValue(btScalar steering, int wheel);
-  void setBrake(btScalar brake);
 
   btScalar rayCast(WheelInfo& wheel);
 
@@ -142,6 +141,12 @@ class RaycastVehicle : public btActionInterface
 
   btScalar m_throttle;
   btScalar m_steeringValue;
+  /// <summary>
+  /// 1.0 - full on front wheels,
+  /// 0.0 - full on rear wheels
+  /// </summary>
+  btScalar m_brakeBias;
+  btScalar m_brake;
 
  private:
   void applyAerodynamics(btScalar step);

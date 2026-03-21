@@ -350,7 +350,11 @@ void Vehicle::setEngineForce(btScalar force) { vehicle_->m_throttle = force; }
 
 void Vehicle::setBrake(btScalar brake)
 {
-  vehicle_->setBrake(brake);
+  vehicle_->m_brake = brake;
+}
+
+void Vehicle::setBrakeBias(btScalar bias) {
+    vehicle_->m_brakeBias = bias;
 }
 
 bool Vehicle::setGearDown() { return vehicle_->setGearDown(); }

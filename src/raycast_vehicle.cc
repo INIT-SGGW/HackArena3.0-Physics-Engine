@@ -53,6 +53,8 @@ RaycastVehicle::RaycastVehicle(btRigidBody* chassis, VehicleRaycaster* raycaster
 
   m_currentVehicleSpeedKmHour = btScalar(0.);
   m_steeringValue = btScalar(0.);
+  m_brakeBias = btScalar(0.6f);
+  m_brake = btScalar(0.f);
 }
 
 void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar step)
@@ -227,16 +229,6 @@ void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
 
   WheelInfo& wheelInfo = getWheelInfo(wheel);
   wheelInfo.m_steering = steering;
-}
-
-void RaycastVehicle::setBrake(btScalar brake)
-{
-  // TODO: for now for all wheels there is always the same braking value, if it will not changed brake var in every
-  // wheel is not needed
-  for (int i = 0; i < m_wheelsInfo.size(); i++)
-  {
-    getWheelInfo(i).m_brake = brake;
-  }
 }
 
 btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
@@ -424,6 +416,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   m_sideImpulse.resize(numWheel);
 
   auto total_drive_torque = updateDriveParts(timeStep);
+  auto total_brake_torque = (m_gearbox.current_gear != Gear::Reverse) ? -kBrakeTorque : kBrakeTorque;
+  total_brake_torque *= m_brake;
+  auto front_brake_torque = total_brake_torque * m_brakeBias;
+  auto rear_brake_torque = total_brake_torque - front_brake_torque;
 
   // std::cout << "steer_val:  " << m_steeringValue << "\n";
 
@@ -453,7 +449,6 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     auto traction_torque = 0.f;
     auto drag_torque = 0.f;
     auto drive_torque = 0.f;
-    auto brake_torque = (m_gearbox.current_gear != Gear::Reverse) ? -kBrakeTorque : kBrakeTorque;
 
     if (groundObject)
     {
@@ -462,17 +457,19 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       if (wheelInfo.m_angSpeed > 0) drag_torque *= -1;
     }
 
-    brake_torque *= wheelInfo.m_brake;
-
     if (!wheelInfo.m_bIsFrontWheel)
     {
       // TODO: differential here should seperate in right proportions drive torque to left and right wheel, for now is
       // always equal
       drive_torque = total_drive_torque / 2;
-      total_torque = drive_torque + traction_torque + drag_torque + brake_torque;
+      total_torque = drive_torque + traction_torque + drag_torque + rear_brake_torque;
+      // std::cout << "rear_brake_torque:  " << rear_brake_torque << "\t";
     }
     else
-      total_torque = traction_torque + drag_torque + brake_torque;
+    {
+      total_torque = traction_torque + drag_torque + front_brake_torque;
+      // std::cout << "front_brake_torque:  " << front_brake_torque << "\t";
+    }
 
     auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
     auto engine_inertia_part = 0.f;
