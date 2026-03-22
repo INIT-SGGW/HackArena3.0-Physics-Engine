@@ -262,7 +262,7 @@ int main()
 
     //printf("# of positions: %lu\n",number);
 
-    //printGhostModeData(&state_ghost);
+    printGhostModeData(&state_ghost);
 
     boink_update_debug();
   }

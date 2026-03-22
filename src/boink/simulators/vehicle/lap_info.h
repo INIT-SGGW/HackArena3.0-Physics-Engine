@@ -27,6 +27,11 @@ namespace boink
         return laps_completed;
     }
 
+    int getCurrentLap() const
+    {
+      return current_lap;
+    }
+
     std::optional<std::pair<int,btScalar>> getPersonalBest() const
     {
       bool found=false;
@@ -62,5 +67,7 @@ namespace boink
 
       return {{it->first,it->second}};
     }
+
+
   };
 }

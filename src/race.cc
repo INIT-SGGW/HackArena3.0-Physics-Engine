@@ -172,7 +172,11 @@ namespace boink
     int steps=Simulation::update(
         dt,max_sub_steps,fixed_delta_time,max_delta_time);
 
-    updateOverlapLists(dt);
+    btScalar simulation_step=steps*fixed_delta_time;
+    if(steps==0)
+      return 0;
+
+    updateOverlapLists(simulation_step);
     return steps;
   }
 

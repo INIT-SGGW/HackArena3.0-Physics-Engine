@@ -35,7 +35,7 @@ namespace boink
     const Timer& getExitTimer() const {return exit_timer_;}
 
     bool isCompletedLapsConditionMet() const 
-    { return lap_info_->getLapsCompleted()<(int)settings_.enabled_until_completed_laps;}
+    { return lap_info_->getCurrentLap()<(int)settings_.enabled_until_completed_laps;}
     bool isEnterSpeedConditionMet() const
     { return speed_<settings_.max_enter_speed;}
     bool isExitSpeedConditionMet() const

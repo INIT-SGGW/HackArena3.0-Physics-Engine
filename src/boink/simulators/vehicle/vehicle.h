@@ -156,6 +156,10 @@ class Vehicle : public Simulator
     int isVehicleInPitstop(bool max_lines=false) const;
     int isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
 
+    bool isOverlapping() const;
+    bool isAnyOverlapTimerRunning() const;
+    btScalar biggestLeftOverlapTime() const;
+
     bool hasStopped() const;
   private:
     void updateLapInfo(btScalar dt);
@@ -199,6 +203,7 @@ class Vehicle : public Simulator
     GhostMode ghost_sim_;
 
     BoundingBox bounding_dimensions_;
+    Timer pitstop_timer_;
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;
