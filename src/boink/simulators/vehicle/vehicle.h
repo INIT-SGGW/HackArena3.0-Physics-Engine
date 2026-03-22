@@ -118,6 +118,7 @@ class Vehicle : public Simulator
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
     void setBrakeBias(btScalar bias);
+    void setDiffSetting(btScalar diffsetting);
 
     /// <summary>
     /// Sets gear up.

@@ -357,6 +357,10 @@ void Vehicle::setBrakeBias(btScalar bias) {
     vehicle_->m_brakeBias = bias;
 }
 
+void Vehicle::setDiffSetting(btScalar diffsetting) {
+    vehicle_->m_diffSetting = diffsetting;
+}
+
 bool Vehicle::setGearDown() { return vehicle_->setGearDown(); }
 
 bool Vehicle::setGearUp() { return vehicle_->setGearUp(); }

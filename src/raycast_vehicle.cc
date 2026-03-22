@@ -55,6 +55,7 @@ RaycastVehicle::RaycastVehicle(btRigidBody* chassis, VehicleRaycaster* raycaster
   m_steeringValue = btScalar(0.);
   m_brakeBias = btScalar(0.6f);
   m_brake = btScalar(0.f);
+  m_diffSetting = btScalar(0.f);
 }
 
 void RaycastVehicle::updateAction(btCollisionWorld* collisionWorld, btScalar step)
@@ -415,7 +416,20 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   m_forwardImpulse.resize(numWheel);
   m_sideImpulse.resize(numWheel);
 
+  // @differential
   auto total_drive_torque = updateDriveParts(timeStep);
+  btScalar curr_diff_stiff = scalarLerp(kMinDiff, kMaxDiff, m_diffSetting);
+
+  auto ang_speed_diff =
+      m_wheelsInfo[(int)WheelPosition::RearLeft].m_angSpeed - m_wheelsInfo[(int)WheelPosition::RearRight].m_angSpeed;
+  auto locking_torque = ang_speed_diff * curr_diff_stiff;
+  auto drive_torque_L = (total_drive_torque / 2.f) - locking_torque;
+  auto drive_torque_R = (total_drive_torque / 2.f) + locking_torque;
+
+  // std::cout << "drive_torq_L:  " << drive_torque_L << "\n";
+  // std::cout << "drive_torq_R:  " << drive_torque_R << "\n";
+
+  // @brake bias
   auto total_brake_torque = (m_gearbox.current_gear != Gear::Reverse) ? -kBrakeTorque : kBrakeTorque;
   total_brake_torque *= m_brake;
   auto front_brake_torque = total_brake_torque * m_brakeBias;
@@ -459,9 +473,10 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
     if (!wheelInfo.m_bIsFrontWheel)
     {
-      // TODO: differential here should seperate in right proportions drive torque to left and right wheel, for now is
-      // always equal
-      drive_torque = total_drive_torque / 2;
+      if (wheel_idx == (int)WheelPosition::RearLeft)
+        drive_torque = drive_torque_L;
+      else
+        drive_torque = drive_torque_R;
       total_torque = drive_torque + traction_torque + drag_torque + rear_brake_torque;
       // std::cout << "rear_brake_torque:  " << rear_brake_torque << "\t";
     }
@@ -475,7 +490,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     auto engine_inertia_part = 0.f;
     if (!wheelInfo.m_bIsFrontWheel)
       engine_inertia_part =
-          m_engine.inertia *
+          (m_engine.inertia / 2.f) *
           btPow(m_gearbox.GetCurrentRatio() * m_gearbox.kDifferentialRatio * kTransmissionEfficiency, 2);
 
     auto wheel_angular_acceleration = total_torque / (wheel_inertia + engine_inertia_part);

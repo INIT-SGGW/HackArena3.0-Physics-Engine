@@ -147,6 +147,7 @@ class RaycastVehicle : public btActionInterface
   /// </summary>
   btScalar m_brakeBias;
   btScalar m_brake;
+  btScalar m_diffSetting;
 
  private:
   void applyAerodynamics(btScalar step);
@@ -180,7 +181,9 @@ class RaycastVehicle : public btActionInterface
   static constexpr float kTransmissionEfficiency = 0.7f;
   static constexpr float kSmoothingTractionForceFactor = 0.35f;
   static constexpr float kBrakeTorque = 3300.0f;  // [Nm]
-  static constexpr float kSlipRatioPeak = 0.1f;   // slip ratio with maximum longitudinal grip
+  static constexpr float kMinDiff = 10.f;
+  static constexpr float kMaxDiff = 300.f;
+  static constexpr float kSlipRatioPeak = 0.1f;  // slip ratio with maximum longitudinal grip
   static inline const Curve kSlipRatioToGrip =
       Curve({0.000, 1.100, 1.600, 1.500, 1.350, 1.250, 1.200, 1.150, 1.120, 1.100, 1.080,
              1.060, 1.050, 1.040, 1.030, 1.020, 1.010, 1.000, 1.000, 1.000, 1.000},
