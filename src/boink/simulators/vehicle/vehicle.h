@@ -1,6 +1,7 @@
 // clang-format off
 #pragma once
 
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
@@ -10,6 +11,7 @@
 #include <LinearMath/btMotionState.h>
 
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 #include "boink/simulators/simulator.h"
@@ -52,6 +54,9 @@ class Vehicle : public Simulator
     struct GhostModeInfo
     {
       bool enabled=false;
+
+      btScalar overlap_target=0.f;
+      std::unordered_map<btCollisionObject*,Timer> overlap_vehicles;
     };
     struct UserData : public BulletUserData
     {
@@ -96,6 +101,8 @@ class Vehicle : public Simulator
     int getCurrentGear() const;
     btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
+
+    UserData* getUserData() { return (UserData*)rigidbody_->getUserPointer();}
 
     btVector3 getVehicleDirection() const;
 
@@ -149,6 +156,10 @@ class Vehicle : public Simulator
     int isVehicleInPitstop(bool max_lines=false) const;
     int isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
 
+    bool isOverlapping() const;
+    bool isAnyOverlapTimerRunning() const;
+    btScalar biggestLeftOverlapTime() const;
+
     bool hasStopped() const;
   private:
     void updateLapInfo(btScalar dt);
@@ -192,6 +203,7 @@ class Vehicle : public Simulator
     GhostMode ghost_sim_;
 
     BoundingBox bounding_dimensions_;
+    Timer pitstop_timer_;
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;

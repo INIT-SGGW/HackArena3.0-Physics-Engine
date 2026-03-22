@@ -8,7 +8,7 @@
 #include <LinearMath/btDefaultMotionState.h>
 
 #include <LinearMath/btQuaternion.h>
-#include <memory>
+#include <algorithm>
 #include <piksel/object.hh>
 
 #include "boink/constants.h"
@@ -19,6 +19,8 @@
 #include "boink/utility.h"
 #include "boink/collision_group.h"
 #include "boink/assert.h"
+
+#include <memory>
 
 namespace boink
 {
@@ -41,6 +43,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
       ghost_sim_(world_.get(),vehicle_.get(),&lap_info_),
+      pitstop_timer_(kBrakingDuration,kBrakingDuration),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
@@ -247,25 +250,25 @@ void Vehicle::updateLapInfo(btScalar dt)
 
 void Vehicle::updatePitstop(btScalar dt)
 {
-  static Timer timer(kBrakingDuration,kBrakingDuration);
-
   if(this->isVehicleInPitstop(Pitstop::Zone::Fix)>0)
   {
-    ghost_sim_.enterGhostModeForce();
+    if(!ghost_sim_.isInGhostMode())
+      ghost_sim_.enterGhostModeForce();
+
     btVector3 vel=rigidbody_->getLinearVelocity();
     btScalar speed2=vel.length2();
 
     if(speed2>kMaxFixZoneSpeed*kMaxFixZoneSpeed)
-      timer.reset();
+      pitstop_timer_.reset();
 
-    if(!timer.hasFinised() && speed2>kMaxFixZonePenaltySpeed*kMaxFixZonePenaltySpeed)
+    if(!pitstop_timer_.hasFinised() && speed2>kMaxFixZonePenaltySpeed*kMaxFixZonePenaltySpeed)
     {
       btVector3 brake_dir=-vel.normalized();
       rigidbody_->applyCentralImpulse(brake_dir*kPitstopBrakingForce*dt);
     }
   }
 
-  timer.update(dt);
+  pitstop_timer_.update(dt);
 }
 
 void Vehicle::updateRender(Renderer* renderer)
@@ -481,6 +484,7 @@ bool Vehicle::setGearUp() { return vehicle_->setGearUp(); }
 void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
 {
   ghost_sim_.enable(ghost_settings);
+  ghost_info_.overlap_target=ghost_settings.exit_delay_when_overlap;
 }
 
 void Vehicle::disableGhostSim()
@@ -670,6 +674,48 @@ int Vehicle::isVehicleInPitstop(Pitstop::Zone zone, bool max_lines) const
       offset,
       bounding_dimensions_,
       max_lines);
+}
+
+bool Vehicle::isOverlapping() const
+{
+  const auto& overlap_vehicles = ghost_info_.overlap_vehicles;
+  if (overlap_vehicles.empty()) 
+    return false;
+
+  return std::any_of(overlap_vehicles.begin(), overlap_vehicles.end(),
+      [](const auto& pair)
+      {
+        return !pair.second.isRunning();
+      });
+}
+
+bool Vehicle::isAnyOverlapTimerRunning() const
+{
+  const auto& overlap_vehicles = ghost_info_.overlap_vehicles;
+  if (overlap_vehicles.empty()) 
+    return false;
+
+  return std::any_of(overlap_vehicles.begin(), overlap_vehicles.end(),
+      [](const auto& pair)
+      {
+        return pair.second.isRunning();
+      });
+}
+
+btScalar Vehicle::biggestLeftOverlapTime() const
+{
+  const auto& overlap_vehicles = ghost_info_.overlap_vehicles;
+  if (overlap_vehicles.empty()) 
+    return 0.f;
+
+  auto it=std::min_element(overlap_vehicles.begin(),overlap_vehicles.end(),
+      [](const auto& p0,const auto& p1)
+      {
+        return p0.second.getCurrent()<p1.second.getCurrent();
+      });
+
+  btScalar time_left=ghost_info_.overlap_target-it->second.getCurrent();
+  return std::max(0.f,time_left);
 }
 
 bool Vehicle::hasStopped() const
