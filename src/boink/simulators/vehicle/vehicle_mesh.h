@@ -44,13 +44,13 @@ namespace boink
         const std::vector<btVector3>& vertices,
         const std::vector<unsigned int>& indices);
   private:
-    static constexpr std::string_view CHASSIS_NAME="Cylinder.002";
+    static constexpr std::string_view CHASSIS_NAME="CHASIS";
     inline static const std::unordered_map<std::string_view, WheelPosition> 
       s_wheel_names_{
-        {"Cylinder.004", WheelPosition::RearRight},
-        {"Cylinder.005", WheelPosition::RearLeft},
-        {"Cylinder.007", WheelPosition::FrontRight},
-        {"Cylinder.003", WheelPosition::FrontLeft},
+        {"REAR_RIGHT", WheelPosition::RearRight},
+        {"REAR_LEFT", WheelPosition::RearLeft},
+        {"FRONT_RIGHT", WheelPosition::FrontRight},
+        {"FRONT_LEFT", WheelPosition::FrontLeft},
 };
   private:
     std::unordered_map<WheelPosition,Element> wheels_;

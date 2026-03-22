@@ -16,6 +16,9 @@ docs
 .vscode
 *.swp
 *.bak
+*.glb
+*.boink
+logs
 
 
 build

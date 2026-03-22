@@ -18,13 +18,13 @@ namespace boink
         p_ghost_->enter_timer_.getCurrent());
     ImGui::Text("Exit timer curr: %f",
         p_ghost_->exit_timer_.getCurrent());
-    ImGui::Text("Overlap timer curr: %f",
-        p_ghost_->overlap_timer_.getCurrent());
+    ImGui::Text("Force timer curr: %f",
+        p_ghost_->force_timer_.getCurrent());
     ImGui::Text("Is active enter timer: %s",
         !p_ghost_->enter_timer_.hasFinised()?"true":"false");
     ImGui::Text("Is active exit timer: %s",
         !p_ghost_->exit_timer_.hasFinised()?"true":"false");
-    ImGui::Text("Is active overlap timer: %s",
-        !p_ghost_->overlap_timer_.hasFinised()?"true":"false");
+    ImGui::Text("Is active force timer: %s",
+        !p_ghost_->force_timer_.hasFinised()?"true":"false");
   }
 }

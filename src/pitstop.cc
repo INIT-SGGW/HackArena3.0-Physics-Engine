@@ -1,76 +1,94 @@
 #include "boink/simulators/track/pitstop.h"
 
-#include "boink/constants.h"
+#include "boink/exception.h"
+#include "boink/logger.h"
+#include "boink/assert.h"
 
 #include <sstream>
 #include <unordered_map>
 
 namespace boink
 {
-  Pitstop::Pitstop(const GltfExtractor& extractor)
+  Pitstop::Pitstop(
+      const GltfExtractor& extractor, 
+      std::shared_ptr<btDynamicsWorld> world,
+      const std::string& path)
+    :pitstop_length_(0)
   {
     for(auto& [type,name]:kZonesNames)
     {
       std::stringstream ss;
       ss<<kPitstopSegName<<kPitstopNameDelim<<name;
-      zones_[type]=createZone(extractor,ss.str());
+      zones_[type]=createZone(extractor,ss.str(),world,path);
 
-      if(!isInOrder(zones_[type].center,zones_[type].right))
-        zones_[type].center.reverse();
+      if(zones_[type].isClosed())
+        throw Exception(
+            Exception::Type::UnsupportedFormatError,
+            "Pitstop line retured is not open");
+
+      BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"center");
+      for(const auto& point:getZone(type).getLine(Road::Side::Center).getPointsAndDist())
+        BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
+
+      BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"left");
+      for(const auto& point:getZone(type).getLine(Road::Side::Left).getPointsAndDist())
+        BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
+
+      BOINK_TRACE("Zone type: {} {}",kZonesNames.at(type),"right");
+      for(const auto& point:getZone(type).getLine(Road::Side::Right).getPointsAndDist())
+        BOINK_TRACE("Vec: {} dist={}",point.first,point.second);
+
+      pitstop_length_+=zones_[type].getLength();
     }
   }
 
-  // Function checks whether center line points are increasing in the forward
-  // direction
-  bool Pitstop::isInOrder(const Line& center,const Line& right)
+  const Road& Pitstop::getZone(Pitstop::Zone type) const 
   {
-    auto center_point=center.getPoint(0);
-    auto next_center_point=center.getPoint(1);
+    auto it=zones_.find(type);
+    if(it==zones_.end())
+    {
+      BOINK_ASSERT(false,"type was Zone::Node");
 
-    auto dir=next_center_point-center_point;
-
-    auto right_point=right.getPoint( 
-        right.getClosestIndex(center_point).first);
-    auto right_dir=right_point-center_point;
-
-    auto normal=right_dir.cross(dir);
-
-    return normal.dot(g_Up)>0;
+      return zones_.begin()->second;
+    }
+    return it->second;
   }
 
-  Pitstop::Zone Pitstop::createZone(
+  Road Pitstop::createZone(
       const GltfExtractor& extractor,
-      const std::string& prefix)
+      const std::string& prefix,
+      std::shared_ptr<btDynamicsWorld> world,
+      std::string path)
   {
     std::stringstream ss;
-    Zone zone;
 
     ss<<prefix<<kPitstopNameDelim<<kCenterSegName;
-    zone.center=Line::createLine(extractor,ss.str());
+    Line center=Line::createLine(extractor,ss.str());
     ss.str("");
 
     ss<<prefix<<kPitstopNameDelim<<kLeftSegName;
-    zone.left=Line::createLine(extractor,ss.str());
+    Line left=Line::createLine(extractor,ss.str());
     ss.str("");
 
     ss<<prefix<<kPitstopNameDelim<<kRightSegName;
-    zone.right=Line::createLine(extractor,ss.str());
+    Line right=Line::createLine(extractor,ss.str());
     ss.str("");
 
-    return zone;
+    path+="_"+prefix+".boink";
+    return Road(std::move(center),std::move(right),std::move(left),world,path);
   }
 
-  const std::unordered_map<std::string_view,Pitstop::ZoneType> Pitstop::kZonesTypes=
+  const std::unordered_map<std::string_view,Pitstop::Zone> Pitstop::kZonesTypes=
   {
-    {"ENTER",ZoneType::Enter},
-    {"FIX",ZoneType::Fix},
-    {"EXIT",ZoneType::Exit}
+    {"ENTER",Zone::Enter},
+    {"FIX",Zone::Fix},
+    {"EXIT",Zone::Exit}
   };
 
-  const std::unordered_map<Pitstop::ZoneType,std::string_view> Pitstop::kZonesNames=
+  const std::unordered_map<Pitstop::Zone,std::string_view> Pitstop::kZonesNames=
   {
-    {ZoneType::Enter,"ENTER"},
-    {ZoneType::Fix,"FIX"},
-    {ZoneType::Exit,"EXIT"}
+    {Zone::Enter,"ENTER"},
+    {Zone::Fix,"FIX"},
+    {Zone::Exit,"EXIT"}
   };
 }

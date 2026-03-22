@@ -35,9 +35,9 @@ namespace boink
       reinterpret_cast<Vehicle::UserData*>(m_chassis->getUserPointer());
     btAssert(user_data!=nullptr);
 
-    RayResultCallback rayCallback(from, to,user_data->ghost_info->enabled);
-    rayCallback.m_collisionFilterGroup=CollisionGroup::Vehicle;
-    rayCallback.m_collisionFilterMask=CollisionGroup::All;
+    RayResultCallback rayCallback(from, to,user_data->ghost_info->enabled,m_chassis);
+    rayCallback.m_collisionFilterGroup=Collision::Group::Vehicle;
+    rayCallback.m_collisionFilterMask=Collision::Group::All;
     
     m_dynamicsWorld->rayTest(from, to, rayCallback);
 

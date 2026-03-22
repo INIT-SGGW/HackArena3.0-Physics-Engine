@@ -55,8 +55,8 @@ namespace boink
 
 		world_->addRigidBody(
         rigidbody_.get(),
-        CollisionGroup::Static,
-        CollisionGroup::Vehicle);
+        Collision::Group::Static,
+        Collision::Group::Vehicle);
   }
 
   Ground::Ground(Ground&& other) noexcept

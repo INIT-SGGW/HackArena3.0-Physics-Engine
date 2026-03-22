@@ -27,7 +27,8 @@ namespace boink
       Sand = 2,
       Gravel = 3,
       Wall = 4,
-      Count = 5
+      Kerb = 5,
+      Count = 6
     };
     struct SurfaceInfo;
 
@@ -89,6 +90,8 @@ namespace boink
           return "gravel";
         case Type::Wall:
           return "wall";
+        case Type::Kerb:
+          return "kerb";
         case Type::Count:
           assert(false && "Invalid Ground Type");
           return "Unknown";

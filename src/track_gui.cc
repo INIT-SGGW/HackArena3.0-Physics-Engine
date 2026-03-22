@@ -25,6 +25,8 @@ namespace boink
     ImGui::Text("Position: (%.2f,%.2f,%.2f)",
         pos.getX(),pos.getY(),pos.getZ());
 
+    ImGui::Text("Track length: %.2f[m]",p_track_->getRoad().getLength());
+
     ImGui::Checkbox("Enable track data vectors draw",
         &p_track_->enable_track_data_vec_draw_);
 

@@ -1,8 +1,8 @@
 #pragma once
 
-namespace boink
+namespace boink::Collision
 {
-  enum CollisionGroup : int
+  enum Group : int
   {
     None=0,
     Static=1<<0,

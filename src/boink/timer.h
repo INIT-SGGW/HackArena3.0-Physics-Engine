@@ -15,6 +15,10 @@ namespace boink
       :elapsed_(0.f),target_(target_duration),has_finised_(false)
     {}
 
+    Timer(btScalar elapsed,btScalar target_duration)
+      :elapsed_(elapsed),target_(target_duration),has_finised_(elapsed==target_duration)
+    {}
+
     void update(btScalar dt)
     {
       if(elapsed_>=target_)

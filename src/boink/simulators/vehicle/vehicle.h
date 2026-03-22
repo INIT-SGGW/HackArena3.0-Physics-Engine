@@ -1,6 +1,7 @@
 // clang-format off
 #pragma once
 
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <BulletCollision/CollisionShapes/btConvexHullShape.h>
@@ -10,6 +11,8 @@
 #include <LinearMath/btMotionState.h>
 
 #include <memory>
+#include <unordered_map>
+#include <utility>
 
 #include "boink/simulators/simulator.h"
 #include "boink/simulators/track/track.h"
@@ -21,6 +24,7 @@
 #include "boink/simulators/vehicle/ghost_mode_settings.h"
 #include "boink/simulators/vehicle/ghost_mode.h"
 #include "boink/simulators/vehicle/lap_info.h"
+#include "boink/bounding_box.h"
 
 namespace boink
 {
@@ -40,14 +44,6 @@ class Vehicle : public Simulator
       RaycastVehicle::VehicleTuning tuning;
       WheelInfo::TyreType tyre_type;
     };
-
-    struct BoundingBox
-    {
-      btVector3 top_left;
-      btVector3 top_right;
-      btVector3 bottom_left;
-      btVector3 bottom_right;
-    };
     
     enum class TurnDirection
     {
@@ -58,6 +54,9 @@ class Vehicle : public Simulator
     struct GhostModeInfo
     {
       bool enabled=false;
+
+      btScalar overlap_target=0.f;
+      std::unordered_map<btCollisionObject*,Timer> overlap_vehicles;
     };
     struct UserData : public BulletUserData
     {
@@ -90,6 +89,7 @@ class Vehicle : public Simulator
     std::shared_ptr<piksel::GuiObject> getGui() override;
 
     void setChassisWorldTransform(const btTransform& transform);
+    void setVehicleToPitstop(Pitstop::Zone zone);
 
     const LapInfo& getLapInfo() const {return lap_info_;}
 
@@ -102,9 +102,16 @@ class Vehicle : public Simulator
     btScalar getWheelAngularSpeed(WheelPosition wheel_pos) const;
     const btTransform& getCenterOfMassTransform() const;
 
+    UserData* getUserData() { return (UserData*)rigidbody_->getUserPointer();}
+
+    btVector3 getVehicleDirection() const;
+
     btScalar getSpeed() const;
     btScalar getMass() const;
+    int getNumWheels() const {return vehicle_->getNumWheels();}
     btVector3 getCenterOfMassCS() const;
+
+    bool areAllWheelsOnGround() const;
 
     btScalar getTyreHealth(WheelPosition pos) const;
     WheelInfo::TyreType getTyreType(WheelPosition pos) const;
@@ -112,6 +119,9 @@ class Vehicle : public Simulator
 
     void setTuning(const RaycastVehicle::VehicleTuning& tuning);
     const RaycastVehicle::VehicleTuning& getTuning() const;
+
+    std::pair<btScalar,TurnDirection> getSteering(
+        WheelPosition pos) const;
 
     // Value from [0,1]
     void setSteering(btScalar value, TurnDirection dir);
@@ -143,8 +153,19 @@ class Vehicle : public Simulator
      * @brief Resets all speeds, forces, interpolation of a vehicle.
      */
     void reset();
+
+    int isVehicleOnTrack(bool max_lines=false) const;
+    int isVehicleInPitstop(bool max_lines=false) const;
+    int isVehicleInPitstop(Pitstop::Zone zone, bool max_lines=false) const;
+
+    bool isOverlapping() const;
+    bool isAnyOverlapTimerRunning() const;
+    btScalar biggestLeftOverlapTime() const;
+
+    bool hasStopped() const;
   private:
     void updateLapInfo(btScalar dt);
+    void updatePitstop(btScalar dt);
   private:
     static btVector3 correctCOM(const btVector3& COM, const VehicleMesh* mesh);
     static std::unique_ptr<btCompoundShape> createCollisonShape(
@@ -156,6 +177,11 @@ class Vehicle : public Simulator
         btScalar mass);
 
     static BoundingBox getBoundingDims(std::shared_ptr<btCollisionShape> col_shape);
+  private:
+    static constexpr btScalar kMaxFixZoneSpeed=15.f;
+    static constexpr btScalar kMaxFixZonePenaltySpeed=5.f;
+    static constexpr btScalar kBrakingDuration=5.f;
+    static constexpr btScalar kPitstopBrakingForce=50000.f;
   private:
     std::shared_ptr<const VehicleMesh> mesh_;
     std::shared_ptr<btDynamicsWorld> world_;
@@ -176,14 +202,13 @@ class Vehicle : public Simulator
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     
-    //int laps_completed_;
-    //btScalar curr_lap_dist_point_;
     LapInfo lap_info_;
 
     GhostModeInfo ghost_info_;
     GhostMode ghost_sim_;
 
     BoundingBox bounding_dimensions_;
+    Timer pitstop_timer_;
 
     UserData user_data_;
     std::shared_ptr<VehicleGui> gui_;

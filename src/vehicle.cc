@@ -7,15 +7,20 @@
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <LinearMath/btDefaultMotionState.h>
 
-#include <cassert>
-#include <memory>
+#include <LinearMath/btQuaternion.h>
+#include <algorithm>
 #include <piksel/object.hh>
 
 #include "boink/constants.h"
+#include "boink/exception.h"
 #include "boink/gui/vehicle_gui.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/timer.h"
 #include "boink/utility.h"
 #include "boink/collision_group.h"
+#include "boink/assert.h"
+
+#include <memory>
 
 namespace boink
 {
@@ -37,14 +42,15 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       track_(track),
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
-      ghost_sim_(world_.get(),vehicle_.get(),&lap_info_.laps_completed),
+      ghost_sim_(world_.get(),vehicle_.get(),&lap_info_),
+      pitstop_timer_(kBrakingDuration,kBrakingDuration),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
     world_->addRigidBody(
         rigidbody_.get(),
-        CollisionGroup::Vehicle,
-        CollisionGroup::Vehicle | CollisionGroup::Static);
+        Collision::Group::Vehicle,
+        Collision::Group::Vehicle | Collision::Group::Static);
 
     rigidbody_->setRestitution(0);
     rigidbody_->setUserPointer(&user_data_);
@@ -57,7 +63,6 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
     rigidbody_->setCcdMotionThreshold(1e-5);
     rigidbody_->setCcdSweptSphereRadius(0.5);
 
-    this->setChassisWorldTransform(btTransform::getIdentity());
 
     vehicle_->setCoordinateSystem(
         0, // right (X)
@@ -103,25 +108,55 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   bounding_dimensions_=getBoundingDims(collision_shape_);
 
-  const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
-  lap_info_.curr_lap_coverage=track_->getCenterline().getCoverage(vehicle_pos);
+  const auto& road=track_->getRoad();
+
+  if(!road.isClosed())
+      throw Exception(
+          Exception::Type::InternalError,
+          "Main road should be closed");
+
+  size_t n=road.getSize(Road::Side::Center);
+  if(n<2)
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line has too few points");
+
+  const btVector3& last=road.getPoint(n-1);
+  const btVector3& first=road.getPoint(0);
+
+  btVector3 segment=first-last;
+
+  if(segment.length2()<g_Epsilon)
+      throw Exception(
+          Exception::Type::InternalError,
+          "Center line cannot have dupliacted points");
+
+  // g_Epsilon is too small when vehicle tilts a little
+  btVector3 before_finish_point=
+      last+ 0.99*segment;
+
+  lap_info_.curr_lap_coverage=
+      road.getCoverage(before_finish_point);
+
+  btTransform transform;
+  transform.setIdentity();
+  transform.setOrigin(before_finish_point);
+
+  this->setChassisWorldTransform(transform);
 }
 
 Vehicle::~Vehicle() noexcept
 {
   if (vehicle_)
-  {
     world_->removeAction(vehicle_.get());
-  }
 
-  if (rigidbody_) world_->removeRigidBody(rigidbody_.get());
+  if (rigidbody_) 
+    world_->removeRigidBody(rigidbody_.get());
 
   if (collision_shape_)
   {
     for (int i = 0; i < collision_shape_->getNumChildShapes(); i++)
-    {
       delete collision_shape_->getChildShape(i);
-    }
   }
 }
 
@@ -131,39 +166,75 @@ void Vehicle::update(btScalar dt)
 
   ghost_sim_.update(dt);
   ghost_info_.enabled=ghost_sim_.isInGhostMode();
+
+  this->updatePitstop(dt);
+
+  btVector3 chassis=this->getChassisWorldTransform().getOrigin();
+  if(chassis.y()<-1000)
+    this->setVehicleToPitstop(Pitstop::Zone::Fix);
+}
+
+void Vehicle::setVehicleToPitstop(Pitstop::Zone zone)
+{
+  const auto& fix_road=
+    track_->getPitstop().getZone(zone);
+  const auto& fix_line_center=fix_road.getLine(boink::Road::Side::Center);
+
+  btVector3 new_pos=fix_line_center.getPoint(fix_line_center.getPointsSize()/2);
+
+  const auto& metrics=fix_road.getClosestMetrics(new_pos);
+
+  btVector3 up_compensate=
+    metrics.normal*(getChassisToGroundDist()+boink::g_GroundMargin);
+  new_pos+=up_compensate;
+  
+  btQuaternion align_to_surface = shortestArcQuat(boink::g_Up, metrics.normal);
+  btVector3 local_forward = quatRotate(align_to_surface, boink::g_Forward);
+
+  btQuaternion align_to_tangent = shortestArcQuat(local_forward, metrics.tangent);
+  btQuaternion final_rot = align_to_tangent * align_to_surface;
+
+  btTransform bt_transform;
+  bt_transform.setIdentity();
+  bt_transform.setOrigin(new_pos);
+  bt_transform.setRotation(final_rot);
+  setChassisWorldTransform(bt_transform);
 }
 
 void Vehicle::updateLapInfo(btScalar dt)
 {
-  btScalar track_length = track_->getCenterline().getLength();
+  btScalar track_length = track_->getRoad().getLength();
 
-  int curr_laps_completed = lap_info_.laps_completed;
+  int curr_lap= lap_info_.current_lap;
 
   const btVector3 vehicle_pos = this->getChassisWorldTransform().getOrigin();
   btScalar prev_coverage = lap_info_.curr_lap_coverage;
-  btScalar curr_coverage = track_->getCenterline().getCoverage(vehicle_pos);
+  btScalar curr_coverage = track_->getRoad().getCoverage(vehicle_pos);
 
   btScalar v = curr_coverage - prev_coverage;
   if (btFabs(v) > track_length / 2.)
   {
     // Means that finish line was crossed
     if (v > 0)
-      curr_laps_completed--;
+      curr_lap--;
     else
     {
       // Only here we calculate the time
       btScalar curr_distance=track_length+v;
       btAssert(curr_distance>=0.f);
-      // First update old time
+
+      if(curr_distance<g_Epsilon)
+        curr_distance=g_Epsilon;
+
       lap_info_.curr_lap_time+=dt*(track_length-prev_coverage)/curr_distance;
 
       // Vehicle can ride this multiple times so we only save the first one
-      if(curr_laps_completed>=LapInfo::kStartingLap&&
+      if(curr_lap>=LapInfo::kStartingLap&&
           lap_info_.lap_times_history.try_emplace(
-          curr_laps_completed,lap_info_.curr_lap_time).second)
+          curr_lap,lap_info_.curr_lap_time).second)
         lap_info_.curr_lap_time=0;
 
-      curr_laps_completed++;
+      curr_lap++;
 
       // Update dt we need to short it
       dt=dt*(curr_coverage/curr_distance);
@@ -173,8 +244,31 @@ void Vehicle::updateLapInfo(btScalar dt)
   btAssert(dt>=0);
   lap_info_.curr_lap_time+=dt;
 
-  lap_info_.laps_completed = curr_laps_completed;
+  lap_info_.current_lap = curr_lap;
   lap_info_.curr_lap_coverage = curr_coverage;
+}
+
+void Vehicle::updatePitstop(btScalar dt)
+{
+  if(this->isVehicleInPitstop(Pitstop::Zone::Fix)>0)
+  {
+    if(!ghost_sim_.isInGhostMode())
+      ghost_sim_.enterGhostModeForce();
+
+    btVector3 vel=rigidbody_->getLinearVelocity();
+    btScalar speed2=vel.length2();
+
+    if(speed2>kMaxFixZoneSpeed*kMaxFixZoneSpeed)
+      pitstop_timer_.reset();
+
+    if(!pitstop_timer_.hasFinised() && speed2>kMaxFixZonePenaltySpeed*kMaxFixZonePenaltySpeed)
+    {
+      btVector3 brake_dir=-vel.normalized();
+      rigidbody_->applyCentralImpulse(brake_dir*kPitstopBrakingForce*dt);
+    }
+  }
+
+  pitstop_timer_.update(dt);
 }
 
 void Vehicle::updateRender(Renderer* renderer)
@@ -235,12 +329,12 @@ std::shared_ptr<piksel::GuiObject> Vehicle::getGui()
 
 void Vehicle::setChassisWorldTransform(const btTransform& transform) 
 { 
-  this->reset();
-
   btTransform offset(btQuaternion::getIdentity(),center_of_mass_);
   btTransform new_transform=transform*offset;
   rigidbody_->setWorldTransform(new_transform);
   motion_state_->setWorldTransform(new_transform);
+
+  this->reset();
 }
 
 btTransform Vehicle::getChassisWorldTransform() const
@@ -285,6 +379,24 @@ btScalar Vehicle::getWheelAngularSpeed(WheelPosition wheel_pos) const
 
 const btTransform& Vehicle::getCenterOfMassTransform() const { return rigidbody_->getCenterOfMassTransform(); }
 
+bool Vehicle::areAllWheelsOnGround() const
+{
+  for(int i=0;i<(int)WheelPosition::Count;i++)
+  {
+    if(!vehicle_->getWheelInfo(i).m_raycastInfo.m_isInContact)
+      return false;
+  }
+
+  return true;
+}
+
+btVector3 Vehicle::getVehicleDirection() const
+{
+  btQuaternion quat=getChassisWorldTransform().getRotation();
+  
+  return quatRotate(quat,g_Forward).normalized();
+}
+
 btScalar Vehicle::getSpeed() const { return rigidbody_->getLinearVelocity().length(); }
 
 btScalar Vehicle::getMass() const { return rigidbody_->getMass(); }
@@ -308,10 +420,10 @@ btScalar Vehicle::getTyreTempCelsius(WheelPosition pos) const
 
 void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
 {
-  assert(vehicle_->getNumWheels() == 4);
+  BOINK_ASSERT(getNumWheels() == 4);
   tuning_ = tuning;
 
-  for (int i = 0; i < vehicle_->getNumWheels(); i++)
+  for (int i = 0; i < getNumWheels(); i++)
   {
     WheelInfo& wheel = vehicle_->getWheelInfo(i);
     wheel.m_suspensionInfo.m_stiffness = tuning_.m_suspensionStiffness;
@@ -328,8 +440,23 @@ void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
 
 const RaycastVehicle::VehicleTuning& Vehicle::getTuning() const
 {
-  assert(vehicle_->getNumWheels() == 4);
+  BOINK_ASSERT(getNumWheels() == 4);
   return tuning_;
+}
+
+std::pair<btScalar,Vehicle::TurnDirection> Vehicle::getSteering(
+    WheelPosition pos) const
+{
+  btScalar rad=vehicle_->getSteeringValue((int)pos);
+
+  TurnDirection dir=TurnDirection::Left;
+  if(rad<0)
+  {
+    dir=TurnDirection::Right;
+    rad*=-1;
+  }
+
+  return {rad,dir};
 }
 
 void Vehicle::setSteering(btScalar value, TurnDirection dir)
@@ -368,6 +495,7 @@ bool Vehicle::setGearUp() { return vehicle_->setGearUp(); }
 void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
 {
   ghost_sim_.enable(ghost_settings);
+  ghost_info_.overlap_target=ghost_settings.exit_delay_when_overlap;
 }
 
 void Vehicle::disableGhostSim()
@@ -400,10 +528,32 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
   std::unique_ptr<btCompoundShape> compound(new btCompoundShape());
   btConvexHullShape* hull = new btConvexHullShape();
 
-  for (const btVector3& v : vertices)
+  float floor = -0.5;
+  float max_z=0;
+  float min_z=3.f;
+  for ( btVector3 v : vertices)
   {
+    if(v.z()>max_z)
+      max_z=v.z();
+
+    if(v.z()<min_z)
+      min_z=v.z();
+
+    if(v.y()<floor)
+      v.setY(floor);
+
     hull->addPoint(v, false);
   }
+
+  // 2. Inject 4 points at the front to FORCE it to be rectangular
+  //float fz = 2.6f; // Front-most Z
+  float hw = 0.9f; // Half-width
+  float hh = -0.3f; // Half-height
+
+  hull->addPoint(btVector3( hw, hh,max_z)); // Top Right Front
+  hull->addPoint(btVector3(-hw, hh,max_z)); // Top Left Front
+  hull->addPoint(btVector3( hw, floor,min_z)); // Top Right Front
+  hull->addPoint(btVector3(-hw, floor,min_z)); // Top Left Front
 
   hull->recalcLocalAabb();
   hull->optimizeConvexHull();
@@ -426,7 +576,7 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
 std::unique_ptr<btRigidBody> Vehicle::createRigidbody(btCompoundShape* col_shape,
       btMotionState* motion_state, btScalar mass)
 {
-  assert(mass != 0.f);
+  BOINK_ASSERT(mass != 0.f);
 
   btVector3 local_inertia(0, 0, 0);
   col_shape->calculateLocalInertia(mass, local_inertia);
@@ -438,7 +588,7 @@ std::unique_ptr<btRigidBody> Vehicle::createRigidbody(btCompoundShape* col_shape
   return body;
 }
 
-Vehicle::BoundingBox Vehicle::getBoundingDims(
+BoundingBox Vehicle::getBoundingDims(
     std::shared_ptr<btCollisionShape> col_shape)
 {
   btVector3 aabb_min;
@@ -477,14 +627,111 @@ void Vehicle::reset()
   rigidbody_->setInterpolationAngularVelocity(btVector3(0, 0, 0));
 
   vehicle_->resetSuspension();
-  for(int i=0; i < vehicle_->getNumWheels(); i++)
+  for(int i=0; i < getNumWheels(); i++)
   {
     auto& wheel_info=vehicle_->getWheelInfo(i);
 
     wheel_info.m_rotation = 0.0f;
     wheel_info.m_deltaRotation = 0.0f;
   }
+
+  // After tp we cannot give vehicle better postion only worse
+  btScalar new_coverage=
+    track_->getRoad().
+    getCoverage(this->getChassisWorldTransform().getOrigin());
+
+  if(new_coverage-lap_info_.curr_lap_coverage>0.1)
+    lap_info_.current_lap--;
+
+  lap_info_.curr_lap_coverage=new_coverage;
+
+  ghost_sim_.enterGhostModeForce();
 }
 
+int Vehicle::isVehicleOnTrack(bool max_lines) const
+{
+  btTransform trans=this->getChassisWorldTransform();
+  btVector3 offset=center_of_mass_;
+
+  return track_->getRoad().isObjectOnRoad(
+      trans.getOrigin(),
+      trans.getRotation(),
+      offset,
+      bounding_dimensions_,
+      max_lines);
+}
+
+int Vehicle::isVehicleInPitstop(bool max_lines) const
+{
+  int wheel_sum=0;
+  for(const auto& [zone_type,_]:track_->getPitstop().getZones())
+    wheel_sum+=this->isVehicleInPitstop(zone_type,max_lines);
+
+  BOINK_ASSERT(wheel_sum<=getNumWheels());
+
+  return wheel_sum;
+}
+
+int Vehicle::isVehicleInPitstop(Pitstop::Zone zone, bool max_lines) const
+{
+  const Road& road=track_->getPitstop().getZone(zone);
+
+  btTransform trans=this->getChassisWorldTransform();
+  btVector3 offset=center_of_mass_;
+
+  return road.isObjectOnRoad(
+      trans.getOrigin(),
+      trans.getRotation(),
+      offset,
+      bounding_dimensions_,
+      max_lines);
+}
+
+bool Vehicle::isOverlapping() const
+{
+  const auto& overlap_vehicles = ghost_info_.overlap_vehicles;
+  if (overlap_vehicles.empty()) 
+    return false;
+
+  return std::any_of(overlap_vehicles.begin(), overlap_vehicles.end(),
+      [](const auto& pair)
+      {
+        return !pair.second.isRunning();
+      });
+}
+
+bool Vehicle::isAnyOverlapTimerRunning() const
+{
+  const auto& overlap_vehicles = ghost_info_.overlap_vehicles;
+  if (overlap_vehicles.empty()) 
+    return false;
+
+  return std::any_of(overlap_vehicles.begin(), overlap_vehicles.end(),
+      [](const auto& pair)
+      {
+        return pair.second.isRunning();
+      });
+}
+
+btScalar Vehicle::biggestLeftOverlapTime() const
+{
+  const auto& overlap_vehicles = ghost_info_.overlap_vehicles;
+  if (overlap_vehicles.empty()) 
+    return 0.f;
+
+  auto it=std::min_element(overlap_vehicles.begin(),overlap_vehicles.end(),
+      [](const auto& p0,const auto& p1)
+      {
+        return p0.second.getCurrent()<p1.second.getCurrent();
+      });
+
+  btScalar time_left=ghost_info_.overlap_target-it->second.getCurrent();
+  return std::max(0.f,time_left);
+}
+
+bool Vehicle::hasStopped() const
+{
+  return this->getSpeed()<0.2f;
+}
 
 }  // namespace boink
