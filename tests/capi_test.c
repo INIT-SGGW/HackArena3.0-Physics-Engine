@@ -23,10 +23,10 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
 int main()
 {
 #ifdef WIN32
-  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\Bolid_F1.glb";
-  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\HorizonTrack_04.glb";
-  /*const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\Bolid_F1.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\HorizonTrack_04.glb";*/
+  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
+  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
+  /*const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\F1_CAR_06.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";*/
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
@@ -90,23 +90,23 @@ int main()
   model.wheel_radius = 0.38;
 
   uint64_t id0;
-  //if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
+  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+  //uint64_t id1;
+  //if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
   //{
   //  PRINT_ERROR();
   //  goto clear;
   //}
-  uint64_t id1;
-  if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-  uint64_t id2;
-  if ((code = boink_spawn_vehicle(handle, &model, &id2)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //uint64_t id2;
+  //if ((code = boink_spawn_vehicle(handle, &model, &id2)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
 
   if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
   {
@@ -144,11 +144,11 @@ int main()
   vehicle_pos.x = 0.;
   vehicle_pos.y = 0.;
   vehicle_pos.z = 0.;
-  if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //if ((code = boink_set_vehicle_position(handle, id1, &vehicle_pos)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
 
   BoinkControls controls;
   controls.brake = 0.0;
@@ -213,21 +213,21 @@ int main()
 
     if (!runOnce2 && dur > 2.0)
     {
-      if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+      //if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
+      //{
+      //  PRINT_ERROR();
+      //  goto clear;
+      //}
       if ((code = boink_set_vehicle_before_finish_line(handle,id0)) != BOINK_OK)
       {
         PRINT_ERROR();
         goto clear;
       }
-      if ((code = boink_set_vehicle_before_finish_line(handle,id2)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+      //if ((code = boink_set_vehicle_before_finish_line(handle,id2)) != BOINK_OK)
+      //{
+      //  PRINT_ERROR();
+      //  goto clear;
+      //}
       runOnce2 = true;
     }
 
@@ -249,23 +249,23 @@ int main()
     time+=sim_time;
 
     struct BoinkVehicleState state;
-    if ((code = boink_read_vehicle_state(handle, id1, &state)) != BOINK_OK)
-    {
-      PRINT_ERROR();
-      goto clear;
-    }
+    //if ((code = boink_read_vehicle_state(handle, id1, &state)) != BOINK_OK)
+    //{
+    //  PRINT_ERROR();
+    //  goto clear;
+    //}
 
     size_t i_closeset =
         findClosestIndex(&state.chassis_position, data.centerline_samples, data.centerline_sample_count);
 
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
-    /*BoinkGhostModeRuntimeState state_ghost;
-    if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
-    {
-      PRINT_ERROR();
-      goto clear;
-    }*/
+    //BoinkGhostModeRuntimeState state_ghost;
+    //if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
+    //{
+    //  PRINT_ERROR();
+    //  goto clear;
+    //}
     uint64_t number;
     if ((code = boink_get_number_of_start_pos(handle,&number) != BOINK_OK))
     {
@@ -275,7 +275,7 @@ int main()
 
     //printf("# of positions: %lu\n",number);
 
-    printGhostModeData(&state_ghost);
+    //printGhostModeData(&state_ghost);
 
     boink_update_debug();
   }

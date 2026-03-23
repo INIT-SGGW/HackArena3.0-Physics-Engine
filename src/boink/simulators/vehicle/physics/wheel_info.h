@@ -103,6 +103,7 @@ struct WheelInfo
 
   btScalar m_traction_force;
   btScalar m_drag_long_force;
+  btScalar m_slip_vec_length;
 
   btScalar m_engineForce;
   btScalar m_steering;

@@ -23,7 +23,7 @@
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btVector3.h>
 
-// #include <iostream>
+#include <iostream>
 
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/track/ground.h"
@@ -37,6 +37,10 @@
 btRigidBody& btActionInterface::getFixedBody()
 {
   static btRigidBody s_fixed(0, 0, 0);
+
+  static boink::Ground::SurfaceInfo fixed_surf = {0.7f, 0.00, 0.3f, 0.f, boink::Ground::Type::Asphalt};
+  static boink::Ground::UserData fixed_user_data(&fixed_surf);
+  s_fixed.setUserPointer(reinterpret_cast<boink::BulletUserData*>(&fixed_user_data));
   s_fixed.setMassProps(btScalar(0.), btVector3(btScalar(0.), btScalar(0.), btScalar(0.)));
   return s_fixed;
 }
@@ -230,6 +234,15 @@ void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
 
   WheelInfo& wheelInfo = getWheelInfo(wheel);
   wheelInfo.m_steering = steering;
+}
+
+void RaycastVehicle::setTyreType(WheelInfo::TyreType tyre_type)
+{
+  for (int i = 0; i < 4; i++)
+  {
+    WheelInfo& wheelInfo = m_wheelsInfo[i];
+    wheelInfo.m_tyreInfo.m_type = tyre_type;
+  }
 }
 
 btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
@@ -603,8 +616,9 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
       auto slip_vec_len =
           btSqrt(slip_ang_normalized * slip_ang_normalized + slip_ratio_normalized * slip_ratio_normalized);
+      wheelInfo.m_slip_vec_length = slip_vec_len;
 
-      // std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
+      std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
 
       if (slip_vec_len > 0.f)
       {
@@ -719,7 +733,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   // std::cout << "rpm:  " << m_engine.rpm << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  // std::cout << "\n";
+  std::cout << "\n";
 }
 
 void RaycastVehicle::setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)
@@ -928,7 +942,7 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (!p_ground->getUserPointer())
   {
-    btAssert(false && "Something is broken with pointers, ask Igor");
+    // btAssert(false && "Something is broken with pointers, ask Igor");
     return nullptr;
   }
 

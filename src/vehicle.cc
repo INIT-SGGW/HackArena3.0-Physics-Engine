@@ -418,6 +418,10 @@ btScalar Vehicle::getTyreTempCelsius(WheelPosition pos) const
   return vehicle_->getWheelInfo((int)pos).m_tyreInfo.m_tempCelsius;
 }
 
+btScalar Vehicle::getTyreSlipLen(WheelPosition pos) const {
+    return vehicle_->getWheelInfo((int)pos).m_slip_vec_length;
+}
+
 void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
 {
   BOINK_ASSERT(getNumWheels() == 4);
@@ -486,6 +490,10 @@ void Vehicle::setBrakeBias(btScalar bias) {
 
 void Vehicle::setDiffSetting(btScalar diffsetting) {
     vehicle_->m_diffSetting = diffsetting;
+}
+
+void Vehicle::setTyreType(WheelInfo::TyreType tyre_type) {
+    vehicle_->setTyreType(tyre_type);
 }
 
 bool Vehicle::setGearDown() { return vehicle_->setGearDown(); }

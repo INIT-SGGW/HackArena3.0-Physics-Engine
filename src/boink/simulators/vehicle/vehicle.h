@@ -116,6 +116,7 @@ class Vehicle : public Simulator
     btScalar getTyreHealth(WheelPosition pos) const;
     WheelInfo::TyreType getTyreType(WheelPosition pos) const;
     btScalar getTyreTempCelsius(WheelPosition pos) const;
+    btScalar getTyreSlipLen(WheelPosition pos) const;
 
     void setTuning(const RaycastVehicle::VehicleTuning& tuning);
     const RaycastVehicle::VehicleTuning& getTuning() const;
@@ -129,6 +130,7 @@ class Vehicle : public Simulator
     void setBrake(btScalar brake);
     void setBrakeBias(btScalar bias);
     void setDiffSetting(btScalar diffsetting);
+    void setTyreType(WheelInfo::TyreType tyre_type);
 
     /// <summary>
     /// Sets gear up.

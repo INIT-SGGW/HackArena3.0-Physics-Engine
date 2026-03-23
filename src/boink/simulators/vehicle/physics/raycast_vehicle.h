@@ -72,6 +72,7 @@ class RaycastVehicle : public btActionInterface
 
   btScalar getSteeringValue(int wheel) const;
   void setSteeringValue(btScalar steering, int wheel);
+  void setTyreType(WheelInfo::TyreType tyre_type);
 
   btScalar rayCast(WheelInfo& wheel);
 
