@@ -23,7 +23,7 @@
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btVector3.h>
 
-#include <iostream>
+// #include <iostream>
 
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/track/ground.h"
@@ -618,7 +618,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
           btSqrt(slip_ang_normalized * slip_ang_normalized + slip_ratio_normalized * slip_ratio_normalized);
       wheelInfo.m_slip_vec_length = slip_vec_len;
 
-      std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
+      // std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
 
       if (slip_vec_len > 0.f)
       {
@@ -733,7 +733,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
   // std::cout << "rpm:  " << m_engine.rpm << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  std::cout << "\n";
+  // std::cout << "\n";
 }
 
 void RaycastVehicle::setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)
