@@ -18,11 +18,17 @@
 #include <LinearMath/btTransform.h>
 #include <LinearMath/btVector3.h>
 
+#include <array>
+
+#include "boink/simulators/vehicle/physics/helpers/curve.h"
+
 class btRigidBody;
 namespace boink
 {
 
 struct WheelInfoConstructionInfo;
+struct TyreTypeProperties;
+
 struct WheelInfo
 {
   struct RaycastInfo
@@ -63,6 +69,10 @@ struct WheelInfo
     btScalar m_health = btScalar(1.0);
     btScalar m_tempCelsius = btScalar(90.0);
 
+    static btScalar heatingConst;  // how fast energy is converted to heat
+    static btScalar coolingConst;  // how fast tyre cools down
+    static btScalar wearRate;      // how fast tyre wears down
+
     static btScalar s_softWearRatePerMin;
     static btScalar s_hardWearRatePerMin;
     static btScalar s_wetWearRatePerMin;
@@ -92,6 +102,8 @@ struct WheelInfo
   btScalar m_slipRatio;
 
   btScalar m_traction_force;
+  btScalar m_drag_long_force;
+  btScalar m_slip_vec_length;
 
   btScalar m_engineForce;
   btScalar m_steering;
@@ -116,6 +128,7 @@ struct WheelInfo
 
   static constexpr float kWheelMass = 16.0f;
   static constexpr float kWheelMassDistCoeff = 0.78f;
+  static const std::array<TyreTypeProperties, 3> kTyresTypesInfo;
 };
 
 struct WheelInfoConstructionInfo
@@ -139,4 +152,17 @@ struct WheelInfoConstructionInfo
 
   bool m_bIsFrontWheel;
 };
+
+struct TyreTypeProperties
+{
+  btScalar baseDryGrip;
+  btScalar baseWetGrip;
+  btScalar wearRate;
+  btScalar optimalTemp;  // TODO: this is potentally uneeded, if truly it is then delete it
+  btScalar heatingFactor;
+
+  Curve tempToGripCoeff;
+  Curve tempToStiffCoeff;
+};
+
 }  // namespace boink

@@ -16,6 +16,7 @@
 
 #include <BulletDynamics/Dynamics/btActionInterface.h>
 
+#include "boink/simulators/track/ground.h"
 #include "boink/simulators/vehicle/physics/helpers/car-drive-parts/engine.h"
 #include "boink/simulators/vehicle/physics/helpers/car-drive-parts/gearbox.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
@@ -71,7 +72,7 @@ class RaycastVehicle : public btActionInterface
 
   btScalar getSteeringValue(int wheel) const;
   void setSteeringValue(btScalar steering, int wheel);
-  void setBrake(btScalar brake);
+  void setTyreType(WheelInfo::TyreType tyre_type);
 
   btScalar rayCast(WheelInfo& wheel);
 
@@ -115,6 +116,9 @@ class RaycastVehicle : public btActionInterface
   /// </summary>
   btVector3 getWheelContactVel(WheelInfo& wheel) const;
 
+  /// <returns>Information about surface under the wheel or nullptr if there is no surface under the wheel.</returns>
+  const Ground::SurfaceInfo* getSurfInfo(WheelInfo& wheel) const;
+
   inline btRigidBody* getRigidBody() { return m_chassisBody; }
   const btRigidBody* getRigidBody() const { return m_chassisBody; }
 
@@ -137,14 +141,17 @@ class RaycastVehicle : public btActionInterface
   int getUserConstraintId() const { return m_userConstraintId; }
 
   btScalar m_throttle;
+  btScalar m_steeringValue;
+  /// <summary>
+  /// 1.0 - full on front wheels,
+  /// 0.0 - full on rear wheels
+  /// </summary>
+  btScalar m_brakeBias;
+  btScalar m_brake;
+  btScalar m_diffSetting;
 
  private:
   void applyAerodynamics(btScalar step);
-  void updateTyres(btScalar step);
-  void updateFrictionBasedOnSurface(btScalar step);
-
- private:
-  static btScalar getTyreWearRatePerMin(WheelInfo::TyreType type);
 
  private:
   btAlignedObjectArray<btVector3> m_forwardWS;
@@ -156,7 +163,7 @@ class RaycastVehicle : public btActionInterface
 
   VehicleRaycaster* m_vehicleRaycaster;
   btScalar m_pitchControl;
-  btScalar m_steeringValue;
+
   btScalar m_currentVehicleSpeedKmHour;
 
   btRigidBody* m_chassisBody;
@@ -171,15 +178,22 @@ class RaycastVehicle : public btActionInterface
 
   bool m_drawEnable = true;
 
+  static constexpr float kAirTemperature = 20.f;  // [Celsius]
   static constexpr float kTransmissionEfficiency = 0.7f;
   static constexpr float kSmoothingTractionForceFactor = 0.35f;
   static constexpr float kBrakeTorque = 3300.0f;  // [Nm]
+  static constexpr float kMinDiff = 10.f;
+  static constexpr float kMaxDiff = 300.f;
+  static constexpr float kSlipRatioPeak = 0.1f;  // slip ratio with maximum longitudinal grip
   static inline const Curve kSlipRatioToGrip =
       Curve({0.000, 1.100, 1.600, 1.500, 1.350, 1.250, 1.200, 1.150, 1.120, 1.100, 1.080,
              1.060, 1.050, 1.040, 1.030, 1.020, 1.010, 1.000, 1.000, 1.000, 1.000},
             0.05f, 0.0f);
+  static constexpr float kSlipAnglePeak = 0.08f;  // slip angle with maximum lateral grip in radians (5.7 degrees)
   static inline const Curve kSlipAngleToGrip = Curve({0.00, 0.50, 0.95, 1.35, 1.55, 1.50, 1.35, 1.20, 1.12, 1.08, 1.06,
                                                       1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
                                                      0.02f, 0.0f);
+  static inline const Curve kWearToGripCoeff =
+      Curve({1.00, 1.00, 0.99, 0.98, 0.97, 0.96, 0.94, 0.91, 0.88, 0.86, 0.85}, -0.1f, 1.f);
 };
 }  // namespace boink

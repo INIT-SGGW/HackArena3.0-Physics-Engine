@@ -116,6 +116,7 @@ class Vehicle : public Simulator
     btScalar getTyreHealth(WheelPosition pos) const;
     WheelInfo::TyreType getTyreType(WheelPosition pos) const;
     btScalar getTyreTempCelsius(WheelPosition pos) const;
+    btScalar getTyreSlipLen(WheelPosition pos) const;
 
     void setTuning(const RaycastVehicle::VehicleTuning& tuning);
     const RaycastVehicle::VehicleTuning& getTuning() const;
@@ -127,6 +128,9 @@ class Vehicle : public Simulator
     void setSteering(btScalar value, TurnDirection dir);
     void setEngineForce(btScalar force);
     void setBrake(btScalar brake);
+    void setBrakeBias(btScalar bias);
+    void setDiffSetting(btScalar diffsetting);
+    void setTyreType(WheelInfo::TyreType tyre_type);
 
     /// <summary>
     /// Sets gear up.
@@ -194,6 +198,9 @@ class Vehicle : public Simulator
 
     std::shared_ptr<const Track> track_;
 
+    /// <summary>
+    /// In radians.
+    /// </summary>
     btScalar max_steer_angle_;
     RaycastVehicle::VehicleTuning tuning_;
     

@@ -355,6 +355,26 @@ void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle)
   BOINK_INFO("Destroyed vehicle mesh");
 }
 
+int boink_get_vehicle_dimensions(BoinkHandle handle, uint64_t vehicle_id, Real* out_width, 
+    Real* out_depth)
+{
+    boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_width);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_depth);
+
+    std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+  auto dims = vehicle->getBoundingDims();
+  *out_width = (dims.top_left - dims.top_right).length();
+  *out_depth = (dims.top_left - dims.bottom_left).length();
+  return BOINK_OK;
+}
+
 int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
 {
   boink::Simulation* p_sim=(boink::Simulation*)handle;
@@ -634,7 +654,7 @@ int boink_spawn_vehicle(
   create_info.tuning.m_suspensionDamping=2.5f;
   create_info.tuning.m_suspensionCompression=2.5f;
 
-  create_info.tyre_type=boink::WheelInfo::TyreType::Wet;
+  create_info.tyre_type=boink::WheelInfo::TyreType::Hard;
 
   // TODO
   // I think try is not needed here but it must be checked
@@ -686,6 +706,20 @@ int boink_set_controls(
         "was lesser than 0 or greater than 1");
   }
 
+  if(controls->brake_balancer>1. || controls->brake_balancer<0.)
+  {
+    RETURN_STATUS_INVALID_ARG(
+        controls->brake_balancer,
+        "was lesser than 0 or greater than 1");
+  }
+
+  if(controls->differential_lock>1. || controls->differential_lock<0.)
+  {
+    RETURN_STATUS_INVALID_ARG(
+        controls->differential_lock,
+        "was lesser than 0 or greater than 1");
+  }
+
   if(controls->steer>1. || controls->steer<-1.)
   {
     RETURN_STATUS_INVALID_ARG(
@@ -702,6 +736,8 @@ int boink_set_controls(
 
   vehicle->setEngineForce(controls->throttle);
   vehicle->setBrake(controls->brake);
+  vehicle->setBrakeBias(controls->brake_balancer);
+  vehicle->setDiffSetting(controls->differential_lock);
 
   Real steer=std::abs(controls->steer);
   boink::Vehicle::TurnDirection dir=
@@ -955,6 +991,31 @@ int boink_set_vehicle_orientation(
   return BOINK_OK;
 }
 
+int boink_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreType tyre_type)
+{
+    boink::Race* p_race=(boink::Race*)h;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      h);
+  
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+
+   if(tyre_type < 0 || tyre_type > 2)
+  {
+    RETURN_STATUS_INVALID_ARG(
+        controls->gear_shift,
+        "was lesser than 0 or greater than 2");
+  }
+
+   if (vehicle->isVehicleInPitstop(boink::Pitstop::Zone::Fix) == 4 && vehicle->hasStopped())
+   {
+       vehicle->setTyreType((boink::WheelInfo::TyreType)(int)tyre_type);
+       return BOINK_OK;
+   }
+   else
+       return BOINK_CONDITION_NOT_MET;
+}
 
 int boink_set_vehicle_at_start_pos(
     BoinkHandle handle,
@@ -1027,7 +1088,7 @@ int boink_read_vehicle_state(
   out_state->wheel_speeds[2] = vehicle->getWheelAngularSpeed(boink::WheelPosition::RearLeft);
   out_state->wheel_speeds[3] = vehicle->getWheelAngularSpeed(boink::WheelPosition::RearRight);
   
-  out_state->brake_applied=0.0;
+  out_state->brake_applied = 0.0;
   out_state->throttle_applied=0.0;
 
   out_state->vehicle_id=vehicle_id;
@@ -1049,6 +1110,9 @@ int boink_read_vehicle_state(
     out_state->tyre_temperature_celsius[wheel_index]=vehicle->getTyreTempCelsius(wheel_pos);
     out_state->wheel_speeds[wheel_index]=
       vehicle->getWheelAngularSpeed(wheel_pos);
+    out_state->tyre_health[wheel_index] = vehicle->getTyreHealth(wheel_pos);
+    out_state->tyre_type = (BoinkTyreType)(int)vehicle->getTyreType(wheel_pos);
+    out_state->tyre_slip[wheel_index] = vehicle->getTyreSlipLen(wheel_pos);
 
     if(wheel_index<2){
       auto pair=vehicle->getSteering(wheel_pos);

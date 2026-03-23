@@ -1,3 +1,4 @@
+// clang-format off
 #include "boink/gui/vehicle_gui.h"
 
 #include <imgui.h>
@@ -172,7 +173,7 @@ namespace boink
 
         if(ImGui::CollapsingHeader(Ground::toString(sur_info->type)))
         {
-          ImGui::Text("Resistive coef: %f",sur_info->resistive_coef);
+          ImGui::Text("Grip coefficient: %f",sur_info->grip_coeff);
           ImGui::Text("Rolling resit: %f",sur_info->rolling_resistance);
           ImGui::Text("Wetness: %f",sur_info->wetness);
         }

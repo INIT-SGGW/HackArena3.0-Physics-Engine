@@ -418,6 +418,10 @@ btScalar Vehicle::getTyreTempCelsius(WheelPosition pos) const
   return vehicle_->getWheelInfo((int)pos).m_tyreInfo.m_tempCelsius;
 }
 
+btScalar Vehicle::getTyreSlipLen(WheelPosition pos) const {
+    return vehicle_->getWheelInfo((int)pos).m_slip_vec_length;
+}
+
 void Vehicle::setTuning(const RaycastVehicle::VehicleTuning& tuning)
 {
   BOINK_ASSERT(getNumWheels() == 4);
@@ -466,6 +470,9 @@ void Vehicle::setSteering(btScalar value, TurnDirection dir)
 
   // User should always set value to [0-1]
 
+  // only for debugging purpose, delete in future
+  vehicle_->m_steeringValue = radians;
+
   vehicle_->setSteeringValue(radians, (int)WheelPosition::FrontLeft);
   vehicle_->setSteeringValue(radians, (int)WheelPosition::FrontRight);
 }
@@ -474,7 +481,19 @@ void Vehicle::setEngineForce(btScalar force) { vehicle_->m_throttle = force; }
 
 void Vehicle::setBrake(btScalar brake)
 {
-  vehicle_->setBrake(brake);
+  vehicle_->m_brake = brake;
+}
+
+void Vehicle::setBrakeBias(btScalar bias) {
+    vehicle_->m_brakeBias = bias;
+}
+
+void Vehicle::setDiffSetting(btScalar diffsetting) {
+    vehicle_->m_diffSetting = diffsetting;
+}
+
+void Vehicle::setTyreType(WheelInfo::TyreType tyre_type) {
+    vehicle_->setTyreType(tyre_type);
 }
 
 bool Vehicle::setGearDown() { return vehicle_->setGearDown(); }
