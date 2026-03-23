@@ -38,9 +38,9 @@ namespace boink
     {
       if(isInGhostMode())
       {
-        force_timer_.update(dt);
         if(force_timer_.hasFinised())
           this->exitGhostMode();
+        force_timer_.update(dt);
       }
 
       return;
@@ -88,6 +88,11 @@ namespace boink
     is_in_ghost_mode_=true;
     this->reset();
 
+    world_->getPairCache()->cleanProxyFromPairs(
+        vehicle_->getRigidBody()->getBroadphaseHandle(), 
+        world_->getDispatcher()
+    );
+
     vehicle_->getRigidBody()->activate(true);
   }
 
@@ -95,6 +100,11 @@ namespace boink
   {
     is_in_ghost_mode_=false;
     this->reset();
+
+    world_->getPairCache()->cleanProxyFromPairs(
+        vehicle_->getRigidBody()->getBroadphaseHandle(), 
+        world_->getDispatcher()
+    );
 
     vehicle_->getRigidBody()->activate(true);
   }
@@ -104,6 +114,6 @@ namespace boink
     enter_timer_.reset(settings_.enter_delay);
     exit_timer_.reset(settings_.exit_delay);
 
-    force_timer_.reset(settings_.exit_delay);
+    force_timer_.reset(settings_.exit_delay_when_overlap);
  }
 }

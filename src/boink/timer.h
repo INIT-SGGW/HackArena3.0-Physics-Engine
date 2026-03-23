@@ -17,7 +17,8 @@ namespace boink
 
     Timer(btScalar elapsed,btScalar target_duration)
       :elapsed_(elapsed),target_(target_duration),has_finised_(elapsed==target_duration)
-    {}
+    {
+    }
 
     void update(btScalar dt)
     {

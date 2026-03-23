@@ -66,14 +66,20 @@ int main()
     return -1;
   }
   BoinkGhostModeSettings settings;
-  settings.enter_delay_ms = 5000.f;
-  settings.exit_delay_ms = 2000.f;
-  settings.enter_speed_max_mps = 5.f;
-  settings.exit_speed_min_mps = 10.f;
+  settings.enter_delay_ms = 1;
+  settings.exit_delay_ms = 1;
+  settings.enter_speed_max_mps = 0.f;
+  settings.exit_speed_min_mps = 00.f;
   settings.until_completed_laps = 0;
-  settings.vehicle_overlap_exit_delay_ms = 3000.f;
+  settings.vehicle_overlap_exit_delay_ms = 1;
 
   if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+
+  if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
@@ -84,7 +90,7 @@ int main()
   model.center_of_mass.y = -0.4;
   model.center_of_mass.z = 0.;
   model.mass = 800.;
-  model.max_steer_angle = 20;
+  model.max_steer_angle = 90;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.01;
   model.wheel_radius = 0.38;
@@ -95,31 +101,18 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  //uint64_t id1;
-  //if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
+      uint64_t id1;
+      if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
   //uint64_t id2;
   //if ((code = boink_spawn_vehicle(handle, &model, &id2)) != BOINK_OK)
   //{
   //  PRINT_ERROR();
   //  goto clear;
   //}
-
-  if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-
-  model.suspension_rest_length = 0.41;
-  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
 
   //BoinkQuaternion vehicle_rot;
   //vehicle_rot.x = 0.;
@@ -170,6 +163,7 @@ int main()
   bool runOnce = false;
   bool runOnce2 = false;
 
+
   int pos=1;
   Real time=0.f;
   while (!boink_should_close_debug())
@@ -203,21 +197,17 @@ int main()
 
     if (!runOnce && dur > 0.6)
     {
-      if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+
       runOnce = true;
     }
 
     if (!runOnce2 && dur > 2.0)
     {
-      //if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
+      if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
       if ((code = boink_set_vehicle_before_finish_line(handle,id0)) != BOINK_OK)
       {
         PRINT_ERROR();
@@ -347,6 +337,7 @@ void printTrackData(const BoinkTrackData* track_data)
   printStateReal(track_data->lap_length_m);
   printStateInt(track_data->centerline_sample_count);
 
+  return;
   const BoinkCenterlineSample* samples = track_data->centerline_samples;
   size_t num_samples = track_data->centerline_sample_count;
   const BoinkCenterlineSample* enter_samples=track_data->pitstop_data.enter_centerline_samples;
