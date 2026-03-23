@@ -218,14 +218,14 @@ void Line::reverse()
 
 btVector3& Line::getPoint(size_t index)
 {
-  btAssert(index<points_dist_.size());
+  BOINK_ASSERT(index<points_dist_.size());
 
   return points_dist_[index].first;
 }
 
 const btVector3& Line::getPoint(size_t index) const
 {
-  btAssert(index<points_dist_.size());
+  BOINK_ASSERT(index<points_dist_.size());
   return points_dist_.at(index).first;
 }
 
