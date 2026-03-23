@@ -18,6 +18,7 @@
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
 #include "boink/simulators/vehicle/physics/ray_result_callback.h"
+#include "boink/assert.h"
 
 namespace boink
 {
@@ -33,7 +34,7 @@ namespace boink
   {
     Vehicle::UserData* user_data=
       reinterpret_cast<Vehicle::UserData*>(m_chassis->getUserPointer());
-    btAssert(user_data!=nullptr);
+    BOINK_ASSERT(user_data!=nullptr);
 
     RayResultCallback rayCallback(from, to,user_data->ghost_info->enabled,m_chassis);
     rayCallback.m_collisionFilterGroup=Collision::Group::Vehicle;

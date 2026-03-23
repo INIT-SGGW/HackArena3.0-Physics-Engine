@@ -10,6 +10,7 @@
 #include "boink/simulators/vehicle/vehicle.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/exception.h"
+#include "boink/assert.h"
 
 namespace boink
 {
@@ -203,7 +204,7 @@ namespace boink
       case WheelInfo::TyreType::Wet:
         return "wet";
       default:
-        btAssert(false && "Unknown TyreType");
+        BOINK_ASSERT(false && "Unknown TyreType");
         return "unknown";
     }
   }
@@ -221,7 +222,7 @@ namespace boink
       case WheelPosition::RearRight:
         return "Rear right";
       default:
-        btAssert(false && "Unknown WheelPosition");
+        BOINK_ASSERT(false && "Unknown WheelPosition");
         return "unknown";
     }
   }

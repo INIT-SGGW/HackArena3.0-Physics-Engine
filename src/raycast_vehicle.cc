@@ -31,6 +31,7 @@
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/wheel_position.h"
+#include "boink/assert.h"
 
 #define ROLLING_INFLUENCE_FIX
 
@@ -121,7 +122,7 @@ const btTransform& RaycastVehicle::getChassisWorldTransform() const
 
 const btTransform& RaycastVehicle::getWheelTransformWS(int wheelIndex) const
 {
-  btAssert(wheelIndex < getNumWheels());
+  BOINK_ASSERT(wheelIndex < getNumWheels());
 
   const WheelInfo& wheel = m_wheelsInfo[wheelIndex];
   return wheel.m_worldTransform;
@@ -210,14 +211,14 @@ WheelInfo& RaycastVehicle::addWheel(const btVector3& connectionPointCS, const bt
 
 const WheelInfo& RaycastVehicle::getWheelInfo(int index) const
 {
-  btAssert((index >= 0) && (index < getNumWheels()));
+  BOINK_ASSERT((index >= 0) && (index < getNumWheels()));
 
   return m_wheelsInfo[index];
 }
 
 WheelInfo& RaycastVehicle::getWheelInfo(int index)
 {
-  btAssert((index >= 0) && (index < getNumWheels()));
+  BOINK_ASSERT((index >= 0) && (index < getNumWheels()));
 
   return m_wheelsInfo[index];
 }
@@ -230,7 +231,7 @@ btScalar RaycastVehicle::getSteeringValue(int wheel) const { return getWheelInfo
 
 void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
 {
-  btAssert(wheel >= 0 && wheel < getNumWheels());
+  BOINK_ASSERT(wheel >= 0 && wheel < getNumWheels());
 
   WheelInfo& wheelInfo = getWheelInfo(wheel);
   wheelInfo.m_steering = steering;
@@ -262,7 +263,7 @@ btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
 
   VehicleRaycaster::VehicleRaycasterResult rayResults;
 
-  btAssert(m_vehicleRaycaster);
+  BOINK_ASSERT(m_vehicleRaycaster);
 
   btRigidBody* object = m_vehicleRaycaster->castRay(source, target, rayResults);
 
@@ -934,7 +935,7 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (!p_ground)
   {
-    btAssert(false &&
+    BOINK_ASSERT(false &&
              "Wheel is not in contact with ground. This should be unreachable, because this method is called only if "
              "wheel is in contact.");
     return nullptr;
@@ -942,7 +943,7 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (!p_ground->getUserPointer())
   {
-    // btAssert(false && "Something is broken with pointers, ask Igor");
+    // BOINK_ASSERT(false && "Something is broken with pointers, ask Igor");
     return nullptr;
   }
 
@@ -959,7 +960,7 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (user_data->getType() != BulletUserData::Type::Ground)
   {
-    btAssert(false && "User data is not Type::Ground");
+    BOINK_ASSERT(false && "User data is not Type::Ground");
     return nullptr;
   }
 
@@ -971,7 +972,7 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (surface_type < (Ground::Type)0 || surface_type >= Ground::Type::Count)
   {
-    btAssert(false && "Invalid Ground::Type");
+    BOINK_ASSERT(false && "Invalid Ground::Type");
     return nullptr;
   }
   else

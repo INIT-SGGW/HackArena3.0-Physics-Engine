@@ -221,7 +221,7 @@ void Vehicle::updateLapInfo(btScalar dt)
     {
       // Only here we calculate the time
       btScalar curr_distance=track_length+v;
-      btAssert(curr_distance>=0.f);
+      BOINK_ASSERT(curr_distance>=0.f);
 
       if(curr_distance<g_Epsilon)
         curr_distance=g_Epsilon;
@@ -241,7 +241,7 @@ void Vehicle::updateLapInfo(btScalar dt)
     }
   }
   
-  btAssert(dt>=0);
+  BOINK_ASSERT(dt>=0);
   lap_info_.curr_lap_time+=dt;
 
   lap_info_.current_lap = curr_lap;
@@ -352,7 +352,7 @@ btTransform Vehicle::getChassisWorldTransform() const
 
 btScalar Vehicle::getChassisToGroundDist() const
 {
-  btAssert((btVector3(0.f,1.f,0.f)-g_Up).length2()<g_Epsilon);
+  BOINK_ASSERT((btVector3(0.f,1.f,0.f)-g_Up).length2()<g_Epsilon);
 
   // TODO i dont know but this function is not ideal
   const auto& wheel_info=vehicle_->getWheelInfo((int)WheelPosition::RearLeft);

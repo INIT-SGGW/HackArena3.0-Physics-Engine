@@ -6,6 +6,7 @@
 #include "boink/exception.h"
 #include "boink/logger.h"
 #include "boink/utility.h"
+#include "boink/assert.h"
 
 #include <algorithm>
 #include <cassert>
@@ -183,7 +184,7 @@ btVector3 Line::getPointInterpolated(
   btVector3 ab=b-a;
   btScalar ab_len2=ab.length2();
 
-  btAssert(ab_len2>g_Epsilon);
+  BOINK_ASSERT(ab_len2>g_Epsilon);
   if(ab_len2<g_Epsilon)
     return a;
 
