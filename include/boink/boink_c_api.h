@@ -911,6 +911,23 @@ BOINK_API int boink_create_vehicle_mesh(const char *glb_model_filename,
 BOINK_API void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle);
 
 /**
+ * Retrieves the dimensions of a specific vehicle.
+ *
+ * Parameters:
+ * - `handle` - handle to a valid race.
+ * - `vehicle_id` - identifier of the vehicle.
+ * - `out_width` - non-null pointer receiving the vehicle width.
+ * - `out_depth` - non-null pointer receiving the vehicle depth (length).
+ *
+ * Returns:
+ * - `BOINK_OK` on success.
+ * - `BOINK_ERR_NOT_FOUND` if the vehicle does not exist.
+ * - An error code on failure.
+ */
+BOINK_API int boink_get_vehicle_dimensions(BoinkHandle handle, uint64_t vehicle_id, 
+    Real* out_width, Real* out_depth);
+
+/**
  * Advances the race by a fixed time step.
  *
  * Parameters:

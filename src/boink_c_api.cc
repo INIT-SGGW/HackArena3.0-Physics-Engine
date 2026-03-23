@@ -355,6 +355,26 @@ void boink_destroy_vehicle_mesh(BoinkVehicleMeshHandle handle)
   BOINK_INFO("Destroyed vehicle mesh");
 }
 
+int boink_get_vehicle_dimensions(BoinkHandle handle, uint64_t vehicle_id, Real* out_width, 
+    Real* out_depth)
+{
+    boink::Race* p_race=(boink::Race*)handle;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      handle);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_width);
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+      out_depth);
+
+    std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle=p_race->getVehicle(vehicle_id));
+  auto dims = vehicle->getBoundingDims();
+  *out_width = (dims.top_left - dims.top_right).length();
+  *out_depth = (dims.top_left - dims.bottom_left).length();
+  return BOINK_OK;
+}
+
 int boink_get_race_duration(BoinkHandle handle, Real* out_dur)
 {
   boink::Simulation* p_sim=(boink::Simulation*)handle;

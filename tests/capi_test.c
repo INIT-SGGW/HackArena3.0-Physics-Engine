@@ -277,6 +277,15 @@ int main()
 
     //printGhostModeData(&state_ghost);
 
+    
+    Real width;
+    Real depth;
+    if ((code = boink_get_vehicle_dimensions(handle, id0, &width, &depth) != BOINK_OK))
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
+    printf("width: %f    depth: %f \n", width, depth);
     boink_update_debug();
   }
 
