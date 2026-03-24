@@ -26,13 +26,12 @@ int main()
   //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
   //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
   const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\F1_CAR_06.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\Untitled.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
   const char* track_filename = "horizon_05.glb";
 #endif
-
   unsigned int major, minor, patch;
   boink_get_engine_version(&major, &minor, &patch);
   printf("Engine verision: %d.%d.%d\n", major, minor, patch);
