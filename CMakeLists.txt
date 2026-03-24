@@ -44,6 +44,8 @@ target_link_libraries(boink PUBLIC piksel::piksel)
 find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(boink PRIVATE spdlog::spdlog)
 
+target_compile_definitions(boink PRIVATE SPDLOG_HEADER_ONLY)
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
