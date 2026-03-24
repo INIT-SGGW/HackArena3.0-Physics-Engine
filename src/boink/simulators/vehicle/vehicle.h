@@ -53,7 +53,7 @@ class Vehicle : public Simulator
 
     struct GhostModeInfo
     {
-      bool enabled=false;
+      bool enabled=true;
 
       btScalar overlap_target=0.f;
       std::unordered_map<btCollisionObject*,Timer> overlap_vehicles;

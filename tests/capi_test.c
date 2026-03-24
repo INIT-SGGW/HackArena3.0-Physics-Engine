@@ -30,7 +30,7 @@ int main()
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
-  const char* track_filename = "horizon_05.glb";
+  const char* track_filename = "SnakeTrack_02.glb";
 #endif
   unsigned int major, minor, patch;
   boink_get_engine_version(&major, &minor, &patch);
@@ -68,15 +68,15 @@ int main()
   settings.enter_delay_ms = 0;
   settings.exit_delay_ms = 0;
   settings.enter_speed_max_mps = 0.f;
-  settings.exit_speed_min_mps = 00.f;
+  settings.exit_speed_min_mps = 0.f;
   settings.until_completed_laps = 0;
   settings.vehicle_overlap_exit_delay_ms = 0;
 
-  //if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
+  if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
 
   if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
   {

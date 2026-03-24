@@ -178,7 +178,9 @@ namespace boink
     if(steps==0)
       return 0;
 
-    updateOverlapLists(simulation_step);
+    if(!gui_->freeze)
+      updateOverlapLists(simulation_step);
+      
     return steps;
   }
 
@@ -199,8 +201,6 @@ namespace boink
         vehicle.second->getUserData()->ghost_info->overlap_vehicles;
       for(auto it=overlap_vehicles.begin();it!=overlap_vehicles.end();)
       {
-        
-
         if(it->second.hasFinised())
           it=overlap_vehicles.erase(it);
         else
@@ -208,7 +208,6 @@ namespace boink
           it->second.update(dt);
           ++it;
         }
-          
       }
     }
 

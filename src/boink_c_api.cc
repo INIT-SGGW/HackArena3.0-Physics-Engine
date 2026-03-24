@@ -659,8 +659,8 @@ int boink_spawn_vehicle(
   // TODO
   // I think try is not needed here but it must be checked
   HANDLE_EXCEPTIONS(
-    *out_vehicle_id = p_race->addVehicle(create_info);
-    boink_set_vehicle_to_pitstop(handle, *out_vehicle_id));
+    *out_vehicle_id = p_race->addVehicle(create_info));
+    //boink_set_vehicle_before_finish_line(handle, *out_vehicle_id));
 
   return BOINK_OK;
 }

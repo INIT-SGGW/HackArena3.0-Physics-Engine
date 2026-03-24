@@ -43,10 +43,12 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
       ghost_sim_(world_.get(),vehicle_.get(),&lap_info_),
-      pitstop_timer_(kBrakingDuration,kBrakingDuration),
+      pitstop_timer_(kBrakingDuration),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
+    pitstop_timer_.setElapsedToFinish();
+
     world_->addRigidBody(
         rigidbody_.get(),
         Collision::Group::Vehicle,
@@ -165,7 +167,6 @@ void Vehicle::update(btScalar dt)
   this->updateLapInfo(dt);
 
   ghost_sim_.update(dt);
-  ghost_info_.enabled=ghost_sim_.isInGhostMode();
 
   this->updatePitstop(dt);
 
@@ -509,7 +510,6 @@ void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
 void Vehicle::disableGhostSim()
 {
   ghost_sim_.disable();
-  ghost_info_.enabled=false;
 }
 
 btVector3 Vehicle::correctCOM(const btVector3& com,const VehicleMesh* mesh)

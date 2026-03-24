@@ -52,31 +52,28 @@ namespace boink
     if(this->isEnterSpeedConditionMet()|| 
        isCompletedLapsConditionMet()) 
     {
-      exit_timer_.reset();
-
       if(isInGhostMode())
         return;
 
-      enter_timer_.update(dt);
       if(enter_timer_.hasFinised())
         this->enterGhostMode();
+      enter_timer_.update(dt);
     }
-
-    if(this->isExitSpeedConditionMet())
+    else if(this->isExitSpeedConditionMet())
     {
-      enter_timer_.reset();
-
       if(!isInGhostMode())
         return;
 
-      exit_timer_.update(dt);
-
       if(exit_timer_.hasFinised())
         this->exitGhostMode();
+      exit_timer_.update(dt);
     }
 
-    if(!this->isEnterSpeedConditionMet() && !this->isExitSpeedConditionMet())
-      this->reset();
+    if(!this->isEnterSpeedConditionMet())
+      enter_timer_.reset();
+    if(!this->isExitSpeedConditionMet())
+      exit_timer_.reset();
+
   }
 
   void GhostMode::enterGhostModeForce()
@@ -103,8 +100,8 @@ namespace boink
   void GhostMode::exitGhostMode()
   {
     is_in_ghost_mode_=false;
-    reinterpret_cast<Vehicle::UserData*>(
-      vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = false;
+    //reinterpret_cast<Vehicle::UserData*>(
+    //  vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = false;
 
     this->reset();
 

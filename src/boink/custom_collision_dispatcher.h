@@ -3,6 +3,7 @@
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/vehicle.h"
+#include "boink/logger.h"
 
 namespace boink
 {
