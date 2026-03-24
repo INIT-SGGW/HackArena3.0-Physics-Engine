@@ -23,10 +23,10 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
 int main()
 {
 #ifdef WIN32
-  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
-  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
-  /*const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\F1_CAR_06.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";*/
+  //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
+  //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
+  const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\F1_CAR_06.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\Untitled.glb";
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
   // const char* track_filename = "lowpoly_track_1_test_5.glb";
@@ -66,18 +66,18 @@ int main()
     return -1;
   }
   BoinkGhostModeSettings settings;
-  settings.enter_delay_ms = 1;
-  settings.exit_delay_ms = 1;
+  settings.enter_delay_ms = 0;
+  settings.exit_delay_ms = 0;
   settings.enter_speed_max_mps = 0.f;
   settings.exit_speed_min_mps = 00.f;
   settings.until_completed_laps = 0;
-  settings.vehicle_overlap_exit_delay_ms = 1;
+  settings.vehicle_overlap_exit_delay_ms = 0;
 
-  if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
+  //if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
+  //{
+  //  PRINT_ERROR();
+  //  goto clear;
+  //}
 
   if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
   {
@@ -101,12 +101,15 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-      uint64_t id1;
-      if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+  
+  uint64_t id1;
+  if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+  
+  
   //uint64_t id2;
   //if ((code = boink_spawn_vehicle(handle, &model, &id2)) != BOINK_OK)
   //{
@@ -163,9 +166,9 @@ int main()
   bool runOnce = false;
   bool runOnce2 = false;
 
-
   int pos=1;
   Real time=0.f;
+  
   while (!boink_should_close_debug())
   {
     Real now = boink_get_time_debug();
@@ -195,9 +198,8 @@ int main()
       }
     }
 
-    if (!runOnce && dur > 0.6)
+    if (!runOnce && dur > 2.6)
     {
-
       runOnce = true;
     }
 

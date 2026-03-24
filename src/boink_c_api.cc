@@ -203,13 +203,13 @@ int boink_get_last_error(char* out_buf, unsigned int* in_out_len)
   if(!out_buf)
   {
     *in_out_len=required_size;
-    RETURN_STATUS(BOINK_OK);
+    return BOINK_OK;
   }
 
   if(*in_out_len<required_size)
   {
     *in_out_len=required_size;
-    RETURN_STATUS(BOINK_ERR_BUFFER_TOO_SMALL);
+    return BOINK_ERR_BUFFER_TOO_SMALL;
   }
 
   memcpy(out_buf,error_desc,required_size);
@@ -659,7 +659,8 @@ int boink_spawn_vehicle(
   // TODO
   // I think try is not needed here but it must be checked
   HANDLE_EXCEPTIONS(
-    *out_vehicle_id=p_race->addVehicle(create_info))
+    *out_vehicle_id = p_race->addVehicle(create_info);
+    boink_set_vehicle_to_pitstop(handle, *out_vehicle_id));
 
   return BOINK_OK;
 }

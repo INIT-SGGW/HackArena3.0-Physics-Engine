@@ -3,6 +3,7 @@
 #include <LinearMath/btScalar.h>
 
 #include "boink/logger.h"
+#include "boink/simulators/vehicle/vehicle.h"
 
 namespace boink
 {
@@ -86,6 +87,9 @@ namespace boink
   void GhostMode::enterGhostMode()
   {
     is_in_ghost_mode_=true;
+    reinterpret_cast<Vehicle::UserData*>(
+      vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = true;
+
     this->reset();
 
     world_->getPairCache()->cleanProxyFromPairs(
@@ -99,6 +103,9 @@ namespace boink
   void GhostMode::exitGhostMode()
   {
     is_in_ghost_mode_=false;
+    reinterpret_cast<Vehicle::UserData*>(
+      vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = false;
+
     this->reset();
 
     world_->getPairCache()->cleanProxyFromPairs(

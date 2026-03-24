@@ -47,8 +47,10 @@ namespace boink
         std::make_shared<Vehicle>(ci,track_,this->getDynamicsWorld());
     Simulator::ID vehicle_id=this->addSimulator(vehicle);
 
-    if(ghost_enabled_)
+    if (ghost_enabled_)
       vehicle->enableGhostSim(ghost_settings_);
+    else
+      vehicle->disableGhostSim();
 
     vehicles_.emplace(vehicle_id,vehicle);
 
@@ -197,12 +199,16 @@ namespace boink
         vehicle.second->getUserData()->ghost_info->overlap_vehicles;
       for(auto it=overlap_vehicles.begin();it!=overlap_vehicles.end();)
       {
-        it->second.update(dt);
+        
 
         if(it->second.hasFinised())
           it=overlap_vehicles.erase(it);
         else
+        {
+          it->second.update(dt);
           ++it;
+        }
+          
       }
     }
 

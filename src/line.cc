@@ -289,6 +289,7 @@ Line Line::createLine(
     std::optional<btVector3> opt_first_point)
 {
   auto& line_node=extractor.getNode(name);
+  BOINK_DEBUG("Line mode: {}", line_node.type);
   if(line_node.type!=TINYGLTF_MODE_LINE)
     throw Exception(
         Exception::Type::UnsupportedFormatError,
