@@ -64,12 +64,12 @@ int main()
     return -1;
   }
   BoinkGhostModeSettings settings;
-  settings.enter_delay_ms = 0;
-  settings.exit_delay_ms = 0;
-  settings.enter_speed_max_mps = 0.f;
-  settings.exit_speed_min_mps = 0.f;
+  settings.enter_delay_ms = 1000;
+  settings.exit_delay_ms = 2000;
+  settings.enter_speed_max_mps = 5.f;
+  settings.exit_speed_min_mps = 15.f;
   settings.until_completed_laps = 0;
-  settings.vehicle_overlap_exit_delay_ms = 0;
+  settings.vehicle_overlap_exit_delay_ms = 3000;
 
   if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
   {
@@ -223,16 +223,16 @@ int main()
 
     if(time>2.5f)
     {
-      if ((code = boink_set_vehicle_at_start_pos(handle,id0,pos)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
-      if ((code = boink_set_vehicle_at_start_pos(handle,id1,pos)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
+      //if ((code = boink_set_vehicle_at_start_pos(handle,id0,pos)) != BOINK_OK)
+      //{
+      //  PRINT_ERROR();
+      //  goto clear;
+      //}
+      //if ((code = boink_set_vehicle_at_start_pos(handle,id1,pos)) != BOINK_OK)
+      //{
+      //  PRINT_ERROR();
+      //  goto clear;
+      //}
       pos++;
       time=0.f;
     }
@@ -265,7 +265,7 @@ int main()
 
     //printf("# of positions: %lu\n",number);
 
-    //printGhostModeData(&state_ghost);
+    printGhostModeData(&state_ghost);
 
     
     //Real width;

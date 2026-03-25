@@ -54,18 +54,18 @@ namespace boink
       if(isInGhostMode())
         return;
 
+      enter_timer_.update(dt);
       if(enter_timer_.hasFinised())
         this->enterGhostMode();
-      enter_timer_.update(dt);
     }
     else if(this->isExitSpeedConditionMet())
     {
       if(!isInGhostMode())
         return;
 
+      exit_timer_.update(dt);
       if(exit_timer_.hasFinised())
         this->exitGhostMode();
-      exit_timer_.update(dt);
     }
 
     if(!this->isEnterSpeedConditionMet() && !isCompletedLapsConditionMet())
