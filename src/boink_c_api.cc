@@ -1399,7 +1399,7 @@ int boink_read_vehicle_ghost_mode_state(
       state.exit_delay_remaining_ms=exit_timer_ms;
   }
 
-  if(enter_timer.isRunning())
+  if(enter_timer.isRunning() && !vehicle->isAnyOverlapTimerRunning() && !vehicle->isOverlapping())
   {
     state.phase=BOINK_GHOST_MODE_PHASE_PENDING_ENTER;
   }

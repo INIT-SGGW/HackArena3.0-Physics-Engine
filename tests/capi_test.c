@@ -66,8 +66,8 @@ int main()
   BoinkGhostModeSettings settings;
   settings.enter_delay_ms = 1000;
   settings.exit_delay_ms = 2000;
-  settings.enter_speed_max_mps = 5.f;
-  settings.exit_speed_min_mps = 15.f;
+  settings.enter_speed_max_mps = 2.f;
+  settings.exit_speed_min_mps = 10.f;
   settings.until_completed_laps = 0;
   settings.vehicle_overlap_exit_delay_ms = 3000;
 

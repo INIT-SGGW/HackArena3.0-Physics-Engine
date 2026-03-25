@@ -36,6 +36,7 @@ namespace boink
   void GhostMode::update(btScalar dt)
   {
     speed_ = vehicle_->getRigidBody()->getLinearVelocity().length();
+
     if(!isSimulationActive())
     {
       if(isInGhostMode())
@@ -53,6 +54,12 @@ namespace boink
     {
       if(isInGhostMode())
         return;
+
+      if (isCompletedLapsConditionMet())
+      {
+        this->enterGhostMode();
+        return;
+      }    
 
       enter_timer_.update(dt);
       if(enter_timer_.hasFinised())
