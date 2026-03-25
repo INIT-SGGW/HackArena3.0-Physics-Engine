@@ -123,7 +123,7 @@ namespace boink
   {
     bool found=false;
     int lap=-1;
-    Simulator::ID vehicle_id=-1;
+    Simulator::ID vehicle_id=0;
     btScalar best_time=FLT_MAX;
 
     for(const auto& pair:vehicles_)

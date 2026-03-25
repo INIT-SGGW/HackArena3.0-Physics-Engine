@@ -514,22 +514,22 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
     std::numeric_limits<decltype(out_track_data->version)>::max();
 
   out_track_data->centerline_samples=p_engine_data->main_samples;
-  out_track_data->centerline_sample_count=p_engine_data->main_samples_size;
+  out_track_data->centerline_sample_count=(unsigned int)p_engine_data->main_samples_size;
 
   out_track_data->pitstop_data.enter_centerline_samples=
     p_engine_data->entry_pitstop_samples;
   out_track_data->pitstop_data.enter_centerline_sample_count=
-    p_engine_data->entry_samples_size;
+    (unsigned int)p_engine_data->entry_samples_size;
 
   out_track_data->pitstop_data.fix_centerline_samples=
     p_engine_data->fix_pitstop_samples;
   out_track_data->pitstop_data.fix_centerline_sample_count=
-    p_engine_data->fix_samples_size;
+    (unsigned int)p_engine_data->fix_samples_size;
 
   out_track_data->pitstop_data.exit_centerline_samples=
     p_engine_data->exit_pitstop_samples;
   out_track_data->pitstop_data.exit_centerline_sample_count=
-    p_engine_data->exit_samples_size;
+    (unsigned int)p_engine_data->exit_samples_size;
 
   // Debug logging for track data
   BOINK_TRACE("=== Track Data ===");
@@ -1256,7 +1256,7 @@ int boink_get_vehicle_personal_best_lap(
     return BOINK_NO_DATA;
 
   *out_lap=opt_best.value().first;
-  *out_lap_time_ms=opt_best.value().second*1000;
+  *out_lap_time_ms=(unsigned int)(opt_best.value().second*1000.f);
 
   return BOINK_OK;
 }

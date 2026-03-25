@@ -62,8 +62,8 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
     // Because cars might move fast we wanna avoid
     // cliping or just going over a wall
-    rigidbody_->setCcdMotionThreshold(1e-5);
-    rigidbody_->setCcdSweptSphereRadius(0.5);
+    rigidbody_->setCcdMotionThreshold(1e-5f);
+    rigidbody_->setCcdSweptSphereRadius(0.5f);
 
 
     vehicle_->setCoordinateSystem(
@@ -135,7 +135,7 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   // g_Epsilon is too small when vehicle tilts a little
   btVector3 before_finish_point=
-      last+ 0.99*segment;
+      last+ 0.99f*segment;
 
   lap_info_.curr_lap_coverage=
       road.getCoverage(before_finish_point);

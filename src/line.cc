@@ -141,7 +141,7 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated1(
     if((i_other <0 || i_other >=(int)this->getPointsSize())&& !is_line_closed_)
       continue;
 
-    i_other = (i_other + this->getPointsSize()) % this->getPointsSize();
+    i_other = (int)((i_other + this->getPointsSize()) % this->getPointsSize());
     const btVector3& other=this->getPoint(i_other);
 
     btVector3 diff=other-closest;

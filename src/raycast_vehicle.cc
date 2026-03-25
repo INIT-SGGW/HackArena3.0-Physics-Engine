@@ -538,9 +538,9 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
               slip_ratio = 0.0001f;
           }
         }
-        else if (btFabs(speed_SR) < 2.9)
+        else if (btFabs(speed_SR) < 2.9f)
         {
-          slip_ratio = slip_velocity / 2.9;
+          slip_ratio = slip_velocity / 2.9f;
         }
         else
         {
@@ -786,7 +786,7 @@ btScalar RaycastVehicle::updateDriveParts(btScalar step)
 {
   (void)step;
 
-  auto drive_torque = 0.0f;
+  btScalar drive_torque = 0.0f;
   if (m_throttle == 0)
   {
     drive_torque = -70 * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * kTransmissionEfficiency;
@@ -801,7 +801,7 @@ btScalar RaycastVehicle::updateDriveParts(btScalar step)
 
 bool RaycastVehicle::setGearUp()
 {
-  auto new_rpms = -1.f;
+  btScalar new_rpms = -1.f;
   auto current_gear = static_cast<uint8_t>(m_gearbox.current_gear);
   auto is_neutral = current_gear == static_cast<uint8_t>(Gear::Neutral);
 
