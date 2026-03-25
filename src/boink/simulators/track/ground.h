@@ -103,10 +103,10 @@ namespace boink
 
   struct Ground::SurfaceInfo
   {
-    btScalar grip_coeff;
-    btScalar drag_coeff;
-    btScalar rolling_resistance;
-    btScalar wetness;
-    Type type;
+    btScalar grip_coeff=0.f ;
+    btScalar drag_coeff=0.f;
+    btScalar rolling_resistance=0.f;
+    btScalar wetness=0.f;
+    Type type=Type::Asphalt;
   };
 }

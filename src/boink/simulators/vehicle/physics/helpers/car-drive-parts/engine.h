@@ -9,8 +9,8 @@ namespace boink
 struct Engine
 {
   bool is_revLimiter_active = false;
-  float inertia = 0.5f;  // [kg*m^2]
-  float rpm = 4000.0f;
+  btScalar inertia = 0.5f;  // [kg*m^2]
+  btScalar rpm = 4000.0f;
 
   /// <summary>
   /// Returns maximum torque at current RPM (max is when a throttle is fully open)
@@ -18,9 +18,9 @@ struct Engine
   /// <returns>
   /// Maximum torque in [Nm]
   /// </returns>
-  float GetMaxTorque() { return RPM_to_torque.GetValue(rpm); }
+  btScalar GetMaxTorque() { return RPM_to_torque.GetValue(rpm); }
 
-  void SetNewRPM(float new_rpm)
+  void SetNewRPM(btScalar new_rpm)
   {
     /*if (new_rpm <= 4000)
       rpm = 4000.0f;

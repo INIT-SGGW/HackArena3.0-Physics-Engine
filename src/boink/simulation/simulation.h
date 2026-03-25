@@ -66,7 +66,7 @@ namespace boink
     std::shared_ptr<btDiscreteDynamicsWorld> dynamics_world_;
 
     btScalar simulation_duration_=0;
-    bool freeze_;
+    bool freeze_=false;
     IDRegistry<Simulator::ID,std::shared_ptr<Simulator>> simulators_;
   };
 }

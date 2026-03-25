@@ -28,7 +28,7 @@ namespace boink
       return true;
     }
   private:
-    float current_;
-    mutable float prev_;
+    float current_=0.f;
+    mutable float prev_=0.f;
   };
 }

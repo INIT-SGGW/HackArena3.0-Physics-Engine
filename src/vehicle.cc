@@ -547,9 +547,9 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
   std::unique_ptr<btCompoundShape> compound(new btCompoundShape());
   btConvexHullShape* hull = new btConvexHullShape();
 
-  float floor = -0.5;
-  float max_z=0;
-  float min_z=3.f;
+  btScalar floor = -0.5;
+  btScalar max_z=0;
+  btScalar min_z=3.f;
   for ( btVector3 v : vertices)
   {
     if(v.z()>max_z)
@@ -565,9 +565,9 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
   }
 
   // 2. Inject 4 points at the front to FORCE it to be rectangular
-  //float fz = 2.6f; // Front-most Z
-  float hw = 0.9f; // Half-width
-  float hh = -0.3f; // Half-height
+  //btScalar fz = 2.6f; // Front-most Z
+  btScalar hw = 0.9f; // Half-width
+  btScalar hh = -0.3f; // Half-height
 
   hull->addPoint(btVector3( hw, hh,max_z)); // Top Right Front
   hull->addPoint(btVector3(-hw, hh,max_z)); // Top Left Front

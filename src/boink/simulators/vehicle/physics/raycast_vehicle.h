@@ -178,18 +178,18 @@ class RaycastVehicle : public btActionInterface
 
   bool m_drawEnable = true;
 
-  static constexpr float kAirTemperature = 20.f;  // [Celsius]
-  static constexpr float kTransmissionEfficiency = 0.7f;
-  static constexpr float kSmoothingTractionForceFactor = 0.35f;
-  static constexpr float kBrakeTorque = 3300.0f;  // [Nm]
-  static constexpr float kMinDiff = 10.f;
-  static constexpr float kMaxDiff = 300.f;
-  static constexpr float kSlipRatioPeak = 0.1f;  // slip ratio with maximum longitudinal grip
+  static constexpr btScalar kAirTemperature = 20.f;  // [Celsius]
+  static constexpr btScalar kTransmissionEfficiency = 0.7f;
+  static constexpr btScalar kSmoothingTractionForceFactor = 0.35f;
+  static constexpr btScalar kBrakeTorque = 3300.0f;  // [Nm]
+  static constexpr btScalar kMinDiff = 10.f;
+  static constexpr btScalar kMaxDiff = 300.f;
+  static constexpr btScalar kSlipRatioPeak = 0.1f;  // slip ratio with maximum longitudinal grip
   static inline const Curve kSlipRatioToGrip =
       Curve({0.000, 1.100, 1.600, 1.500, 1.350, 1.250, 1.200, 1.150, 1.120, 1.100, 1.080,
              1.060, 1.050, 1.040, 1.030, 1.020, 1.010, 1.000, 1.000, 1.000, 1.000},
             0.05f, 0.0f);
-  static constexpr float kSlipAnglePeak = 0.08f;  // slip angle with maximum lateral grip in radians (5.7 degrees)
+  static constexpr btScalar kSlipAnglePeak = 0.08f;  // slip angle with maximum lateral grip in radians (5.7 degrees)
   static inline const Curve kSlipAngleToGrip = Curve({0.00, 0.50, 0.95, 1.35, 1.55, 1.50, 1.35, 1.20, 1.12, 1.08, 1.06,
                                                       1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
                                                      0.02f, 0.0f);

@@ -126,8 +126,8 @@ struct WheelInfo
 
   void updateWheel(const btRigidBody& chassis, RaycastInfo& raycastInfo);
 
-  static constexpr float kWheelMass = 16.0f;
-  static constexpr float kWheelMassDistCoeff = 0.78f;
+  static constexpr btScalar kWheelMass = 16.0f;
+  static constexpr btScalar kWheelMassDistCoeff = 0.78f;
   static const std::array<TyreTypeProperties, 3> kTyresTypesInfo;
 };
 

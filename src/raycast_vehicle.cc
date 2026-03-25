@@ -32,6 +32,7 @@
 #include "boink/simulators/vehicle/physics/wheel_info.h"
 #include "boink/simulators/vehicle/wheel_position.h"
 #include "boink/assert.h"
+#include "boink/constants.h"
 
 #define ROLLING_INFLUENCE_FIX
 
@@ -389,30 +390,6 @@ void RaycastVehicle::updateSuspension(btScalar deltaTime)
   }
 }
 
-struct WheelContactPoint
-{
-  btRigidBody* m_body0;
-  btRigidBody* m_body1;
-  btVector3 m_frictionPositionWorld;
-  btVector3 m_frictionDirectionWorld;
-  btScalar m_jacDiagABInv;
-  btScalar m_maxImpulse;
-
-  WheelContactPoint(btRigidBody* body0, btRigidBody* body1, const btVector3& frictionPosWorld,
-                    const btVector3& frictionDirectionWorld, btScalar maxImpulse)
-      : m_body0(body0),
-        m_body1(body1),
-        m_frictionPositionWorld(frictionPosWorld),
-        m_frictionDirectionWorld(frictionDirectionWorld),
-        m_maxImpulse(maxImpulse)
-  {
-    btScalar denom0 = body0->computeImpulseDenominator(frictionPosWorld, frictionDirectionWorld);
-    btScalar denom1 = body1->computeImpulseDenominator(frictionPosWorld, frictionDirectionWorld);
-    btScalar relaxation = 1.f;
-    m_jacDiagABInv = relaxation / (denom0 + denom1);
-  }
-};
-
 void RaycastVehicle::updateFriction(btScalar timeStep)
 {
   /*updateFrictionBasedOnSurface(timeStep);
@@ -501,7 +478,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     }
 
     auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
-    auto engine_inertia_part = 0.f;
+    btScalar engine_inertia_part = 0.f;
     if (!wheelInfo.m_bIsFrontWheel)
       engine_inertia_part =
           (m_engine.inertia / 2.f) *
@@ -609,9 +586,12 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
                                   ? surf_grip_coeff * surf_wet_grip_coeff * temp_grip_coeff * wear_grip_coeff
                                   : surf_grip_coeff * surf_wet_grip_coeff;
 
+      BOINK_ASSERT(temp_stiff_coeff > g_Epsilon);
       auto curr_peak_lat = kSlipAnglePeak / temp_stiff_coeff;
       auto curr_peak_long = kSlipRatioPeak / temp_stiff_coeff;
 
+      BOINK_ASSERT(curr_peak_lat > g_Epsilon);
+      BOINK_ASSERT(curr_peak_long > g_Epsilon);
       auto slip_ang_normalized = slip_angle / curr_peak_lat;
       auto slip_ratio_normalized = slip_ratio / curr_peak_long;
 
@@ -621,7 +601,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
       // std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
 
-      if (slip_vec_len > 0.f)
+      if (slip_vec_len > g_Epsilon)
       {
         auto slip_ang_scaled = slip_vec_len * kSlipAnglePeak;
         auto slip_ratio_scaled = slip_vec_len * kSlipRatioPeak;
@@ -792,7 +772,7 @@ void RaycastVehicle::applyAerodynamics(btScalar step)
 
   btVector3 down_dir = -m_chassisBody->getWorldTransform().getBasis().getColumn(1);
 
-  assert(down_dir.length() < 1.01 && down_dir.length() > 0.99);
+  BOINK_ASSERT(down_dir.length() < 1.01 && down_dir.length() > 0.99);
 
   btVector3 air_down_force = kAirLiftCoef * kCommonCoef * speed2 * down_dir;
 
@@ -966,6 +946,11 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   Ground::UserData* user_data_casted = (Ground::UserData*)user_data;
   const Ground::SurfaceInfo* surface_info = user_data_casted->p_surface_info;
+  if(surface_info == nullptr)
+  {
+    BOINK_ASSERT(false && "Ground::SurfaceInfo pointer is null");
+    return nullptr;
+  }
   auto surface_type = surface_info->type;
 
   // std::cout << "surface:  " << Ground::toString(surface_type) << "\t";
