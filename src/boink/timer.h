@@ -8,11 +8,11 @@ namespace boink
   {
   public:
     Timer()
-      :Timer(0.0f)
+      :Timer(kZero)
     {}
 
     Timer(btScalar target_duration)
-      :elapsed_(0.f),target_(target_duration)
+      :elapsed_(kZero),target_(target_duration)
     {}
 
     void update(btScalar dt)
@@ -25,7 +25,7 @@ namespace boink
 
     void reset()
     {
-      elapsed_=0.f;
+      elapsed_= kZero;
     }
 
     void reset(btScalar target_duration)
@@ -36,12 +36,12 @@ namespace boink
 
     bool hasFinised() const
     {
-      return target_==elapsed_;
+      return target_<=elapsed_;
     }
 
     bool isRunning() const
     {
-      return elapsed_!=0.f && !hasFinised();
+      return elapsed_!= kZero && !hasFinised();
     }
 
     btScalar getCurrent() const
@@ -61,5 +61,7 @@ namespace boink
   private:
     btScalar elapsed_;
     btScalar target_;
+
+    static constexpr float kZero = -1e-5f;
   };
 }

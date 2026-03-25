@@ -26,10 +26,9 @@ int main()
   //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
   //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
   const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\F1_CAR_06.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\snake_07.glb";
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
-  // const char* track_filename = "lowpoly_track_1_test_5.glb";
   const char* track_filename = "SnakeTrack_02.glb";
 #endif
   unsigned int major, minor, patch;
@@ -222,21 +221,21 @@ int main()
       runOnce2 = true;
     }
 
-    /*if(time>20.f)
+    if(time>2.5f)
     {
-      //if ((code = boink_set_vehicle_to_pitstop(handle,id0)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
-      //if ((code = boink_set_vehicle_to_pitstop(handle,id1)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
+      if ((code = boink_set_vehicle_at_start_pos(handle,id0,pos)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
+      if ((code = boink_set_vehicle_at_start_pos(handle,id1,pos)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
       pos++;
       time=0.f;
-    }*/
+    }
     time+=sim_time;
 
     struct BoinkVehicleState state;
@@ -251,12 +250,12 @@ int main()
 
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
-    //BoinkGhostModeRuntimeState state_ghost;
-    //if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
-    //{
-    //  PRINT_ERROR();
-    //  goto clear;
-    //}
+    BoinkGhostModeRuntimeState state_ghost;
+    if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
     uint64_t number;
     if ((code = boink_get_number_of_start_pos(handle,&number) != BOINK_OK))
     {

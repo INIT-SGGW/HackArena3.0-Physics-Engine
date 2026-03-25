@@ -35,6 +35,7 @@ namespace boink
 
   void GhostMode::update(btScalar dt)
   {
+    speed_ = vehicle_->getRigidBody()->getLinearVelocity().length();
     if(!isSimulationActive())
     {
       if(isInGhostMode())
@@ -46,8 +47,6 @@ namespace boink
 
       return;
     }
-
-    speed_=vehicle_->getRigidBody()->getLinearVelocity().length();
 
     if(this->isEnterSpeedConditionMet()|| 
        isCompletedLapsConditionMet()) 
@@ -69,7 +68,7 @@ namespace boink
       exit_timer_.update(dt);
     }
 
-    if(!this->isEnterSpeedConditionMet())
+    if(!this->isEnterSpeedConditionMet() && !isCompletedLapsConditionMet())
       enter_timer_.reset();
     if(!this->isExitSpeedConditionMet())
       exit_timer_.reset();
@@ -100,8 +99,8 @@ namespace boink
   void GhostMode::exitGhostMode()
   {
     is_in_ghost_mode_=false;
-    //reinterpret_cast<Vehicle::UserData*>(
-    //  vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = false;
+    reinterpret_cast<Vehicle::UserData*>(
+      vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = false;
 
     this->reset();
 

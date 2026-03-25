@@ -171,6 +171,8 @@ namespace boink
       btScalar fixed_delta_time,
       btScalar max_delta_time)
   {
+    
+    updateOverlapLists(0);
     int steps=Simulation::update(
         dt,max_sub_steps,fixed_delta_time,max_delta_time);
 
@@ -178,8 +180,7 @@ namespace boink
     if(steps==0)
       return 0;
 
-    if(!gui_->freeze)
-      updateOverlapLists(simulation_step);
+    updateOverlapLists(simulation_step);
       
     return steps;
   }

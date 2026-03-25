@@ -140,9 +140,20 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
   lap_info_.curr_lap_coverage=
       road.getCoverage(before_finish_point);
 
+  btVector3 up_compensate =
+    g_Up * (getChassisToGroundDist() + g_GroundMargin);
+
+  const auto& sample = road.getMetrics(0);
+  btQuaternion align_to_surface = shortestArcQuat(g_Up, sample.normal);
+  btVector3 local_forward = quatRotate(align_to_surface, boink::g_Forward);
+
+  btQuaternion align_to_tangent = shortestArcQuat(local_forward, sample.tangent);
+  btQuaternion final_rot = align_to_tangent * align_to_surface;
+
   btTransform transform;
   transform.setIdentity();
-  transform.setOrigin(before_finish_point);
+  transform.setRotation(final_rot);
+  transform.setOrigin(before_finish_point+up_compensate);
 
   this->setChassisWorldTransform(transform);
 }
