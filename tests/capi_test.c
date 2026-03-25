@@ -29,7 +29,7 @@ int main()
   const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\snake_07.glb";
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
-  const char* track_filename = "SnakeTrack_02.glb";
+  const char* track_filename = "snake_07.glb";
 #endif
   unsigned int major, minor, patch;
   boink_get_engine_version(&major, &minor, &patch);
