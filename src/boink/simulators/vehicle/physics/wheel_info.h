@@ -66,8 +66,8 @@ struct WheelInfo
   struct TyreInfo
   {
     TyreType m_type;
-    btScalar m_health = btScalar(1.0);
-    btScalar m_tempCelsius = btScalar(90.0);
+    btScalar m_health;
+    btScalar m_tempCelsius = btScalar(20.0);
 
     static btScalar heatingConst;  // how fast energy is converted to heat
     static btScalar coolingConst;  // how fast tyre cools down

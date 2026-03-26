@@ -65,7 +65,6 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
     rigidbody_->setCcdMotionThreshold(1e-5f);
     rigidbody_->setCcdSweptSphereRadius(0.5f);
 
-
     vehicle_->setCoordinateSystem(
         0, // right (X)
         1, // up (Y)
@@ -380,7 +379,7 @@ const btTransform& Vehicle::getWheelWorldTransform(WheelPosition wheel_pos) cons
   return vehicle_->getWheelTransformWS((int)wheel_pos);
 }
 
-btScalar Vehicle::getEngineRPM() const { return vehicle_->getEngineRPM(); }
+btScalar Vehicle::getEngineRPM() const { return vehicle_->getEngineRPM();}
 
 int Vehicle::getCurrentGear() const { return vehicle_->getCurrentGear(); }
 

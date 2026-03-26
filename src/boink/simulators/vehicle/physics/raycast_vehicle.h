@@ -175,6 +175,7 @@ class RaycastVehicle : public btActionInterface
   int m_indexForwardAxis;
 
   btAlignedObjectArray<WheelInfo> m_wheelsInfo;
+  btScalar m_last_frame_speed;
 
   bool m_drawEnable = true;
 
@@ -190,10 +191,11 @@ class RaycastVehicle : public btActionInterface
              1.060f, 1.050f, 1.040f, 1.030f, 1.020f, 1.010f, 1.000f, 1.000f, 1.000f, 1.000f},
             0.05f, 0.0f);
   static constexpr btScalar kSlipAnglePeak = 0.08f;  // slip angle with maximum lateral grip in radians (5.7 degrees)
-  static inline const Curve kSlipAngleToGrip = Curve({0.00f, 0.50f, 0.95f, 1.35f, 1.55f, 1.50f, 1.35f, 1.20f,1.12f, 1.08f, 1.06f,
-                                                      1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f},
-                                                     0.02f, 0.0f);
+  static inline const Curve kSlipAngleToGrip =
+      Curve({0.00f, 0.50f, 0.95f, 1.35f, 1.55f, 1.50f, 1.35f, 1.20f, 1.12f, 1.08f, 1.06f,
+             1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f},
+            0.02f, 0.0f);
   static inline const Curve kWearToGripCoeff =
-      Curve({1.00f, 1.00f, 0.99f, 0.98f, 0.97f, 0.96f, 0.94f, 0.91f, 0.88f, 0.86f, 0.85f}, -0.1f, 1.f);
+      Curve({0.85f, 0.86f, 0.88f, 0.91f, 0.94f, 0.96f, 0.97f, 0.98f, 0.99f, 1.00f, 1.00f}, 0.1f, 0.f);
 };
 }  // namespace boink
