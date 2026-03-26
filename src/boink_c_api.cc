@@ -994,7 +994,7 @@ int boink_set_vehicle_orientation(
 
 int boink_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreType tyre_type)
 {
-    boink::Race* p_race=(boink::Race*)h;
+  boink::Race* p_race=(boink::Race*)h;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       h);
   
@@ -1017,6 +1017,28 @@ int boink_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreTyp
    else
        return BOINK_CONDITION_NOT_MET;
 }
+
+int boink_force_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreType tyre_type)
+{
+  boink::Race* p_race = (boink::Race*)h;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+    h);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle = p_race->getVehicle(vehicle_id));
+
+  if (tyre_type < 0 || tyre_type > 2)
+  {
+    RETURN_STATUS_INVALID_ARG(
+      controls->gear_shift,
+      "was lesser than 0 or greater than 2");
+  }
+
+  vehicle->setTyreType((boink::WheelInfo::TyreType)(int)tyre_type);
+  return BOINK_OK;
+}
+
 
 int boink_set_vehicle_at_start_pos(
     BoinkHandle handle,
