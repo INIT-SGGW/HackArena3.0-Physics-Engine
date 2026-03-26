@@ -20,8 +20,8 @@ namespace boink
   public:
     bool* freeze=nullptr;
     const float* duration=nullptr;
-    float gravity_acc;
-    size_t num_simulators;
+    float gravity_acc=10.f;
+    size_t num_simulators=0;
   private:
     std::vector<std::pair<Simulator::ID,std::shared_ptr<piksel::GuiObject>>> 
       guis_;

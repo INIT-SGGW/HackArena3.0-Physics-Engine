@@ -244,6 +244,8 @@ void RaycastVehicle::setTyreType(WheelInfo::TyreType tyre_type)
   {
     WheelInfo& wheelInfo = m_wheelsInfo[i];
     wheelInfo.m_tyreInfo.m_type = tyre_type;
+    wheelInfo.m_tyreInfo.m_health = btScalar(1.0);
+    wheelInfo.m_tyreInfo.m_tempCelsius = btScalar(90.0);
   }
 }
 
@@ -629,12 +631,24 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       auto wheel_speed = wheel_vel.length();
       auto dynamic_drag_coeff = surf_drag_coeff * (0.5f + wheel_speed * 0.02f);
       auto drag_force = dynamic_drag_coeff * wheelInfo.m_wheelsSuspensionForce;
-      auto drag_direction = -wheel_vel.normalized();
-      auto drag_impulse = drag_direction * drag_force * timeStep;
-
-      auto drag_long_percent = btFabs(long_speed) / wheel_speed;
-      wheelInfo.m_drag_long_force = drag_force * drag_long_percent;
-
+      
+      btVector3 drag_impulse;
+      if(wheel_speed > g_Epsilon) 
+      {
+        auto drag_direction = -wheel_vel.normalized();
+        drag_impulse = drag_direction * drag_force * timeStep;
+      }
+      else
+        drag_impulse = btVector3(0.f, 0.f, 0.f);
+      
+      if(wheel_speed > g_Epsilon)
+      {
+        auto drag_long_percent = btFabs(long_speed) / wheel_speed;
+        wheelInfo.m_drag_long_force = drag_force * drag_long_percent;
+      }
+      else
+        wheelInfo.m_drag_long_force = 0.f;
+      
       // @temperature
       auto lat_power = btFabs(lateral_force * lat_speed);
       auto long_power = btFabs(traction_force * slip_velocity);
