@@ -195,6 +195,6 @@ class RaycastVehicle : public btActionInterface
                                                       1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
                                                      0.02f, 0.0f);
   static inline const Curve kWearToGripCoeff =
-      Curve({1.00, 1.00, 0.99, 0.98, 0.97, 0.96, 0.94, 0.91, 0.88, 0.86, 0.85}, -0.1f, 1.f);
+      Curve({0.85, 0.86, 0.88, 0.91, 0.94, 0.96, 0.97, 0.98, 0.99, 1.00, 1.00}, 0.1f, 0.f);
 };
 }  // namespace boink

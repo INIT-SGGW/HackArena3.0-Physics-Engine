@@ -605,6 +605,8 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       // std::cout << "surf_wet_grip_coeff: " << surf_wet_grip_coeff << "\t";
       // std::cout << "temp_grip_coeff: " << temp_grip_coeff << "\t";
       // std::cout << "temp_stiff_coeff: " << temp_stiff_coeff << "\t";
+      /*std::cout << "tyre_health: " << wheelInfo.m_tyreInfo.m_health << "\t";
+      std::cout << "wear_grip_coeff: " << wear_grip_coeff << "\t";*/
 
       // this represent that temperature or wear of tyre is not important on other surface than asphalt
       auto total_grip_coeff = (surf_grip_coeff == 1.f)
@@ -621,7 +623,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
           btSqrt(slip_ang_normalized * slip_ang_normalized + slip_ratio_normalized * slip_ratio_normalized);
       wheelInfo.m_slip_vec_length = slip_vec_len;
 
-      std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
+      // std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
 
       if (slip_vec_len > 0.f)
       {
@@ -662,14 +664,16 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       auto long_power = btFabs(traction_force * slip_velocity);
 
       auto slip_power = lat_power + long_power;
-      auto rolling_power = 0.15f * wheelInfo.m_wheelsSuspensionForce * wheel_speed;  // temperature from wheel squishing
+      auto rolling_power = 0.1f * wheelInfo.m_wheelsSuspensionForce * wheel_speed;  // temperature from wheel squishing
       auto heat_generated =
           (slip_power + rolling_power) * WheelInfo::TyreInfo::heatingConst * tyre_type_info.heatingFactor * timeStep;
-      auto speed_factor = btMax(2.f, wheel_speed);  // minimal value when car is stopped
+      auto speed_factor = btMax(5.f, wheel_speed);  // minimal value when car is stopped
       auto wet_factor = 1.f + (surf_wet * 4.f);
       auto heat_lost = (wheelInfo.m_tyreInfo.m_tempCelsius - kAirTemperature) * WheelInfo::TyreInfo::coolingConst *
                        speed_factor * wet_factor * timeStep;
       wheelInfo.m_tyreInfo.m_tempCelsius += heat_generated - heat_lost;
+      if (wheelInfo.m_tyreInfo.m_tempCelsius > 160.f) wheelInfo.m_tyreInfo.m_tempCelsius = btScalar(160.f);
+      if (wheelInfo.m_tyreInfo.m_tempCelsius < 0.f) wheelInfo.m_tyreInfo.m_tempCelsius = btScalar(0.f);
 
       // std::cout << "wetness: " << surf_wet << "\t";
       // std::cout << "tyre_type: " << (int)wheelInfo.m_tyreInfo.m_type << "\t";
@@ -736,7 +740,8 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
   auto car_linear_speed = getRigidBody()->getLinearVelocity().length();
 
-  if (car_linear_speed < 0.1f && m_last_frame_speed >= 0.1f)
+  if (car_linear_speed < 0.1f && m_last_frame_speed >= 0.1f && m_gearbox.current_gear != Gear::First &&
+      m_gearbox.current_gear != Gear::Reverse)
   {
     m_gearbox.current_gear = Gear::Neutral;
     m_engine.m_is_on_idle = true;
@@ -757,8 +762,8 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     m_brake = 1;
   }
 
-  std::cout << "gear:  " << m_gearbox.current_gear << "\t";
-  std::cout << "rpm:  " << m_engine.rpm << "\t";
+  // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
+  // std::cout << "rpm:  " << m_engine.rpm << "\t";
   //// std::cout << "idle_rpm:  " << m_engine.GetIdleRPM() << "\t";
   // std::cout << "displayed_rpm:  " << getEngineRPM() << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";

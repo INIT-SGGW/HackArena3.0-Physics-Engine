@@ -22,7 +22,7 @@ namespace boink
 {
 // TODO
 btScalar WheelInfo::TyreInfo::heatingConst = btScalar(0.00005f);
-btScalar WheelInfo::TyreInfo::coolingConst = btScalar(0.001f);
+btScalar WheelInfo::TyreInfo::coolingConst = btScalar(0.0002f);
 btScalar WheelInfo::TyreInfo::wearRate = btScalar(0.0000001f);
 
 btScalar WheelInfo::TyreInfo::s_softWearRatePerMin = btScalar(0.05);
@@ -69,7 +69,7 @@ WheelInfo::WheelInfo(WheelInfoConstructionInfo& ci)
   m_suspensionInfo.m_chassisConnectionPointCS = ci.m_chassisConnectionCS;
   m_suspensionInfo.m_maxForce = ci.m_maxSuspensionForce;
 
-  m_tyreInfo.m_health = btScalar(1.0);
+  m_tyreInfo.m_health = btScalar(1.);
   m_tyreInfo.m_type = ci.m_tyreType;
 
   m_wheelDirectionCS = ci.m_wheelDirectionCS;
