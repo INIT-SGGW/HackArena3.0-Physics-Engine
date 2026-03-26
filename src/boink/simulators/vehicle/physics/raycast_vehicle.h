@@ -175,6 +175,7 @@ class RaycastVehicle : public btActionInterface
   int m_indexForwardAxis;
 
   btAlignedObjectArray<WheelInfo> m_wheelsInfo;
+  btScalar m_last_frame_speed;
 
   bool m_drawEnable = true;
 

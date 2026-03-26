@@ -222,7 +222,13 @@ WheelInfo& RaycastVehicle::getWheelInfo(int index)
   return m_wheelsInfo[index];
 }
 
-btScalar RaycastVehicle::getEngineRPM() const { return m_engine.rpm; }
+btScalar RaycastVehicle::getEngineRPM() const
+{
+  if (m_engine.m_is_on_idle)
+    return m_engine.GetIdleRPM();
+  else
+    return m_engine.rpm;
+}
 
 int RaycastVehicle::getCurrentGear() const { return static_cast<int>(m_gearbox.current_gear); }
 
@@ -414,9 +420,6 @@ struct WheelContactPoint
 
 void RaycastVehicle::updateFriction(btScalar timeStep)
 {
-  /*updateFrictionBasedOnSurface(timeStep);
-  updateTyres(timeStep);*/
-
   // std::cout << "vel_X:  " << getRigidBody()->getLinearVelocity().getX() << "\t";
   // std::cout << "vel_Y:  " << getRigidBody()->getLinearVelocity().getY() << "\t";
   // std::cout << "vel_Z:  " << getRigidBody()->getLinearVelocity().getZ() << "\t";
@@ -722,6 +725,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   auto avg_ang_speed = (m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearLeft)].m_angSpeed +
                         m_wheelsInfo[static_cast<uint8_t>(WheelPosition::RearRight)].m_angSpeed) /
                        2;
+
   auto new_rpm =
       avg_ang_speed * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * (60.0f / (2.0f * 3.14159f));
   if (new_rpm > 15000.0f)  // rev limiter
@@ -730,8 +734,33 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     m_engine.is_revLimiter_active = false;
   m_engine.SetNewRPM(new_rpm);
 
-  // std::cout << "gear:  " << m_gearbox.current_gear << "\t";
-  // std::cout << "rpm:  " << m_engine.rpm << "\t";
+  auto car_linear_speed = getRigidBody()->getLinearVelocity().length();
+
+  if (car_linear_speed < 0.1f && m_last_frame_speed >= 0.1f)
+  {
+    m_gearbox.current_gear = Gear::Neutral;
+    m_engine.m_is_on_idle = true;
+  }
+  m_last_frame_speed = car_linear_speed;
+
+  if (new_rpm < 4000)
+    m_engine.m_is_on_idle = true;
+  else
+  {
+    m_engine.m_is_on_idle = false;
+    m_engine.m_idle_timer = 0.f;
+  }
+  if (m_engine.m_is_on_idle) m_engine.UpdateIdleRPMTimer(timeStep);
+
+  if (car_linear_speed < 1.f && m_gearbox.current_gear == Gear::Neutral)
+  {
+    m_brake = 1;
+  }
+
+  std::cout << "gear:  " << m_gearbox.current_gear << "\t";
+  std::cout << "rpm:  " << m_engine.rpm << "\t";
+  //// std::cout << "idle_rpm:  " << m_engine.GetIdleRPM() << "\t";
+  // std::cout << "displayed_rpm:  " << getEngineRPM() << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
   std::cout << "\n";
 }

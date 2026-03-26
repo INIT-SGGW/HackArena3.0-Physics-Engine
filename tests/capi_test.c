@@ -285,7 +285,7 @@ int main()
       PRINT_ERROR();
       goto clear;
     }
-    printf("width: %f    depth: %f \n", width, depth);
+    //printf("width: %f    depth: %f \n", width, depth);
     boink_update_debug();
   }
 
