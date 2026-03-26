@@ -651,13 +651,21 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       // @drag
       auto wheel_vel = getWheelContactVel(wheelInfo);
       auto wheel_speed = wheel_vel.length();
-      auto dynamic_drag_coeff = surf_drag_coeff * (0.5f + wheel_speed * 0.02f);
+      auto dynamic_drag_coeff = surf_drag_coeff * wheel_speed * 0.3f;
       auto drag_force = dynamic_drag_coeff * wheelInfo.m_wheelsSuspensionForce;
       auto drag_direction = -wheel_vel.normalized();
       auto drag_impulse = drag_direction * drag_force * timeStep;
 
-      auto drag_long_percent = btFabs(long_speed) / wheel_speed;
-      wheelInfo.m_drag_long_force = drag_force * drag_long_percent;
+      // std::cout << "drag_impulse: " << drag_impulse.length() << "\t";
+      // std::cout << "wheel_speed: " << wheel_speed << "\t";
+
+      if (wheel_speed > 0.1f)
+      {
+        auto drag_long_percent = btFabs(long_speed) / wheel_speed;
+        wheelInfo.m_drag_long_force = drag_force * drag_long_percent;
+      }
+      else
+        wheelInfo.m_drag_long_force = 0.f;
 
       // @temperature
       auto lat_power = btFabs(lateral_force * lat_speed);
