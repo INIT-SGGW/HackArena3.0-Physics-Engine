@@ -38,7 +38,7 @@ btRigidBody& btActionInterface::getFixedBody()
 {
   static btRigidBody s_fixed(0, 0, 0);
 
-  static boink::Ground::SurfaceInfo fixed_surf = {0.7f, 0.00, 0.3f, 0.f, boink::Ground::Type::Asphalt};
+  static boink::Ground::SurfaceInfo fixed_surf = {0.7f, 0.0f, 0.3f, 0.f, boink::Ground::Type::Asphalt};
   static boink::Ground::UserData fixed_user_data(&fixed_surf);
   s_fixed.setUserPointer(reinterpret_cast<boink::BulletUserData*>(&fixed_user_data));
   s_fixed.setMassProps(btScalar(0.), btVector3(btScalar(0.), btScalar(0.), btScalar(0.)));
@@ -591,16 +591,23 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       btScalar lateral_force = btScalar(0.f);
       btScalar traction_force = btScalar(0.f);
 
-      auto surf_info = getSurfInfo(wheelInfo);
-      const auto& tyre_type_info = WheelInfo::kTyresTypesInfo[(int)wheelInfo.m_tyreInfo.m_type];
-      auto surf_wet = surf_info->wetness;
+      btScalar surf_wet = 0.f;
+      btScalar surf_grip_coeff = 0.f;
+      btScalar surf_drag_coeff = 0.f;
 
-      auto surf_grip_coeff = surf_info->grip_coeff;
+      const auto& tyre_type_info = WheelInfo::kTyresTypesInfo[(int)wheelInfo.m_tyreInfo.m_type];
+      auto surf_info = getSurfInfo(wheelInfo);
+      if (surf_info)
+      {
+        surf_wet = surf_info->wetness;
+        surf_grip_coeff = surf_info->grip_coeff;
+        surf_drag_coeff = surf_info->drag_coeff;
+      }
+
       auto temp_grip_coeff = tyre_type_info.tempToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
       auto wear_grip_coeff = kWearToGripCoeff.GetValue(wheelInfo.m_tyreInfo.m_health);
       auto surf_wet_grip_coeff = scalarLerp(tyre_type_info.baseDryGrip, tyre_type_info.baseWetGrip, surf_wet);
       auto temp_stiff_coeff = tyre_type_info.tempToStiffCoeff.GetValue(wheelInfo.m_tyreInfo.m_tempCelsius);
-      auto surf_drag_coeff = surf_info->drag_coeff;
 
       // std::cout << "surf_wet_grip_coeff: " << surf_wet_grip_coeff << "\t";
       // std::cout << "temp_grip_coeff: " << temp_grip_coeff << "\t";
