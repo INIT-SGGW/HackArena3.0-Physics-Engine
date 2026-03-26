@@ -9,7 +9,7 @@ class Curve
 // TODO: change vector for array to define Curve as constexpr
 {
  public:
-  Curve(std::vector<float>&& values, float step, float min_arg)
+  Curve(std::vector<btScalar>&& values, btScalar step, btScalar min_arg)
       : values_(std::move(values)),
         inv_step_(1.0f / step),
         min_arg_(min_arg),
@@ -17,7 +17,7 @@ class Curve
   {
   }
 
-  float GetValue(float x) const
+  btScalar GetValue(btScalar x) const
   {
     auto normalized_x = (x - min_arg_) * inv_step_;
 
@@ -31,9 +31,9 @@ class Curve
   }
 
  private:
-  const std::vector<float> values_;
-  const float inv_step_;
-  const float min_arg_;
+  const std::vector<btScalar> values_;
+  const btScalar inv_step_;
+  const btScalar min_arg_;
   const int max_index_;
 };
 }  // namespace boink

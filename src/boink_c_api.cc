@@ -203,13 +203,13 @@ int boink_get_last_error(char* out_buf, unsigned int* in_out_len)
   if(!out_buf)
   {
     *in_out_len=required_size;
-    RETURN_STATUS(BOINK_OK);
+    return BOINK_OK;
   }
 
   if(*in_out_len<required_size)
   {
     *in_out_len=required_size;
-    RETURN_STATUS(BOINK_ERR_BUFFER_TOO_SMALL);
+    return BOINK_ERR_BUFFER_TOO_SMALL;
   }
 
   memcpy(out_buf,error_desc,required_size);
@@ -514,22 +514,22 @@ int boink_get_track_data(BoinkHandle handle, BoinkTrackData *out_track_data)
     std::numeric_limits<decltype(out_track_data->version)>::max();
 
   out_track_data->centerline_samples=p_engine_data->main_samples;
-  out_track_data->centerline_sample_count=p_engine_data->main_samples_size;
+  out_track_data->centerline_sample_count=(unsigned int)p_engine_data->main_samples_size;
 
   out_track_data->pitstop_data.enter_centerline_samples=
     p_engine_data->entry_pitstop_samples;
   out_track_data->pitstop_data.enter_centerline_sample_count=
-    p_engine_data->entry_samples_size;
+    (unsigned int)p_engine_data->entry_samples_size;
 
   out_track_data->pitstop_data.fix_centerline_samples=
     p_engine_data->fix_pitstop_samples;
   out_track_data->pitstop_data.fix_centerline_sample_count=
-    p_engine_data->fix_samples_size;
+    (unsigned int)p_engine_data->fix_samples_size;
 
   out_track_data->pitstop_data.exit_centerline_samples=
     p_engine_data->exit_pitstop_samples;
   out_track_data->pitstop_data.exit_centerline_sample_count=
-    p_engine_data->exit_samples_size;
+    (unsigned int)p_engine_data->exit_samples_size;
 
   // Debug logging for track data
   BOINK_TRACE("=== Track Data ===");
@@ -659,7 +659,8 @@ int boink_spawn_vehicle(
   // TODO
   // I think try is not needed here but it must be checked
   HANDLE_EXCEPTIONS(
-    *out_vehicle_id=p_race->addVehicle(create_info))
+    *out_vehicle_id = p_race->addVehicle(create_info));
+    //boink_set_vehicle_before_finish_line(handle, *out_vehicle_id));
 
   return BOINK_OK;
 }
@@ -993,7 +994,7 @@ int boink_set_vehicle_orientation(
 
 int boink_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreType tyre_type)
 {
-    boink::Race* p_race=(boink::Race*)h;
+  boink::Race* p_race=(boink::Race*)h;
   IF_RETURN_STATUS_INVALID_ARG_NULL(
       h);
   
@@ -1016,6 +1017,28 @@ int boink_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreTyp
    else
        return BOINK_CONDITION_NOT_MET;
 }
+
+int boink_force_set_vehicle_tyre_type(BoinkHandle h, uint64_t vehicle_id, BoinkTyreType tyre_type)
+{
+  boink::Race* p_race = (boink::Race*)h;
+  IF_RETURN_STATUS_INVALID_ARG_NULL(
+    h);
+
+  std::shared_ptr<boink::Vehicle> vehicle;
+  HANDLE_EXCEPTIONS(
+    vehicle = p_race->getVehicle(vehicle_id));
+
+  if (tyre_type < 0 || tyre_type > 2)
+  {
+    RETURN_STATUS_INVALID_ARG(
+      controls->gear_shift,
+      "was lesser than 0 or greater than 2");
+  }
+
+  vehicle->setTyreType((boink::WheelInfo::TyreType)(int)tyre_type);
+  return BOINK_OK;
+}
+
 
 int boink_set_vehicle_at_start_pos(
     BoinkHandle handle,
@@ -1255,7 +1278,7 @@ int boink_get_vehicle_personal_best_lap(
     return BOINK_NO_DATA;
 
   *out_lap=opt_best.value().first;
-  *out_lap_time_ms=opt_best.value().second*1000;
+  *out_lap_time_ms=(unsigned int)(opt_best.value().second*1000.f);
 
   return BOINK_OK;
 }
@@ -1398,7 +1421,7 @@ int boink_read_vehicle_ghost_mode_state(
       state.exit_delay_remaining_ms=exit_timer_ms;
   }
 
-  if(enter_timer.isRunning())
+  if(enter_timer.isRunning() && !vehicle->isAnyOverlapTimerRunning() && !vehicle->isOverlapping())
   {
     state.phase=BOINK_GHOST_MODE_PHASE_PENDING_ENTER;
   }

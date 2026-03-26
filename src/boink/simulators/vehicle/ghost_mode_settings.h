@@ -14,6 +14,6 @@ namespace boink
 
     unsigned int enabled_until_completed_laps=0;
 
-    btScalar exit_delay_when_overlap=0.f;
+    btScalar exit_delay_when_overlap=0.0f;
   };
 }

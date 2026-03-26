@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.21)
+if(WIN32)
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
+endif()
 
-project(BoinkEngine VERSION 0.17.0)
+project(BoinkEngine VERSION 0.17.7)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,14 +43,20 @@ target_link_libraries(boink PUBLIC ${BULLET_LIBRARIES})
 
 find_package(piksel CONFIG REQUIRED)                                                                                                                                          
 target_link_libraries(boink PUBLIC piksel::piksel)
+#target_compile_definitions(boink PRIVATE GLFW_STATIC)
 
 find_package(spdlog CONFIG REQUIRED)
-target_link_libraries(boink PRIVATE spdlog::spdlog)
+find_package(fmt CONFIG REQUIRED)
+
+target_link_libraries(boink PRIVATE 
+    spdlog::spdlog_header_only
+    fmt::fmt-header-only
+)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
     if(USE_ASAN_WIN)
+    message(STATUS "Enabling Address Sanitizer for MSVC Debug build.")
     target_compile_options(boink PUBLIC /fsanitize=address)
     endif()
     target_compile_options(boink 

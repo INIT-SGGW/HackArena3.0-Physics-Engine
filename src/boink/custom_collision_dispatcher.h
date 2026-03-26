@@ -3,6 +3,7 @@
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
 #include "boink/bullet_user_data.h"
 #include "boink/simulators/vehicle/vehicle.h"
+#include "boink/logger.h"
 
 namespace boink
 {
@@ -29,9 +30,10 @@ namespace boink
           Vehicle::UserData* v_ud0 = reinterpret_cast<Vehicle::UserData*>(ud0);
           Vehicle::UserData* v_ud1 = reinterpret_cast<Vehicle::UserData*>(ud1);
 
-          // Jeśli któryś ma ghost_info->enabled, w TEJ klatce odrzucamy kolizję!
           if (v_ud0->ghost_info->enabled || v_ud1->ghost_info->enabled)
+          {
             return false; 
+          }
 
           if (v_ud0->ghost_info->overlap_vehicles.find(
                 const_cast<btCollisionObject*>(body1)) 

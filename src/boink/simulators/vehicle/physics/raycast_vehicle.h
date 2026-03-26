@@ -179,22 +179,23 @@ class RaycastVehicle : public btActionInterface
 
   bool m_drawEnable = true;
 
-  static constexpr float kAirTemperature = 20.f;  // [Celsius]
-  static constexpr float kTransmissionEfficiency = 0.7f;
-  static constexpr float kSmoothingTractionForceFactor = 0.35f;
-  static constexpr float kBrakeTorque = 3300.0f;  // [Nm]
-  static constexpr float kMinDiff = 10.f;
-  static constexpr float kMaxDiff = 300.f;
-  static constexpr float kSlipRatioPeak = 0.1f;  // slip ratio with maximum longitudinal grip
+  static constexpr btScalar kAirTemperature = 20.f;  // [Celsius]
+  static constexpr btScalar kTransmissionEfficiency = 0.7f;
+  static constexpr btScalar kSmoothingTractionForceFactor = 0.35f;
+  static constexpr btScalar kBrakeTorque = 3300.0f;  // [Nm]
+  static constexpr btScalar kMinDiff = 10.f;
+  static constexpr btScalar kMaxDiff = 300.f;
+  static constexpr btScalar kSlipRatioPeak = 0.1f;  // slip ratio with maximum longitudinal grip
   static inline const Curve kSlipRatioToGrip =
-      Curve({0.000, 1.100, 1.600, 1.500, 1.350, 1.250, 1.200, 1.150, 1.120, 1.100, 1.080,
-             1.060, 1.050, 1.040, 1.030, 1.020, 1.010, 1.000, 1.000, 1.000, 1.000},
+      Curve({0.000f, 1.100f, 1.600f, 1.500f, 1.350f, 1.250f, 1.200f, 1.150f, 1.120f, 1.100f, 1.080f,
+             1.060f, 1.050f, 1.040f, 1.030f, 1.020f, 1.010f, 1.000f, 1.000f, 1.000f, 1.000f},
             0.05f, 0.0f);
-  static constexpr float kSlipAnglePeak = 0.08f;  // slip angle with maximum lateral grip in radians (5.7 degrees)
-  static inline const Curve kSlipAngleToGrip = Curve({0.00, 0.50, 0.95, 1.35, 1.55, 1.50, 1.35, 1.20, 1.12, 1.08, 1.06,
-                                                      1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05},
-                                                     0.02f, 0.0f);
+  static constexpr btScalar kSlipAnglePeak = 0.08f;  // slip angle with maximum lateral grip in radians (5.7 degrees)
+  static inline const Curve kSlipAngleToGrip =
+      Curve({0.00f, 0.50f, 0.95f, 1.35f, 1.55f, 1.50f, 1.35f, 1.20f, 1.12f, 1.08f, 1.06f,
+             1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f, 1.05f},
+            0.02f, 0.0f);
   static inline const Curve kWearToGripCoeff =
-      Curve({0.85, 0.86, 0.88, 0.91, 0.94, 0.96, 0.97, 0.98, 0.99, 1.00, 1.00}, 0.1f, 0.f);
+      Curve({0.85f, 0.86f, 0.88f, 0.91f, 0.94f, 0.96f, 0.97f, 0.98f, 0.99f, 1.00f, 1.00f}, 0.1f, 0.f);
 };
 }  // namespace boink

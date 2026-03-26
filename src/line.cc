@@ -6,6 +6,7 @@
 #include "boink/exception.h"
 #include "boink/logger.h"
 #include "boink/utility.h"
+#include "boink/assert.h"
 
 #include <algorithm>
 #include <cassert>
@@ -140,7 +141,7 @@ std::pair<btVector3,btScalar> Line::getClosestPointInterpolated1(
     if((i_other <0 || i_other >=(int)this->getPointsSize())&& !is_line_closed_)
       continue;
 
-    i_other = (i_other + this->getPointsSize()) % this->getPointsSize();
+    i_other = (int)((i_other + this->getPointsSize()) % this->getPointsSize());
     const btVector3& other=this->getPoint(i_other);
 
     btVector3 diff=other-closest;
@@ -183,7 +184,7 @@ btVector3 Line::getPointInterpolated(
   btVector3 ab=b-a;
   btScalar ab_len2=ab.length2();
 
-  btAssert(ab_len2>g_Epsilon);
+  BOINK_ASSERT(ab_len2>g_Epsilon);
   if(ab_len2<g_Epsilon)
     return a;
 
@@ -217,14 +218,14 @@ void Line::reverse()
 
 btVector3& Line::getPoint(size_t index)
 {
-  btAssert(index<points_dist_.size());
+  BOINK_ASSERT(index<points_dist_.size());
 
   return points_dist_[index].first;
 }
 
 const btVector3& Line::getPoint(size_t index) const
 {
-  btAssert(index<points_dist_.size());
+  BOINK_ASSERT(index<points_dist_.size());
   return points_dist_.at(index).first;
 }
 

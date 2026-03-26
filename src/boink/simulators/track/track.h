@@ -89,7 +89,7 @@ namespace boink
 
     btTransform transform_=btTransform::getIdentity();
     std::string filename_;
-    int version_;
+    int version_=0;
 
     std::shared_ptr<const Weather> weather_;
 

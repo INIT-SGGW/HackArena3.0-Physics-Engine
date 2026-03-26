@@ -19,11 +19,11 @@ struct Engine
     float targetIdle = 4000.0f;
 
     // 1. ECU Hunting (Wolne falowanie komputera walczacego o utrzymanie obrotow)
-    // Zmienia siê powoli, np. co 1-2 sekundy. Amplituda: +/- 40 RPM
+    // Zmienia sie powoli, np. co 1-2 sekundy. Amplituda: +/- 40 RPM
     float ecuHunt = sin(m_idle_timer * 2.5f) * 40.0f;
 
     // 2. Mechaniczna asymetria (Szybsze falowanie od walkow rozrzadu)
-    // Zmienia siê szybko. Amplituda: +/- 60 RPM
+    // Zmienia sie szybko. Amplituda: +/- 60 RPM
     float mechVibe = sin(m_idle_timer * 12.0f) * 60.0f;
 
     // 3. Wypadanie zaplonow / Szum (Micro-noise)
@@ -42,9 +42,9 @@ struct Engine
   /// <returns>
   /// Maximum torque in [Nm]
   /// </returns>
-  float GetMaxTorque() { return RPM_to_torque.GetValue(rpm); }
+  btScalar GetMaxTorque() { return RPM_to_torque.GetValue(rpm); }
 
-  void SetNewRPM(float new_rpm)
+  void SetNewRPM(btScalar new_rpm)
   {
     if (new_rpm > 16000.f)
       rpm = 16000.f;
@@ -53,9 +53,9 @@ struct Engine
   }
 
  private:
-  static inline const Curve RPM_to_torque =
-      Curve({200, 250, 320, 380, 440, 500, 550, 590, 620, 640, 660, 670, 675, 678, 680, 680,
-             680, 680, 675, 670, 660, 650, 635, 620, 600, 580, 560, 535, 510, 480, 450},
-            500.0f, 0.0f);  // N*m
+  static inline const Curve RPM_to_torque = Curve(
+      {200.f, 250.f, 320.f, 380.f, 440.f, 500.f, 550.f, 590.f, 620.f, 640.f, 660.f, 670.f, 675.f, 678.f, 680.f, 680.f,
+       680.f, 680.f, 675.f, 670.f, 660.f, 650.f, 635.f, 620.f, 600.f, 580.f, 560.f, 535.f, 510.f, 480.f, 450.f},
+      500.0f, 0.0f);  // N*m
 };
 }  // namespace boink

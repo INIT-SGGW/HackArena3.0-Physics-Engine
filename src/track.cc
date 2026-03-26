@@ -87,11 +87,11 @@ namespace boink
   {
     btScalar wetness=weather_->getWetness();
     surface_infos_[Ground::Type::Grass]= 
-      {0.35f, 0.01, 0.3f, wetness,Ground::Type::Grass};
+      {0.35f, 0.01f, 0.3f, wetness,Ground::Type::Grass};
     surface_infos_[Ground::Type::Sand]= 
-      {0.3f, 0.25, 0.4f, wetness,Ground::Type::Sand};
+      {0.3f, 0.25f, 0.4f, wetness,Ground::Type::Sand};
     surface_infos_[Ground::Type::Gravel]= 
-      {0.45f, 0.15, 0.4f, wetness,Ground::Type::Gravel};
+      {0.45f, 0.15f, 0.4f, wetness,Ground::Type::Gravel};
     surface_infos_[Ground::Type::Asphalt]= 
       {1.0f, 0.0f, 0.1f, wetness,Ground::Type::Asphalt};
     surface_infos_[Ground::Type::Kerb]= 

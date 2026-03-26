@@ -43,10 +43,12 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
       max_steer_angle_(create_info.max_steer_angle),
       tuning_(create_info.tuning),
       ghost_sim_(world_.get(),vehicle_.get(),&lap_info_),
-      pitstop_timer_(kBrakingDuration,kBrakingDuration),
+      pitstop_timer_(kBrakingDuration),
       user_data_(&ghost_info_),
       gui_(std::make_shared<VehicleGui>(this))
   {
+    pitstop_timer_.setElapsedToFinish();
+
     world_->addRigidBody(
         rigidbody_.get(),
         Collision::Group::Vehicle,
@@ -60,8 +62,8 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
     // Because cars might move fast we wanna avoid
     // cliping or just going over a wall
-    rigidbody_->setCcdMotionThreshold(1e-5);
-    rigidbody_->setCcdSweptSphereRadius(0.5);
+    rigidbody_->setCcdMotionThreshold(1e-5f);
+    rigidbody_->setCcdSweptSphereRadius(0.5f);
 
     vehicle_->setCoordinateSystem(
         0, // right (X)
@@ -132,14 +134,25 @@ Vehicle::Vehicle(const CreationInfo& create_info, std::shared_ptr<const Track> t
 
   // g_Epsilon is too small when vehicle tilts a little
   btVector3 before_finish_point=
-      last+ 0.99*segment;
+      last+ 0.99f*segment;
 
   lap_info_.curr_lap_coverage=
       road.getCoverage(before_finish_point);
 
+  btVector3 up_compensate =
+    g_Up * (getChassisToGroundDist() + g_GroundMargin);
+
+  const auto& sample = road.getMetrics(0);
+  btQuaternion align_to_surface = shortestArcQuat(g_Up, sample.normal);
+  btVector3 local_forward = quatRotate(align_to_surface, boink::g_Forward);
+
+  btQuaternion align_to_tangent = shortestArcQuat(local_forward, sample.tangent);
+  btQuaternion final_rot = align_to_tangent * align_to_surface;
+
   btTransform transform;
   transform.setIdentity();
-  transform.setOrigin(before_finish_point);
+  transform.setRotation(final_rot);
+  transform.setOrigin(before_finish_point+up_compensate);
 
   this->setChassisWorldTransform(transform);
 }
@@ -164,7 +177,6 @@ void Vehicle::update(btScalar dt)
   this->updateLapInfo(dt);
 
   ghost_sim_.update(dt);
-  ghost_info_.enabled=ghost_sim_.isInGhostMode();
 
   this->updatePitstop(dt);
 
@@ -220,7 +232,7 @@ void Vehicle::updateLapInfo(btScalar dt)
     {
       // Only here we calculate the time
       btScalar curr_distance=track_length+v;
-      btAssert(curr_distance>=0.f);
+      BOINK_ASSERT(curr_distance>=0.f);
 
       if(curr_distance<g_Epsilon)
         curr_distance=g_Epsilon;
@@ -240,7 +252,7 @@ void Vehicle::updateLapInfo(btScalar dt)
     }
   }
   
-  btAssert(dt>=0);
+  BOINK_ASSERT(dt>=0);
   lap_info_.curr_lap_time+=dt;
 
   lap_info_.current_lap = curr_lap;
@@ -351,7 +363,7 @@ btTransform Vehicle::getChassisWorldTransform() const
 
 btScalar Vehicle::getChassisToGroundDist() const
 {
-  btAssert((btVector3(0.f,1.f,0.f)-g_Up).length2()<g_Epsilon);
+  BOINK_ASSERT((btVector3(0.f,1.f,0.f)-g_Up).length2()<g_Epsilon);
 
   // TODO i dont know but this function is not ideal
   const auto& wheel_info=vehicle_->getWheelInfo((int)WheelPosition::RearLeft);
@@ -508,7 +520,6 @@ void Vehicle::enableGhostSim(const GhostModeSettings& ghost_settings)
 void Vehicle::disableGhostSim()
 {
   ghost_sim_.disable();
-  ghost_info_.enabled=false;
 }
 
 btVector3 Vehicle::correctCOM(const btVector3& com,const VehicleMesh* mesh)
@@ -535,9 +546,9 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
   std::unique_ptr<btCompoundShape> compound(new btCompoundShape());
   btConvexHullShape* hull = new btConvexHullShape();
 
-  float floor = -0.5;
-  float max_z=0;
-  float min_z=3.f;
+  btScalar floor = -0.5;
+  btScalar max_z=0;
+  btScalar min_z=3.f;
   for ( btVector3 v : vertices)
   {
     if(v.z()>max_z)
@@ -553,9 +564,9 @@ std::unique_ptr<btCompoundShape> Vehicle::createCollisonShape(const std::vector<
   }
 
   // 2. Inject 4 points at the front to FORCE it to be rectangular
-  //float fz = 2.6f; // Front-most Z
-  float hw = 0.9f; // Half-width
-  float hh = -0.3f; // Half-height
+  //btScalar fz = 2.6f; // Front-most Z
+  btScalar hw = 0.9f; // Half-width
+  btScalar hh = -0.3f; // Half-height
 
   hull->addPoint(btVector3( hw, hh,max_z)); // Top Right Front
   hull->addPoint(btVector3(-hw, hh,max_z)); // Top Left Front

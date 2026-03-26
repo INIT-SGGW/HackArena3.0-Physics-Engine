@@ -8,35 +8,24 @@ namespace boink
   {
   public:
     Timer()
-      :Timer(0.0f)
+      :Timer(kZero)
     {}
 
     Timer(btScalar target_duration)
-      :elapsed_(0.f),target_(target_duration),has_finised_(false)
-    {}
-
-    Timer(btScalar elapsed,btScalar target_duration)
-      :elapsed_(elapsed),target_(target_duration),has_finised_(elapsed==target_duration)
+      :elapsed_(kZero),target_(target_duration)
     {}
 
     void update(btScalar dt)
     {
       if(elapsed_>=target_)
-      {
-        has_finised_=true;
         elapsed_=target_;
-      }
       else
-      {
-        has_finised_=false;
         elapsed_+=dt;
-      }
     }
 
     void reset()
     {
-      has_finised_=false;
-      elapsed_=0.f;
+      elapsed_= kZero;
     }
 
     void reset(btScalar target_duration)
@@ -47,12 +36,12 @@ namespace boink
 
     bool hasFinised() const
     {
-      return has_finised_;
+      return target_<=elapsed_;
     }
 
     bool isRunning() const
     {
-      return elapsed_!=0.f && !hasFinised();
+      return elapsed_!= kZero && !hasFinised();
     }
 
     btScalar getCurrent() const
@@ -68,12 +57,11 @@ namespace boink
     void setElapsedToFinish() 
     {
       elapsed_=target_;
-      has_finised_=true;
     }
   private:
     btScalar elapsed_;
     btScalar target_;
 
-    bool has_finised_;
+    static constexpr float kZero = -1e-5f;
   };
 }

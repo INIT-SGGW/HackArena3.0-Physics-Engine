@@ -47,8 +47,10 @@ namespace boink
         std::make_shared<Vehicle>(ci,track_,this->getDynamicsWorld());
     Simulator::ID vehicle_id=this->addSimulator(vehicle);
 
-    if(ghost_enabled_)
+    if (ghost_enabled_)
       vehicle->enableGhostSim(ghost_settings_);
+    else
+      vehicle->disableGhostSim();
 
     vehicles_.emplace(vehicle_id,vehicle);
 
@@ -121,7 +123,7 @@ namespace boink
   {
     bool found=false;
     int lap=-1;
-    Simulator::ID vehicle_id=-1;
+    Simulator::ID vehicle_id=0;
     btScalar best_time=FLT_MAX;
 
     for(const auto& pair:vehicles_)
@@ -169,6 +171,8 @@ namespace boink
       btScalar fixed_delta_time,
       btScalar max_delta_time)
   {
+    
+    updateOverlapLists(0);
     int steps=Simulation::update(
         dt,max_sub_steps,fixed_delta_time,max_delta_time);
 
@@ -177,6 +181,7 @@ namespace boink
       return 0;
 
     updateOverlapLists(simulation_step);
+      
     return steps;
   }
 
@@ -197,12 +202,13 @@ namespace boink
         vehicle.second->getUserData()->ghost_info->overlap_vehicles;
       for(auto it=overlap_vehicles.begin();it!=overlap_vehicles.end();)
       {
-        it->second.update(dt);
-
         if(it->second.hasFinised())
           it=overlap_vehicles.erase(it);
         else
+        {
+          it->second.update(dt);
           ++it;
+        }
       }
     }
 

@@ -11,7 +11,7 @@ namespace boink
   const int g_MaxSubSteps=15;
   const btScalar g_FixedDeltaTime=1.f/120.f;
   const btScalar g_MaxDeltaTime=0.1f;
-  const btScalar g_Epsilon=1e-4;
+  const btScalar g_Epsilon=1e-4f;
 
-  const btScalar g_GroundMargin=0.05;
+  const btScalar g_GroundMargin=0.05f;
 }

@@ -23,16 +23,14 @@ size_t findClosestIndex(const BoinkVec3* pos, const BoinkCenterlineSample* sampl
 int main()
 {
 #ifdef WIN32
-  const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
-  const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
-  /*const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\\F1_CAR_06.glb";
-  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\horizon_05.glb";*/
+  //const char* vehicle_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
+  //const char* track_filename = "E:\\RepozytoriaGIT\\HackArena3.0-Physics-Engine\\maps\\horizon_05.glb";
+  const char* vehicle_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\F1_CAR_06.glb";
+  const char* track_filename = "C:\\Users\\igoru\\source\\repos\\HackArena3.0-Physics-Engine\\snake_07.glb";
 #else
   const char* vehicle_filename = "F1_CAR_06.glb";
-  // const char* track_filename = "lowpoly_track_1_test_5.glb";
-  const char* track_filename = "horizon_05.glb";
+  const char* track_filename = "bolt_03.glb";
 #endif
-
   unsigned int major, minor, patch;
   boink_get_engine_version(&major, &minor, &patch);
   printf("Engine verision: %d.%d.%d\n", major, minor, patch);
@@ -66,14 +64,20 @@ int main()
     return -1;
   }
   BoinkGhostModeSettings settings;
-  settings.enter_delay_ms = 5000.f;
-  settings.exit_delay_ms = 2000.f;
-  settings.enter_speed_max_mps = 5.f;
+  settings.enter_delay_ms = 1000;
+  settings.exit_delay_ms = 2000;
+  settings.enter_speed_max_mps = 2.f;
   settings.exit_speed_min_mps = 10.f;
   settings.until_completed_laps = 0;
-  settings.vehicle_overlap_exit_delay_ms = 3000.f;
+  settings.vehicle_overlap_exit_delay_ms = 3000;
 
   if ((code = boink_set_ghost_mode_settings(handle, &settings)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+
+  if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
   {
     PRINT_ERROR();
     goto clear;
@@ -84,7 +88,7 @@ int main()
   model.center_of_mass.y = -0.4;
   model.center_of_mass.z = 0.;
   model.mass = 800.;
-  model.max_steer_angle = 20;
+  model.max_steer_angle = 90;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.01;
   model.wheel_radius = 0.38;
@@ -95,31 +99,21 @@ int main()
     PRINT_ERROR();
     goto clear;
   }
-  //uint64_t id1;
-  //if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
-  //{
-  //  PRINT_ERROR();
-  //  goto clear;
-  //}
+  
+  uint64_t id1;
+  if ((code = boink_spawn_vehicle(handle, &model, &id1)) != BOINK_OK)
+  {
+    PRINT_ERROR();
+    goto clear;
+  }
+  
+  
   //uint64_t id2;
   //if ((code = boink_spawn_vehicle(handle, &model, &id2)) != BOINK_OK)
   //{
   //  PRINT_ERROR();
   //  goto clear;
   //}
-
-  if ((code = boink_despawn_vehicle(handle, id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
-
-  model.suspension_rest_length = 0.41;
-  if ((code = boink_spawn_vehicle(handle, &model, &id0)) != BOINK_OK)
-  {
-    PRINT_ERROR();
-    goto clear;
-  }
 
   //BoinkQuaternion vehicle_rot;
   //vehicle_rot.x = 0.;
@@ -172,6 +166,7 @@ int main()
 
   int pos=1;
   Real time=0.f;
+  
   while (!boink_should_close_debug())
   {
     Real now = boink_get_time_debug();
@@ -201,23 +196,18 @@ int main()
       }
     }
 
-    if (!runOnce && dur > 0.6)
+    if (!runOnce && dur > 2.6)
     {
-      if ((code = boink_disable_ghost_mode(handle)) != BOINK_OK)
-      {
-        PRINT_ERROR();
-        goto clear;
-      }
       runOnce = true;
     }
 
     if (!runOnce2 && dur > 2.0)
     {
-      //if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
-      //{
-      //  PRINT_ERROR();
-      //  goto clear;
-      //}
+      if ((code = boink_set_vehicle_before_finish_line(handle,id1)) != BOINK_OK)
+      {
+        PRINT_ERROR();
+        goto clear;
+      }
       if ((code = boink_set_vehicle_before_finish_line(handle,id0)) != BOINK_OK)
       {
         PRINT_ERROR();
@@ -231,21 +221,21 @@ int main()
       runOnce2 = true;
     }
 
-    /*if(time>20.f)
+    if(time>2.5f)
     {
-      //if ((code = boink_set_vehicle_to_pitstop(handle,id0)) != BOINK_OK)
+      //if ((code = boink_set_vehicle_at_start_pos(handle,id0,pos)) != BOINK_OK)
       //{
       //  PRINT_ERROR();
       //  goto clear;
       //}
-      //if ((code = boink_set_vehicle_to_pitstop(handle,id1)) != BOINK_OK)
+      //if ((code = boink_set_vehicle_at_start_pos(handle,id1,pos)) != BOINK_OK)
       //{
       //  PRINT_ERROR();
       //  goto clear;
       //}
       pos++;
       time=0.f;
-    }*/
+    }
     time+=sim_time;
 
     struct BoinkVehicleState state;
@@ -260,12 +250,12 @@ int main()
 
     // printCenterlineSample(&data.centerline_samples[i_closeset],0);
 
-    //BoinkGhostModeRuntimeState state_ghost;
-    //if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
-    //{
-    //  PRINT_ERROR();
-    //  goto clear;
-    //}
+    BoinkGhostModeRuntimeState state_ghost;
+    if ((code = boink_read_vehicle_ghost_mode_state(handle, id1, &state_ghost)) != BOINK_OK)
+    {
+      PRINT_ERROR();
+      goto clear;
+    }
     uint64_t number;
     if ((code = boink_get_number_of_start_pos(handle,&number) != BOINK_OK))
     {
@@ -275,16 +265,16 @@ int main()
 
     //printf("# of positions: %lu\n",number);
 
-    //printGhostModeData(&state_ghost);
+    printGhostModeData(&state_ghost);
 
     
-    Real width;
-    Real depth;
-    if ((code = boink_get_vehicle_dimensions(handle, id0, &width, &depth) != BOINK_OK))
-    {
-      PRINT_ERROR();
-      goto clear;
-    }
+    //Real width;
+    //Real depth;
+    //if ((code = boink_get_vehicle_dimensions(handle, id0, &width, &depth) != BOINK_OK))
+    //{
+    //  PRINT_ERROR();
+    //  goto clear;
+    //}
     //printf("width: %f    depth: %f \n", width, depth);
     boink_update_debug();
   }
@@ -347,6 +337,7 @@ void printTrackData(const BoinkTrackData* track_data)
   printStateReal(track_data->lap_length_m);
   printStateInt(track_data->centerline_sample_count);
 
+  return;
   const BoinkCenterlineSample* samples = track_data->centerline_samples;
   size_t num_samples = track_data->centerline_sample_count;
   const BoinkCenterlineSample* enter_samples=track_data->pitstop_data.enter_centerline_samples;

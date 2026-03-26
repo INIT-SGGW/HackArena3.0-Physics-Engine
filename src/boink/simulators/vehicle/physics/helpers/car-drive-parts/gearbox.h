@@ -7,11 +7,11 @@ namespace boink
 struct Gearbox
 {
  public:
-  static constexpr float kDifferentialRatio = 3.9;
-  static constexpr float kGearRatios[10] = {-2.8, 0.0, 4.60, 3.40, 2.70, 2.25, 1.90, 1.65, 1.45, 1.30};
+  static constexpr btScalar kDifferentialRatio = 3.9f;
+  static constexpr btScalar kGearRatios[10] = {-2.8f, 0.0f, 4.60f, 3.40f, 2.70f, 2.25f, 1.90f, 1.65f, 1.45f, 1.30f};
 
   Gear current_gear = Gear::First;
 
-  float GetCurrentRatio() const { return kGearRatios[static_cast<uint8_t>(current_gear)]; }
+  btScalar GetCurrentRatio() const { return kGearRatios[static_cast<uint8_t>(current_gear)]; }
 };
 }  // namespace boink

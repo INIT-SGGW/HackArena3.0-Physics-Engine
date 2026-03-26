@@ -3,6 +3,7 @@
 #include <LinearMath/btScalar.h>
 
 #include "boink/logger.h"
+#include "boink/simulators/vehicle/vehicle.h"
 
 namespace boink
 {
@@ -34,48 +35,51 @@ namespace boink
 
   void GhostMode::update(btScalar dt)
   {
+    speed_ = vehicle_->getRigidBody()->getLinearVelocity().length();
+
     if(!isSimulationActive())
     {
       if(isInGhostMode())
       {
-        force_timer_.update(dt);
         if(force_timer_.hasFinised())
           this->exitGhostMode();
+        force_timer_.update(dt);
       }
 
       return;
     }
 
-    speed_=vehicle_->getRigidBody()->getLinearVelocity().length();
-
     if(this->isEnterSpeedConditionMet()|| 
        isCompletedLapsConditionMet()) 
     {
-      exit_timer_.reset();
-
       if(isInGhostMode())
         return;
+
+      if (isCompletedLapsConditionMet())
+      {
+        this->enterGhostMode();
+        return;
+      }    
 
       enter_timer_.update(dt);
       if(enter_timer_.hasFinised())
         this->enterGhostMode();
     }
-
-    if(this->isExitSpeedConditionMet())
+    else if(this->isExitSpeedConditionMet())
     {
-      enter_timer_.reset();
-
       if(!isInGhostMode())
         return;
 
       exit_timer_.update(dt);
-
       if(exit_timer_.hasFinised())
         this->exitGhostMode();
     }
 
-    if(!this->isEnterSpeedConditionMet() && !this->isExitSpeedConditionMet())
-      this->reset();
+    if(!this->isEnterSpeedConditionMet() && !isCompletedLapsConditionMet())
+      enter_timer_.reset();
+    if(!this->isExitSpeedConditionMet())
+      exit_timer_.reset();
+
   }
 
   void GhostMode::enterGhostModeForce()
@@ -86,7 +90,15 @@ namespace boink
   void GhostMode::enterGhostMode()
   {
     is_in_ghost_mode_=true;
+    reinterpret_cast<Vehicle::UserData*>(
+      vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = true;
+
     this->reset();
+
+    world_->getPairCache()->cleanProxyFromPairs(
+        vehicle_->getRigidBody()->getBroadphaseHandle(), 
+        world_->getDispatcher()
+    );
 
     vehicle_->getRigidBody()->activate(true);
   }
@@ -94,7 +106,15 @@ namespace boink
   void GhostMode::exitGhostMode()
   {
     is_in_ghost_mode_=false;
+    reinterpret_cast<Vehicle::UserData*>(
+      vehicle_->getRigidBody()->getUserPointer())->ghost_info->enabled = false;
+
     this->reset();
+
+    world_->getPairCache()->cleanProxyFromPairs(
+        vehicle_->getRigidBody()->getBroadphaseHandle(), 
+        world_->getDispatcher()
+    );
 
     vehicle_->getRigidBody()->activate(true);
   }
@@ -104,6 +124,6 @@ namespace boink
     enter_timer_.reset(settings_.enter_delay);
     exit_timer_.reset(settings_.exit_delay);
 
-    force_timer_.reset(settings_.exit_delay);
+    force_timer_.reset(settings_.exit_delay_when_overlap);
  }
 }

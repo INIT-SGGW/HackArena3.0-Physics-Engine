@@ -11,6 +11,8 @@
 
 #include <vector>
 
+#include "boink/assert.h"
+
 namespace boink::math
 {
 
@@ -111,8 +113,8 @@ namespace boink::math
   size_t getIthClosestIndex(const std::vector<btVector3>& vec,
       const btVector3& point,size_t ith)
   {
-    btAssert(ith<=vec.size());
-    btAssert(ith>=1);
+    BOINK_ASSERT(ith<=vec.size());
+    BOINK_ASSERT(ith>=1);
 
     std::vector<bool> used(vec.size(),false);
     size_t i_closest = 0;
@@ -168,7 +170,7 @@ namespace boink::math
     
     // Turn vec3 to vec2 in local plane
     btVector3 local_ray_dir(ray_dir.dot(local_x),ray_dir.dot(local_y),0.f);
-    btAssert(local_ray_dir.length()>1.f-epsilon &&
+    BOINK_ASSERT(local_ray_dir.length()>1.f-epsilon &&
         local_ray_dir.length()<1.f+epsilon);
 
     if(local_ray_dir.length2() <epsilon*epsilon)

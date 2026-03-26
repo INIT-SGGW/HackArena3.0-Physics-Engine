@@ -23,9 +23,11 @@
 #include <LinearMath/btQuaternion.h>
 #include <LinearMath/btVector3.h>
 
-#include <iostream>
+// #include <iostream>
 
+#include "boink/assert.h"
 #include "boink/bullet_user_data.h"
+#include "boink/constants.h"
 #include "boink/simulators/track/ground.h"
 #include "boink/simulators/vehicle/physics/helpers/scalarLerp.h"
 #include "boink/simulators/vehicle/physics/vehicle_raycaster.h"
@@ -121,7 +123,7 @@ const btTransform& RaycastVehicle::getChassisWorldTransform() const
 
 const btTransform& RaycastVehicle::getWheelTransformWS(int wheelIndex) const
 {
-  btAssert(wheelIndex < getNumWheels());
+  BOINK_ASSERT(wheelIndex < getNumWheels());
 
   const WheelInfo& wheel = m_wheelsInfo[wheelIndex];
   return wheel.m_worldTransform;
@@ -210,14 +212,14 @@ WheelInfo& RaycastVehicle::addWheel(const btVector3& connectionPointCS, const bt
 
 const WheelInfo& RaycastVehicle::getWheelInfo(int index) const
 {
-  btAssert((index >= 0) && (index < getNumWheels()));
+  BOINK_ASSERT((index >= 0) && (index < getNumWheels()));
 
   return m_wheelsInfo[index];
 }
 
 WheelInfo& RaycastVehicle::getWheelInfo(int index)
 {
-  btAssert((index >= 0) && (index < getNumWheels()));
+  BOINK_ASSERT((index >= 0) && (index < getNumWheels()));
 
   return m_wheelsInfo[index];
 }
@@ -236,7 +238,7 @@ btScalar RaycastVehicle::getSteeringValue(int wheel) const { return getWheelInfo
 
 void RaycastVehicle::setSteeringValue(btScalar steering, int wheel)
 {
-  btAssert(wheel >= 0 && wheel < getNumWheels());
+  BOINK_ASSERT(wheel >= 0 && wheel < getNumWheels());
 
   WheelInfo& wheelInfo = getWheelInfo(wheel);
   wheelInfo.m_steering = steering;
@@ -248,6 +250,8 @@ void RaycastVehicle::setTyreType(WheelInfo::TyreType tyre_type)
   {
     WheelInfo& wheelInfo = m_wheelsInfo[i];
     wheelInfo.m_tyreInfo.m_type = tyre_type;
+    wheelInfo.m_tyreInfo.m_health = btScalar(1.0);
+    wheelInfo.m_tyreInfo.m_tempCelsius = btScalar(20.0);
   }
 }
 
@@ -268,7 +272,7 @@ btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
 
   VehicleRaycaster::VehicleRaycasterResult rayResults;
 
-  btAssert(m_vehicleRaycaster);
+  BOINK_ASSERT(m_vehicleRaycaster);
 
   btRigidBody* object = m_vehicleRaycaster->castRay(source, target, rayResults);
 
@@ -394,30 +398,6 @@ void RaycastVehicle::updateSuspension(btScalar deltaTime)
   }
 }
 
-struct WheelContactPoint
-{
-  btRigidBody* m_body0;
-  btRigidBody* m_body1;
-  btVector3 m_frictionPositionWorld;
-  btVector3 m_frictionDirectionWorld;
-  btScalar m_jacDiagABInv;
-  btScalar m_maxImpulse;
-
-  WheelContactPoint(btRigidBody* body0, btRigidBody* body1, const btVector3& frictionPosWorld,
-                    const btVector3& frictionDirectionWorld, btScalar maxImpulse)
-      : m_body0(body0),
-        m_body1(body1),
-        m_frictionPositionWorld(frictionPosWorld),
-        m_frictionDirectionWorld(frictionDirectionWorld),
-        m_maxImpulse(maxImpulse)
-  {
-    btScalar denom0 = body0->computeImpulseDenominator(frictionPosWorld, frictionDirectionWorld);
-    btScalar denom1 = body1->computeImpulseDenominator(frictionPosWorld, frictionDirectionWorld);
-    btScalar relaxation = 1.f;
-    m_jacDiagABInv = relaxation / (denom0 + denom1);
-  }
-};
-
 void RaycastVehicle::updateFriction(btScalar timeStep)
 {
   // std::cout << "vel_X:  " << getRigidBody()->getLinearVelocity().getX() << "\t";
@@ -503,7 +483,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
     }
 
     auto wheel_inertia = wheelInfo.kWheelMass * wheelInfo.m_wheelSimRadius * wheelInfo.kWheelMassDistCoeff;
-    auto engine_inertia_part = 0.f;
+    btScalar engine_inertia_part = 0.f;
     if (!wheelInfo.m_bIsFrontWheel)
       engine_inertia_part =
           (m_engine.inertia / 2.f) *
@@ -563,9 +543,9 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
               slip_ratio = 0.0001f;
           }
         }
-        else if (btFabs(speed_SR) < 2.9)
+        else if (btFabs(speed_SR) < 2.9f)
         {
-          slip_ratio = slip_velocity / 2.9;
+          slip_ratio = slip_velocity / 2.9f;
         }
         else
         {
@@ -620,9 +600,12 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
                                   ? surf_grip_coeff * surf_wet_grip_coeff * temp_grip_coeff * wear_grip_coeff
                                   : surf_grip_coeff * surf_wet_grip_coeff;
 
+      BOINK_ASSERT(temp_stiff_coeff > g_Epsilon);
       auto curr_peak_lat = kSlipAnglePeak / temp_stiff_coeff;
       auto curr_peak_long = kSlipRatioPeak / temp_stiff_coeff;
 
+      BOINK_ASSERT(curr_peak_lat > g_Epsilon);
+      BOINK_ASSERT(curr_peak_long > g_Epsilon);
       auto slip_ang_normalized = slip_angle / curr_peak_lat;
       auto slip_ratio_normalized = slip_ratio / curr_peak_long;
 
@@ -632,7 +615,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
 
       // std::cout << "slip_vec_len:  " << slip_vec_len << "\t";
 
-      if (slip_vec_len > 0.f)
+      if (slip_vec_len > g_Epsilon)
       {
         auto slip_ang_scaled = slip_vec_len * kSlipAnglePeak;
         auto slip_ratio_scaled = slip_vec_len * kSlipRatioPeak;
@@ -782,7 +765,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
   //// std::cout << "idle_rpm:  " << m_engine.GetIdleRPM() << "\t";
   // std::cout << "displayed_rpm:  " << getEngineRPM() << "\t";
   // std::cout << "speed: " << getRigidBody()->getLinearVelocity().length() << "\n\n";
-  std::cout << "\n";
+  // std::cout << "\n";
 }
 
 void RaycastVehicle::setCoordinateSystem(int rightIndex, int upIndex, int forwardIndex)
@@ -840,7 +823,7 @@ void RaycastVehicle::applyAerodynamics(btScalar step)
 
   btVector3 down_dir = -m_chassisBody->getWorldTransform().getBasis().getColumn(1);
 
-  assert(down_dir.length() < 1.01 && down_dir.length() > 0.99);
+  BOINK_ASSERT(down_dir.length() < 1.01 && down_dir.length() > 0.99);
 
   btVector3 air_down_force = kAirLiftCoef * kCommonCoef * speed2 * down_dir;
 
@@ -854,7 +837,7 @@ btScalar RaycastVehicle::updateDriveParts(btScalar step)
 {
   (void)step;
 
-  auto drive_torque = 0.0f;
+  btScalar drive_torque = 0.0f;
   if (m_throttle == 0)
   {
     drive_torque = -70 * m_gearbox.GetCurrentRatio() * Gearbox::kDifferentialRatio * kTransmissionEfficiency;
@@ -869,7 +852,7 @@ btScalar RaycastVehicle::updateDriveParts(btScalar step)
 
 bool RaycastVehicle::setGearUp()
 {
-  auto new_rpms = -1.f;
+  btScalar new_rpms = -1.f;
   auto current_gear = static_cast<uint8_t>(m_gearbox.current_gear);
   auto is_neutral = current_gear == static_cast<uint8_t>(Gear::Neutral);
 
@@ -983,15 +966,16 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (!p_ground)
   {
-    btAssert(false &&
-             "Wheel is not in contact with ground. This should be unreachable, because this method is called only if "
-             "wheel is in contact.");
+    BOINK_ASSERT(
+        false &&
+        "Wheel is not in contact with ground. This should be unreachable, because this method is called only if "
+        "wheel is in contact.");
     return nullptr;
   }
 
   if (!p_ground->getUserPointer())
   {
-    // btAssert(false && "Something is broken with pointers, ask Igor");
+    // BOINK_ASSERT(false && "Something is broken with pointers, ask Igor");
     return nullptr;
   }
 
@@ -1008,19 +992,24 @@ const Ground::SurfaceInfo* RaycastVehicle::getSurfInfo(WheelInfo& wheel) const
 
   if (user_data->getType() != BulletUserData::Type::Ground)
   {
-    btAssert(false && "User data is not Type::Ground");
+    BOINK_ASSERT(false && "User data is not Type::Ground");
     return nullptr;
   }
 
   Ground::UserData* user_data_casted = (Ground::UserData*)user_data;
   const Ground::SurfaceInfo* surface_info = user_data_casted->p_surface_info;
+  if (surface_info == nullptr)
+  {
+    BOINK_ASSERT(false && "Ground::SurfaceInfo pointer is null");
+    return nullptr;
+  }
   auto surface_type = surface_info->type;
 
   // std::cout << "surface:  " << Ground::toString(surface_type) << "\t";
 
   if (surface_type < (Ground::Type)0 || surface_type >= Ground::Type::Count)
   {
-    btAssert(false && "Invalid Ground::Type");
+    BOINK_ASSERT(false && "Invalid Ground::Type");
     return nullptr;
   }
   else

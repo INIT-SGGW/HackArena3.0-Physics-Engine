@@ -53,7 +53,7 @@ namespace boink
     const LapInfo* lap_info_;
 
     bool is_sim_enabled_=false;
-    bool is_in_ghost_mode_=false;
+    bool is_in_ghost_mode_=true;
 
     btScalar speed_=0.f;
     Timer enter_timer_;

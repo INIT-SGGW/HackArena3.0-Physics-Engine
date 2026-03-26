@@ -50,7 +50,6 @@ namespace boink
           Vehicle::UserData* my_vehicle_data = 
               reinterpret_cast<Vehicle::UserData*>(m_chassis->getUserPointer());
 
-
           if (vehicle_data->ghost_info->enabled)
             return m_closestHitFraction; 
           else if (my_vehicle_data->ghost_info->overlap_vehicles.find(
