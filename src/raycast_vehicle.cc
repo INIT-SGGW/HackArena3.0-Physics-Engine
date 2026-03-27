@@ -703,7 +703,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       // std::cout << "heat_gen: " << heat_generated << "\t";
       // std::cout << "temperature: " << wheelInfo.m_tyreInfo.m_tempCelsius << "\t";
 
-      // @ wear
+      // @wear
       slip_power = lat_power + long_power;
       wheelInfo.m_tyreInfo.m_health -= slip_power * WheelInfo::TyreInfo::wearRate * timeStep;
       if (wheelInfo.m_tyreInfo.m_health < 0.f) wheelInfo.m_tyreInfo.m_health = 0.f;
