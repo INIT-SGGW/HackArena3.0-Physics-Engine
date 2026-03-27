@@ -125,6 +125,7 @@ struct WheelInfo
   WheelInfo(WheelInfoConstructionInfo& ci);
 
   void updateWheel(const btRigidBody& chassis, RaycastInfo& raycastInfo);
+  void resetWheel();
 
   static constexpr btScalar kWheelMass = 16.0f;
   static constexpr btScalar kWheelMassDistCoeff = 0.78f;
