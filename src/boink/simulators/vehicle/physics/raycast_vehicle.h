@@ -140,6 +140,8 @@ class RaycastVehicle : public btActionInterface
   void setUserConstraintId(int uid) { m_userConstraintId = uid; }
   int getUserConstraintId() const { return m_userConstraintId; }
 
+  void reset();
+
   btScalar m_throttle;
   btScalar m_steeringValue;
   /// <summary>

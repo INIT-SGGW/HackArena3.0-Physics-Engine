@@ -337,6 +337,31 @@ btScalar RaycastVehicle::rayCast(WheelInfo& wheel)
   return depth;
 }
 
+void RaycastVehicle::reset()
+{
+  resetSuspension();
+  m_currentVehicleSpeedKmHour = btScalar(0.f);
+
+  m_throttle = btScalar(0.f);
+  m_steeringValue = btScalar(0.f);
+  m_brake = btScalar(0.f);
+
+  m_engine.is_revLimiter_active = false;
+  m_engine.m_is_on_idle = true;
+  m_engine.m_idle_timer = btScalar(0.f);
+  m_engine.SetNewRPM(btScalar(0.f));
+
+  m_gearbox.current_gear = Gear::First;
+
+  for (int i = 0; i < getNumWheels(); i++)
+  {
+    auto& wheel_info = getWheelInfo(i);
+    wheel_info.resetWheel();
+  }
+
+  m_last_frame_speed = btScalar(0.f);
+}
+
 void RaycastVehicle::resetSuspension()
 {
   for (int i = 0; i < m_wheelsInfo.size(); i++)
@@ -678,7 +703,7 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
       // std::cout << "heat_gen: " << heat_generated << "\t";
       // std::cout << "temperature: " << wheelInfo.m_tyreInfo.m_tempCelsius << "\t";
 
-      // @ wear
+      // @wear
       slip_power = lat_power + long_power;
       wheelInfo.m_tyreInfo.m_health -= slip_power * WheelInfo::TyreInfo::wearRate * timeStep;
       if (wheelInfo.m_tyreInfo.m_health < 0.f) wheelInfo.m_tyreInfo.m_health = 0.f;
@@ -878,7 +903,7 @@ bool RaycastVehicle::setGearUp()
     new_rpms = m_engine.rpm * (m_gearbox.kGearRatios[current_gear + 1] / m_gearbox.GetCurrentRatio());
   }
 
-  if (new_rpms >= 3000 || is_neutral)
+  if (new_rpms >= 4000 || is_neutral)
   {
     m_engine.SetNewRPM(new_rpms);
     m_gearbox.current_gear = static_cast<Gear>(current_gear + 1);

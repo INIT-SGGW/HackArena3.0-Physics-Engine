@@ -644,14 +644,7 @@ void Vehicle::reset()
   rigidbody_->setInterpolationLinearVelocity(btVector3(0, 0, 0));
   rigidbody_->setInterpolationAngularVelocity(btVector3(0, 0, 0));
 
-  vehicle_->resetSuspension();
-  for(int i=0; i < getNumWheels(); i++)
-  {
-    auto& wheel_info=vehicle_->getWheelInfo(i);
-
-    wheel_info.m_rotation = 0.0f;
-    wheel_info.m_deltaRotation = 0.0f;
-  }
+  vehicle_->reset();
 
   // After tp we cannot give vehicle better postion only worse
   btScalar new_coverage=

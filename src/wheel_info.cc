@@ -23,7 +23,7 @@ namespace boink
 // TODO
 btScalar WheelInfo::TyreInfo::heatingConst = btScalar(0.00005f);
 btScalar WheelInfo::TyreInfo::coolingConst = btScalar(0.0002f);
-btScalar WheelInfo::TyreInfo::wearRate = btScalar(0.0000001f);
+btScalar WheelInfo::TyreInfo::wearRate = btScalar(0.00000006f);
 
 btScalar WheelInfo::TyreInfo::s_softWearRatePerMin = btScalar(0.05);
 btScalar WheelInfo::TyreInfo::s_hardWearRatePerMin = s_softWearRatePerMin;
@@ -44,19 +44,25 @@ btScalar WheelInfo::TyreInfo::s_angularSpeedTempCoolingConst = btScalar(0.1);
 // Curve tempToStiffCoeff;
 const std::array<TyreTypeProperties, 3> WheelInfo::kTyresTypesInfo = {
     {{1.00f, 0.2f, 3.f, 100.f, 1.2f,
-      Curve({0.80f, 0.82f, 0.85f, 0.88f, 0.92f, 0.96f, 0.98f, 0.99f, 1.00f, 1.00f, 0.98f, 0.94f, 0.88f, 0.82f, 0.78f, 0.75f, 0.75f},
+      Curve({0.80f, 0.82f, 0.85f, 0.88f, 0.92f, 0.96f, 0.98f, 0.99f, 1.00f, 1.00f, 0.98f, 0.94f, 0.88f, 0.82f, 0.78f,
+             0.75f, 0.75f},
             10.f, 0.f),
-      Curve({1.50f, 1.40f, 1.30f, 1.20f, 1.15f, 1.10f, 1.05f, 1.02f, 1.00f, 1.00f, 0.95f, 0.85f, 0.75f, 0.65f, 0.60f, 0.55f, 0.50f},
+      Curve({1.50f, 1.40f, 1.30f, 1.20f, 1.15f, 1.10f, 1.05f, 1.02f, 1.00f, 1.00f, 0.95f, 0.85f, 0.75f, 0.65f, 0.60f,
+             0.55f, 0.50f},
             10.f, 0.f)},  // soft
      {0.96f, 0.2f, 1.f, 100.f, 0.8f,
-      Curve({0.75f, 0.77f, 0.80f, 0.83f, 0.86f, 0.89f, 0.92f, 0.95f, 0.97f, 0.99f, 1.00f, 1.00f, 0.99f, 0.97f, 0.95f, 0.92f, 0.88f},
+      Curve({0.75f, 0.77f, 0.80f, 0.83f, 0.86f, 0.89f, 0.92f, 0.95f, 0.97f, 0.99f, 1.00f, 1.00f, 0.99f, 0.97f, 0.95f,
+             0.92f, 0.88f},
             10.f, 0.f),
-      Curve({1.60f, 1.50f, 1.40f, 1.30f, 1.25f, 1.20f, 1.15f, 1.10f, 1.05f, 1.02f, 1.00f, 1.00f, 0.98f, 0.95f, 0.90f, 0.85f, 0.80f},
+      Curve({1.60f, 1.50f, 1.40f, 1.30f, 1.25f, 1.20f, 1.15f, 1.10f, 1.05f, 1.02f, 1.00f, 1.00f, 0.98f, 0.95f, 0.90f,
+             0.85f, 0.80f},
             10.f, 0.f)},  // hard
      {0.85f, 0.8f, 1.5f, 75.f, 2.5f,
-      Curve({0.85f, 0.88f, 0.92f, 0.95f, 0.97f, 0.99f, 1.00f, 1.00f, 0.95f, 0.85f, 0.75f, 0.65f, 0.55f, 0.50f, 0.50f, 0.50f, 0.50f},
+      Curve({0.85f, 0.88f, 0.92f, 0.95f, 0.97f, 0.99f, 1.00f, 1.00f, 0.95f, 0.85f, 0.75f, 0.65f, 0.55f, 0.50f, 0.50f,
+             0.50f, 0.50f},
             10.f, 0.f),
-      Curve({1.30f, 1.20f, 1.15f, 1.10f, 1.05f, 1.02f, 1.00f, 1.00f, 0.90f, 0.75f, 0.60f, 0.50f, 0.45f, 0.40f, 0.40f, 0.40f, 0.40f},
+      Curve({1.30f, 1.20f, 1.15f, 1.10f, 1.05f, 1.02f, 1.00f, 1.00f, 0.90f, 0.75f, 0.60f, 0.50f, 0.45f, 0.40f, 0.40f,
+             0.40f, 0.40f},
             10.f, 0.f)}}};  // wet
 
 WheelInfo::WheelInfo(WheelInfoConstructionInfo& ci)
@@ -122,5 +128,20 @@ void WheelInfo::updateWheel(const btRigidBody& chassis, RaycastInfo& raycastInfo
     m_raycastInfo.m_contactNormalWS = -m_raycastInfo.m_wheelDirectionWS;
     m_clippedInvContactDotSuspension = btScalar(1.0);
   }
+}
+
+void WheelInfo::resetWheel()
+{
+  m_angSpeed = btScalar(0.f);
+  m_traction_force = btScalar(0.f);
+  m_drag_long_force = btScalar(0.f);
+  m_slip_vec_length = btScalar(0.f);
+
+  m_engineForce = btScalar(0.f);
+  m_steering = btScalar(0.f);
+  m_brake = btScalar(0.f);
+
+  m_rotation = 0.0f;
+  m_deltaRotation = 0.0f;
 }
 }  // namespace boink
