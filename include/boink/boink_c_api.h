@@ -34,7 +34,7 @@
 
 #define BOINK_C_API_VERSION_MINOR 17
 
-#define BOINK_C_API_VERSION_PATCH 0
+#define BOINK_C_API_VERSION_PATCH 7
 
 /**
  * Indicates successful operation.
