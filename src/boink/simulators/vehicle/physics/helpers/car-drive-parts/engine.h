@@ -46,8 +46,8 @@ struct Engine
 
   void SetNewRPM(btScalar new_rpm)
   {
-    if (new_rpm > 16000.f)
-      rpm = 16000.f;
+    if (new_rpm > 15500.f)
+      rpm = 15500.f;
     else
       rpm = new_rpm;
   }

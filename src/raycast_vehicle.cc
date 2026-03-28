@@ -648,7 +648,20 @@ void RaycastVehicle::updateFriction(btScalar timeStep)
         auto lat_grip_base = kSlipAngleToGrip.GetValue(slip_ang_scaled) * total_grip_coeff;
         auto long_grip_base = kSlipRatioToGrip.GetValue(slip_ratio_scaled) * total_grip_coeff;
 
-        auto lat_grip = lat_grip_base * (slip_ang_normalized / slip_vec_len);
+        btScalar lat_fraction = slip_ang_normalized / slip_vec_len;
+        if (!wheelInfo.m_bIsFrontWheel)
+        {
+          btScalar sign = (lat_fraction < btScalar(0.f)) ? btScalar(-1.f) : btScalar(1.f);
+          btScalar abs_fraction = btFabs(lat_fraction);
+          abs_fraction = btMax(abs_fraction, btScalar(0.15f));
+          lat_fraction = abs_fraction * sign;
+        }
+        else
+        {
+          lat_fraction *= 1.15;
+        }
+
+        auto lat_grip = lat_grip_base * lat_fraction;
         auto long_grip = long_grip_base * (slip_ratio_normalized / slip_vec_len);
 
         lateral_force = -lat_grip * wheelInfo.m_wheelsSuspensionForce;

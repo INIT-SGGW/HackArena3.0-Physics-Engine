@@ -85,10 +85,10 @@ int main()
 
   BoinkVehicleModel model;
   model.center_of_mass.x = 0.;
-  model.center_of_mass.y = -0.4;
+  model.center_of_mass.y = -1.;
   model.center_of_mass.z = 0.;
   model.mass = 800.;
-  model.max_steer_angle = 90;
+  model.max_steer_angle = 20;
   model.mesh = mesh_handle;
   model.suspension_rest_length = 0.01;
   model.wheel_radius = 0.38;
@@ -181,8 +181,8 @@ int main()
     }
 
     BoinkWeather weather_state;
-    weather_state.cloudiness = 0.5f;
-    weather_state.rain_intensity = 0.4f;
+    weather_state.cloudiness = 0.0f;
+    weather_state.rain_intensity = 0.0f;
     weather_state.temperature_c = 10.f;
 
     Real dur;
