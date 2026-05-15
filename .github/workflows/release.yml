@@ -20,25 +20,21 @@ jobs:
             os: windows-latest
             triplet: x64-windows-static-md
             artifact_name: boink-windows-x64
-            archive_ext: zip
 
           - name: linux-x64
             os: ubuntu-latest
             triplet: x64-linux
             artifact_name: boink-linux-x64
-            archive_ext: tar.gz
 
           - name: linux-arm64
             os: ubuntu-24.04-arm
             triplet: arm64-linux
             artifact_name: boink-linux-arm64
-            archive_ext: tar.gz
 
           - name: macos-arm64
             os: macos-latest
             triplet: arm64-osx
             artifact_name: boink-macos-arm64
-            archive_ext: tar.gz
 
     steps:
       - name: Checkout
@@ -46,11 +42,37 @@ jobs:
         with:
           submodules: recursive
 
-      # ── vcpkg (reads VCPKG_ROOT / submodule automatically) ────────────────
+      # ── Linux: install build tools + GLFW system dependencies ─────────────
+      # GLFW needs X11/Wayland headers even on headless CI (compile-time only).
+      # cmake + ninja are also missing on the bare ARM runner image.
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            pkg-config \
+            libx11-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxext-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            wayland-protocols
+
+      # ── macOS: make sure ninja is available ───────────────────────────────
+      - name: Install macOS build dependencies
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      # ── vcpkg ─────────────────────────────────────────────────────────────
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
 
-      # ── Windows: MSVC environment ──────────────────────────────────────────
+      # ── Windows: MSVC dev shell ────────────────────────────────────────────
       - name: Setup MSVC dev environment
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
@@ -58,8 +80,6 @@ jobs:
           arch: x64
 
       # ── Configure ─────────────────────────────────────────────────────────
-      # Your CMakePresets.json has "release" preset but no per-platform triplet
-      # override, so we pass the triplet as an extra cache variable here.
       - name: Configure CMake
         run: >
           cmake --preset release
@@ -70,13 +90,11 @@ jobs:
       - name: Build
         run: cmake --build ${{ github.workspace }}/build/release --config Release --parallel
 
-      # ── Install into staging dir ───────────────────────────────────────────
+      # ── Install ───────────────────────────────────────────────────────────
       - name: Install
         run: cmake --install ${{ github.workspace }}/build/release --config Release
 
-      # ── Windows: grab any GLFW artefacts vcpkg installed ──────────────────
-      # With x64-windows-static-md GLFW is almost certainly static (.lib only).
-      # We copy the .lib so consumers can link against it if needed.
+      # ── Windows: copy GLFW files from vcpkg installed tree ────────────────
       - name: Copy GLFW files (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -88,13 +106,10 @@ jobs:
           New-Item -ItemType Directory -Force -Path $destLib | Out-Null
           New-Item -ItemType Directory -Force -Path $destBin | Out-Null
 
-          # Static import lib
           Get-ChildItem -Path $tripletDir -Recurse -Include "glfw3.lib" -ErrorAction SilentlyContinue | ForEach-Object {
             Write-Host "Copying lib: $($_.FullName)"
             Copy-Item $_.FullName -Destination $destLib -Force
           }
-
-          # Shared DLL (only present if GLFW ended up dynamic somehow)
           Get-ChildItem -Path $tripletDir -Recurse -Include "glfw3.dll" -ErrorAction SilentlyContinue | ForEach-Object {
             Write-Host "Copying dll: $($_.FullName)"
             Copy-Item $_.FullName -Destination $destBin -Force
