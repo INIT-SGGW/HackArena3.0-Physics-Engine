@@ -27,7 +27,7 @@ cmake --build build/release
 ## License
 Copyright (c) 2026 Koło naukowe \_\_init\_\_
 
-This project is licensed under the MIT License.
+Boink is licensed under the GNU GPL v3.0.
 
 ## Third party licenses
 See the THIRD_PARTY_LICENSES.txt file for full details.
