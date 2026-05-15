@@ -43,8 +43,6 @@ jobs:
           submodules: recursive
 
       # ── Linux: install build tools + GLFW system dependencies ─────────────
-      # GLFW needs X11/Wayland headers even on headless CI (compile-time only).
-      # cmake + ninja are also missing on the bare ARM runner image.
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
@@ -61,7 +59,9 @@ jobs:
             libxext-dev \
             libwayland-dev \
             libxkbcommon-dev \
-            wayland-protocols
+            wayland-protocols \
+            libgl-dev \
+            libglu1-mesa-dev
 
       # ── macOS: make sure ninja is available ───────────────────────────────
       - name: Install macOS build dependencies
