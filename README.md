@@ -2,6 +2,8 @@
 
 Boink is a simple physics engine focused on vehicle simulation.
 
+![Boink Debugger](images/boink01.png)
+
 ## Dependencies
 
 Boink uses:
